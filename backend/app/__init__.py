@@ -1,0 +1,1 @@
+"""ScholarMate Backend Application"""
