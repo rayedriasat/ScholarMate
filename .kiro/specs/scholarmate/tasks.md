@@ -15,33 +15,44 @@
   - Create environment template files (frontend.env.template, backend.env.template)
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 2. Implement Google OAuth authentication flow
-  - [ ] 2.1 Set up Google Cloud Console project and OAuth credentials
+- [x] 2. Implement Google OAuth authentication flow
+
+  - [x] 2.1 Set up Google Cloud Console project and OAuth credentials
+
+
     - Configure OAuth consent screen with drive.file scope
     - Generate client ID and client secret for web, iOS, and Android
     - _Requirements: 2.1_
   
-  - [ ] 2.2 Create Flutter AuthService with Google Sign-In
+
+
+  - [x] 2.2 Create Flutter AuthService with Google Sign-In
     - Implement signInWithGoogle() method using google_sign_in package
     - Implement signOut() method
     - Implement getAccessToken() and refreshToken() methods
     - Create authStateChanges stream for reactive auth state
     - _Requirements: 2.1, 2.2, 2.5_
   
-  - [ ] 2.3 Build modern authentication UI screens
+  - [x] 2.3 Build modern authentication UI screens
+
     - Create splash screen with animated ScholarMate logo
     - Create login screen with Google Sign-In button (modern gradient design)
     - Implement responsive layout for mobile, tablet, and desktop
     - Add loading states and error handling UI
     - _Requirements: 2.1, 2.6_
   
-  - [ ] 2.4 Create backend token storage endpoint
+  - [x] 2.4 Create backend token storage endpoint
+
+
     - Implement POST /api/auth/store-tokens endpoint in FastAPI
     - Create EncryptionService for token encryption using AES-256
     - Store encrypted tokens in Supabase encrypted_tokens table
     - _Requirements: 2.3, 2.4_
   
-  - [ ] 2.5 Display user profile after authentication
+
+
+  - [x] 2.5 Display user profile after authentication
+
     - Create home screen scaffold with user avatar and name in app bar
     - Implement sign-out functionality
     - Add smooth transitions between auth states
