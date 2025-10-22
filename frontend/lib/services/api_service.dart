@@ -27,6 +27,9 @@ class ApiService {
   /// Store OAuth tokens in the backend
   Future<void> storeTokens({
     required String userId,
+    required String email,
+    String? name,
+    String? pictureUrl,
     required String accessToken,
     String? refreshToken,
     String? idToken,
@@ -37,6 +40,9 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_id': userId,
+          'email': email,
+          'name': name,
+          'picture_url': pictureUrl,
           'access_token': accessToken,
           'refresh_token': refreshToken,
           'id_token': idToken,

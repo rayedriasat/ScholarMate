@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
@@ -75,9 +76,11 @@ class _AppInitializerState extends State<AppInitializer> {
       }
 
       // Initialize auth service
+      // Note: serverClientId is not supported on web
+      // On Android/iOS, serverClientId should be the Web OAuth client ID
       await authService.initialize(
         clientId: configService.googleClientId,
-        serverClientId: configService.googleClientSecret,
+        serverClientId: kIsWeb ? null : configService.googleClientId,
       );
 
       // Listen to auth state changes
@@ -106,7 +109,10 @@ class _AppInitializerState extends State<AppInitializer> {
       final apiService = ApiService();
       await apiService.storeTokens(
         userId: user.id,
-        accessToken: user.accessToken!,
+        email: user.email,
+        name: user.displayName,
+        pictureUrl: user.photoUrl,
+        accessToken: user.accessToken ?? '',
         idToken: user.idToken,
       );
     } catch (e) {

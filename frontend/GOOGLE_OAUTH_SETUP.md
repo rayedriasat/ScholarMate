@@ -130,7 +130,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
         <key>CFBundleURLSchemes</key>
         <array>
             <!-- Replace with your REVERSED_CLIENT_ID -->
-            <string>com.googleusercontent.apps.YOUR_CLIENT_ID</string>
+            <string>325415234543-7o5i28gu9gvv1rp7mvk1palufttvs86s.apps.googleusercontent.com</string>
         </array>
     </dict>
 </array>

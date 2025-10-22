@@ -80,22 +80,53 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Sign in with Google (explicit user-initiated authentication)
-  /// Only available on platforms that support it (check with supportsAuthenticate)
+  /// On web, this triggers the FedCM prompt. On other platforms, uses authenticate()
   Future<User> signInWithGoogle() async {
     if (!_isInitialized || _googleSignIn == null) {
       throw Exception('AuthService not initialized');
     }
 
-    if (!_googleSignIn!.supportsAuthenticate()) {
-      throw Exception(
-        'Platform does not support authenticate(). Use platform-specific sign-in method.',
-      );
-    }
-
     _setLoading(true);
 
     try {
-      // Authenticate the user with scope hint for Drive access
+      // On web, authenticate() is not supported, so we just trigger the prompt
+      // The actual sign-in happens via the authenticationEvents stream
+      if (kIsWeb || !_googleSignIn!.supportsAuthenticate()) {
+        // On web, we need to wait for the authentication event
+        // Create a completer to wait for the result
+        final completer = Completer<User>();
+
+        // Listen for authentication events (only once)
+        late StreamSubscription subscription;
+        subscription = authStateChanges.listen((user) {
+          if (user != null && !completer.isCompleted) {
+            completer.complete(user);
+            subscription.cancel();
+          }
+        });
+
+        // Trigger the FedCM prompt
+        attemptLightweightAuthentication();
+
+        // Wait for authentication with timeout
+        try {
+          final user = await completer.future.timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              subscription.cancel();
+              throw Exception(
+                'Sign-in timed out. Please check your browser settings and allow third-party sign-in for this site.',
+              );
+            },
+          );
+          return user;
+        } catch (e) {
+          subscription.cancel();
+          rethrow;
+        }
+      }
+
+      // On non-web platforms, use authenticate()
       final account = await _googleSignIn!.authenticate(
         scopeHint: ['https://www.googleapis.com/auth/drive.file'],
       );
@@ -253,6 +284,8 @@ class AuthService extends ChangeNotifier {
   /// Handle authentication errors from the stream
   void _handleAuthenticationError(Object error) {
     debugPrint('Authentication error: $error');
+    debugPrint('Error type: ${error.runtimeType}');
+    debugPrint('Error details: ${error.toString()}');
     _currentUser = null;
     _authStateController.add(null);
     notifyListeners();

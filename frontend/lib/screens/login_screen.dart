@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
 
 /// Login screen with Google Sign-In
@@ -60,6 +61,10 @@ class _LoginScreenState extends State<LoginScreen>
         if (errorMessage.contains('canceled') ||
             errorMessage.contains('cancelled')) {
           _errorMessage = 'Sign-in was canceled';
+        } else if (errorMessage.contains('timed out') ||
+            errorMessage.contains('browser settings')) {
+          _errorMessage =
+              'Please enable third-party sign-in in your browser settings (click the icon next to the URL bar)';
         } else {
           _errorMessage = 'An unexpected error occurred. Please try again.';
         }
@@ -212,17 +217,10 @@ class _LoginScreenState extends State<LoginScreen>
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          Image.network(
-                                            'https://www.google.com/favicon.ico',
+                                          SvgPicture.asset(
+                                            'assets/google_logo.svg',
                                             width: 24,
                                             height: 24,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                                  return const Icon(
-                                                    Icons.login,
-                                                    size: 24,
-                                                  );
-                                                },
                                           ),
                                           const SizedBox(width: 12),
                                           const Text(

@@ -15,13 +15,21 @@ app = FastAPI(
 )
 
 # CORS configuration
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:8080").split(",")
+# In development, allow all origins for easier testing across devices
+if os.getenv("DEBUG", "False").lower() == "true":
+    cors_origins = ["*"]
+else:
+    # In production, use specific origins from environment
+    cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:8080").split(",")
+    cors_origins = [origin.strip() for origin in cors_origins]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include routers
