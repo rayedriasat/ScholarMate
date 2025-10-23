@@ -238,9 +238,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               )
                             else
-                              Center(
-                                child: web.renderButton(),
-                              ),
+                              Center(child: web.renderButton()),
 
                             // Error Message
                             if (_errorMessage != null) ...[
