@@ -16,6 +16,22 @@ class FileExplorerScreen extends StatefulWidget {
   State<FileExplorerScreen> createState() => _FileExplorerScreenState();
 }
 
+/// Public class to handle back navigation from parent widgets
+class FileExplorerNavigationHandler {
+  static _FileExplorerScreenState? _instance;
+
+  static void _setInstance(_FileExplorerScreenState? instance) {
+    _instance = instance;
+  }
+
+  static Future<bool> handleBackNavigation() async {
+    if (_instance != null) {
+      return await _instance!.handleBackNavigation();
+    }
+    return true; // Allow exit if no instance
+  }
+}
+
 class _FileExplorerScreenState extends State<FileExplorerScreen> {
   late DriveService _driveService;
   List<DriveFile> _files = [];
@@ -29,8 +45,15 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   @override
   void initState() {
     super.initState();
+    FileExplorerNavigationHandler._setInstance(this);
     _driveService = DriveService(authService: context.read<AuthService>());
     _loadInitialFolder();
+  }
+
+  @override
+  void dispose() {
+    FileExplorerNavigationHandler._setInstance(null);
+    super.dispose();
   }
 
   Future<void> _loadInitialFolder() async {
@@ -98,6 +121,49 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
     _currentFolderId = folder.id;
     await _loadFiles(folder.id);
+  }
+
+  /// Navigate back one folder level
+  Future<void> _navigateBack() async {
+    if (_navigationPath.length > 1) {
+      // Remove current folder from path
+      _navigationPath.removeLast();
+      final parentFolder = _navigationPath.last;
+      _currentFolderId = parentFolder.id;
+      await _loadFiles(parentFolder.id);
+    }
+  }
+
+  /// Check if we can navigate back (not at root)
+  bool get _canNavigateBack => _navigationPath.length > 1;
+
+  /// Handle back button press - only handles folder navigation, not app exit
+  /// Returns true if at root level and parent should handle exit
+  Future<bool> handleBackNavigation() async {
+    // Close FAB menu if open
+    if (_showFABMenu) {
+      setState(() {
+        _showFABMenu = false;
+      });
+      return false;
+    }
+
+    // Clear selection if any files are selected
+    if (_selectedFiles.isNotEmpty) {
+      setState(() {
+        _selectedFiles.clear();
+      });
+      return false;
+    }
+
+    // Navigate back if not at root
+    if (_canNavigateBack) {
+      await _navigateBack();
+      return false;
+    }
+
+    // At root level - let parent handle exit logic
+    return true;
   }
 
   Future<void> _refresh() async {
@@ -290,6 +356,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       appBar: AppBar(
         title: const Text('Files'),
         elevation: 0,
+        leading: _canNavigateBack
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _navigateBack,
+                tooltip: 'Back',
+              )
+            : null,
         actions: [
           if (_selectedFiles.isNotEmpty)
             IconButton(
