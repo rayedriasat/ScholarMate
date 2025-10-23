@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../services/auth_service.dart';
+import '../services/web_wrapper.dart' as web;
 
-/// Login screen with Google Sign-In
+/// Login screen with Google Sign-In (v7 API)
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -185,55 +187,60 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             const SizedBox(height: 32),
 
-                            // Google Sign-In Button
-                            SizedBox(
-                              width: double.infinity,
-                              height: 56,
-                              child: ElevatedButton(
-                                onPressed: authService.isLoading
-                                    ? null
-                                    : _handleSignIn,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.grey[800],
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(
-                                      color: Colors.grey[300]!,
-                                      width: 1,
+                            // Google Sign-In
+                            if (GoogleSignIn.instance.supportsAuthenticate())
+                              SizedBox(
+                                width: double.infinity,
+                                height: 56,
+                                child: ElevatedButton(
+                                  onPressed: authService.isLoading
+                                      ? null
+                                      : _handleSignIn,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.grey[800],
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      side: BorderSide(
+                                        color: Colors.grey[300]!,
+                                        width: 1,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                child: authService.isLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          SvgPicture.asset(
-                                            'assets/google_logo.svg',
-                                            width: 24,
-                                            height: 24,
+                                  child: authService.isLoading
+                                      ? const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
                                           ),
-                                          const SizedBox(width: 12),
-                                          const Text(
-                                            'Sign in with Google',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
+                                        )
+                                      : Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            SvgPicture.asset(
+                                              'assets/google_logo.svg',
+                                              width: 24,
+                                              height: 24,
                                             ),
-                                          ),
-                                        ],
-                                      ),
+                                            const SizedBox(width: 12),
+                                            const Text(
+                                              'Sign in with Google',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              )
+                            else
+                              Center(
+                                child: web.renderButton(),
                               ),
-                            ),
 
                             // Error Message
                             if (_errorMessage != null) ...[

@@ -1,6 +1,11 @@
-# Google OAuth Setup Guide for ScholarMate
+# Google OAuth Setup Guide for ScholarMate (google_sign_in 7.x)
 
-This guide walks you through setting up Google OAuth credentials for the ScholarMate application.
+This guide sets up Google OAuth for ScholarMate using google_sign_in ^7.2.0.
+
+Key changes vs 6.x:
+- Call GoogleSignIn.instance.initialize(...) exactly once at startup.
+- Authentication and authorization are separate. We request Drive scope when needed.
+- On Web, authentication uses the plugin-provided renderButton.
 
 ## Prerequisites
 
@@ -138,7 +143,8 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ### Web Configuration
 
-The web configuration will be handled programmatically in the Flutter code using the Web Client ID.
+- Ensure you created a Web OAuth client and put its Client ID in `.env` as `GOOGLE_CLIENT_ID`.
+- The app uses `GoogleSignIn.instance.initialize(clientId: ...)` and shows the official Google button via `google_sign_in_web`'s `renderButton()`.
 
 ## Step 7: Testing
 
