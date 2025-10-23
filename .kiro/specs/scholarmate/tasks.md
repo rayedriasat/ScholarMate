@@ -59,19 +59,28 @@
     - _Requirements: 2.6_
 
 **Test Checkpoint**: User can sign in with Google, see their profile, and sign out successfully.
+>> Approved, Tested and Verified By Rayed
 
 
 ## Phase 2: Drive Integration & File Browsing (Testable Checkpoint)
 
-- [ ] 3. Implement Google Drive service and file operations
-  - [ ] 3.1 Create DriveService with Google Drive API integration
+- [x] 3. Implement Google Drive service and file operations
+
+
+
+
+  - [x] 3.1 Create DriveService with Google Drive API integration
+
+
     - Implement createAppFolder() to create ScholarMate folder in Drive
     - Implement listFiles(folderId) to fetch files and folders
     - Implement uploadFile() for PDF and Markdown uploads
     - Implement createFolder(), deleteFile(), renameFile(), moveFile() operations
     - _Requirements: 3.1, 3.2, 3.4, 3.5_
   
-  - [ ] 3.2 Build modern file explorer UI
+  - [x] 3.2 Build modern file explorer UI
+
+
     - Create responsive file browser with tree view for web/desktop
     - Create collapsible folder view for mobile with smooth animations
     - Design colorful file/folder cards with icons, metadata (size, date)
@@ -79,14 +88,18 @@
     - Add floating action button (FAB) for upload/create folder with animated menu
     - _Requirements: 3.3, 3.6_
   
-  - [ ] 3.3 Implement file upload interface
+  - [x] 3.3 Implement file upload interface, multiple files/folders can be selected and uploaded at once, just like google drive upload.
+
+
     - Create file picker dialog supporting PDF and Markdown files
     - Build upload progress indicator with percentage and cancel option
     - Add drag-and-drop support for web/desktop
     - Implement error handling with user-friendly messages
     - _Requirements: 3.5_
   
-  - [ ] 3.4 Implement folder operations UI
+  - [x] 3.4 Implement folder operations UI
+
+
     - Create folder creation dialog with validation
     - Implement context menu for file/folder operations (rename, move, delete)
     - Add confirmation dialogs for destructive actions

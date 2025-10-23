@@ -51,6 +51,7 @@ dependencies:
   
   # SVG support
   flutter_svg: ^2.0.10+1
+  file_picker: ^10.3.3
 
 dev_dependencies:
   flutter_test:
