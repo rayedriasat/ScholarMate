@@ -41,23 +41,20 @@ class AuthService extends ChangeNotifier {
     }
 
     try {
-      _googleSignIn = GoogleSignIn.instance;
-
-      await _googleSignIn!.initialize(
-        clientId: clientId,
+      _googleSignIn = GoogleSignIn(
+        clientId: kIsWeb ? clientId : null,
         serverClientId: serverClientId,
-      );
-
-      // Listen to authentication events
-      _googleSignIn!.authenticationEvents.listen(
-        _handleAuthenticationEvent,
-        onError: _handleAuthenticationError,
+        scopes: [
+          'email',
+          'profile',
+          'https://www.googleapis.com/auth/drive.file',
+        ],
       );
 
       _isInitialized = true;
 
-      // Attempt lightweight authentication (may show UI on some platforms)
-      attemptLightweightAuthentication();
+      // Try silent sign-in
+      await _signInSilently();
 
       notifyListeners();
     } catch (e) {
@@ -66,21 +63,23 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Attempt lightweight authentication (previously signInSilently)
-  /// May show UI on some platforms (e.g., account selection on Android)
-  void attemptLightweightAuthentication() {
-    if (!_isInitialized || _googleSignIn == null) {
-      debugPrint('AuthService not initialized');
-      return;
+  /// Attempt silent sign-in
+  Future<void> _signInSilently() async {
+    try {
+      final account = await _googleSignIn!.signInSilently();
+      if (account != null) {
+        final user = await _createUserFromAccount(account);
+        _currentUser = user;
+        _authStateController.add(user);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Silent sign-in failed: $e');
     }
-
-    // This may or may not return a Future depending on the platform
-    // We handle the result via the authenticationEvents stream
-    _googleSignIn!.attemptLightweightAuthentication();
   }
 
   /// Sign in with Google (explicit user-initiated authentication)
-  /// On web, this triggers the FedCM prompt. On other platforms, uses authenticate()
+  /// Opens OAuth popup on web, works in incognito mode
   Future<User> signInWithGoogle() async {
     if (!_isInitialized || _googleSignIn == null) {
       throw Exception('AuthService not initialized');
@@ -89,54 +88,14 @@ class AuthService extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      // On web, authenticate() is not supported, so we just trigger the prompt
-      // The actual sign-in happens via the authenticationEvents stream
-      if (kIsWeb || !_googleSignIn!.supportsAuthenticate()) {
-        // On web, we need to wait for the authentication event
-        // Create a completer to wait for the result
-        final completer = Completer<User>();
+      // signIn() opens OAuth popup on web
+      final account = await _googleSignIn!.signIn();
 
-        // Listen for authentication events (only once)
-        late StreamSubscription subscription;
-        subscription = authStateChanges.listen((user) {
-          if (user != null && !completer.isCompleted) {
-            completer.complete(user);
-            subscription.cancel();
-          }
-        });
-
-        // Trigger the FedCM prompt
-        attemptLightweightAuthentication();
-
-        // Wait for authentication with timeout
-        try {
-          final user = await completer.future.timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              subscription.cancel();
-              throw Exception(
-                'Sign-in timed out. Please check your browser settings and allow third-party sign-in for this site.',
-              );
-            },
-          );
-          return user;
-        } catch (e) {
-          subscription.cancel();
-          rethrow;
-        }
+      if (account == null) {
+        throw Exception('Sign-in was canceled');
       }
 
-      // On non-web platforms, use authenticate()
-      final account = await _googleSignIn!.authenticate(
-        scopeHint: ['https://www.googleapis.com/auth/drive.file'],
-      );
-
-      // Get authentication tokens
-      final auth = await account.authorizationClient.authorizationForScopes([
-        'https://www.googleapis.com/auth/drive.file',
-      ]);
-
-      final user = await _createUserFromAccount(account, auth);
+      final user = await _createUserFromAccount(account);
       _currentUser = user;
       _authStateController.add(user);
       notifyListeners();
@@ -144,6 +103,15 @@ class AuthService extends ChangeNotifier {
       return user;
     } catch (e) {
       debugPrint('Sign-in failed: $e');
+
+      // Check if it's a People API error
+      if (e.toString().contains('People API')) {
+        throw Exception(
+          'Please enable the People API in your Google Cloud Console:\n'
+          'https://console.developers.google.com/apis/api/people.googleapis.com/overview?project=325415234543',
+        );
+      }
+
       rethrow;
     } finally {
       _setLoading(false);
@@ -175,16 +143,14 @@ class AuthService extends ChangeNotifier {
   /// Get current access token
   /// Returns null if user is not authenticated or token is not available
   Future<String?> getAccessToken() async {
-    if (_currentUser == null || _googleSignIn == null) return null;
+    if (_currentUser == null) return null;
 
     try {
-      // Get authorization for the required scopes
-      final authClient = _googleSignIn!.authorizationClient;
-      final auth = await authClient.authorizationForScopes([
-        'https://www.googleapis.com/auth/drive.file',
-      ]);
+      final account = _googleSignIn!.currentUser;
+      if (account == null) return null;
 
-      return auth?.accessToken;
+      final auth = await account.authentication;
+      return auth.accessToken;
     } catch (e) {
       debugPrint('Failed to get access token: $e');
       return null;
@@ -194,26 +160,24 @@ class AuthService extends ChangeNotifier {
   /// Refresh the access token
   /// Returns the new access token or null if refresh failed
   Future<String?> refreshToken() async {
-    if (_currentUser == null || _googleSignIn == null) return null;
+    if (_currentUser == null) return null;
 
     try {
-      final authClient = _googleSignIn!.authorizationClient;
+      final account = _googleSignIn!.currentUser;
+      if (account == null) return null;
 
-      // Clear the cached authorization token to force a refresh
-      if (_currentUser?.accessToken != null) {
-        await authClient.clearAuthorizationToken(
-          accessToken: _currentUser!.accessToken!,
-        );
-      }
+      // Clear cached tokens
+      await account.clearAuthCache();
 
-      // Request authorization again (this will get a fresh token)
-      final auth = await authClient.authorizationForScopes([
-        'https://www.googleapis.com/auth/drive.file',
-      ]);
+      // Get fresh authentication
+      final auth = await account.authentication;
 
-      if (auth != null) {
+      if (auth.accessToken != null) {
         // Update the current user with the new token
-        _currentUser = _currentUser!.copyWith(accessToken: auth.accessToken);
+        _currentUser = _currentUser!.copyWith(
+          accessToken: auth.accessToken!,
+          idToken: auth.idToken,
+        );
         notifyListeners();
         return auth.accessToken;
       }
@@ -233,79 +197,30 @@ class AuthService extends ChangeNotifier {
     }
 
     try {
-      final authClient = _googleSignIn!.authorizationClient;
-      await authClient.authorizeScopes(scopes);
+      final account = _googleSignIn!.currentUser;
+      if (account == null) {
+        throw Exception('No user signed in');
+      }
+
+      await _googleSignIn!.requestScopes(scopes);
     } catch (e) {
-      debugPrint('Failed to authorize scopes: $e');
+      debugPrint('Failed to request scopes: $e');
       rethrow;
     }
   }
 
-  /// Check if specific scopes are already authorized
-  Future<bool> hasScopes(List<String> scopes) async {
-    if (_currentUser == null || _googleSignIn == null) return false;
-
-    try {
-      final authClient = _googleSignIn!.authorizationClient;
-      final auth = await authClient.authorizationForScopes(scopes);
-      return auth != null;
-    } catch (e) {
-      debugPrint('Failed to check scopes: $e');
-      return false;
-    }
-  }
-
-  /// Handle authentication events from the stream
-  void _handleAuthenticationEvent(GoogleSignInAuthenticationEvent event) async {
-    // Check if it's a sign-in or sign-out event
-    if (event is GoogleSignInAuthenticationEventSignIn) {
-      final account = event.user;
-
-      try {
-        // Get authorization for the required scopes
-        final auth = await account.authorizationClient.authorizationForScopes([
-          'https://www.googleapis.com/auth/drive.file',
-        ]);
-
-        final user = await _createUserFromAccount(account, auth);
-        _currentUser = user;
-        _authStateController.add(user);
-        notifyListeners();
-      } catch (e) {
-        debugPrint('Error handling sign-in event: $e');
-      }
-    } else if (event is GoogleSignInAuthenticationEventSignOut) {
-      _currentUser = null;
-      _authStateController.add(null);
-      notifyListeners();
-    }
-  }
-
-  /// Handle authentication errors from the stream
-  void _handleAuthenticationError(Object error) {
-    debugPrint('Authentication error: $error');
-    debugPrint('Error type: ${error.runtimeType}');
-    debugPrint('Error details: ${error.toString()}');
-    _currentUser = null;
-    _authStateController.add(null);
-    notifyListeners();
-  }
-
   /// Create User object from GoogleSignInAccount
-  Future<User> _createUserFromAccount(
-    GoogleSignInAccount account,
-    GoogleSignInClientAuthorization? auth,
-  ) async {
-    // Get ID token
-    final authentication = account.authentication;
+  Future<User> _createUserFromAccount(GoogleSignInAccount account) async {
+    // Get authentication tokens
+    final auth = await account.authentication;
 
     return User.fromGoogleSignIn(
       id: account.id,
       email: account.email,
       displayName: account.displayName,
       photoUrl: account.photoUrl,
-      accessToken: auth?.accessToken ?? '',
-      idToken: authentication.idToken,
+      accessToken: auth.accessToken ?? '',
+      idToken: auth.idToken,
     );
   }
 
@@ -313,11 +228,6 @@ class AuthService extends ChangeNotifier {
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
-  }
-
-  /// Check if the platform supports the authenticate() method
-  bool supportsAuthenticate() {
-    return _googleSignIn?.supportsAuthenticate() ?? false;
   }
 
   @override

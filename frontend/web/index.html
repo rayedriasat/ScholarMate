@@ -22,6 +22,38 @@
 
   <!-- Google Sign-In -->
   <meta name="google-signin-client_id" content="325415234543-menqofjbigrju70tbi7oab4p5ath82lc.apps.googleusercontent.com">
+  
+  <!-- Suppress noisy GSI console messages -->
+  <script>
+    (function() {
+      // Suppress all GSI_LOGGER messages
+      const originalLog = console.log;
+      const originalWarn = console.warn;
+      const originalError = console.error;
+      
+      const shouldSuppress = (msg) => {
+        return msg && typeof msg === 'string' && 
+               (msg.includes('GSI_LOGGER') || 
+                msg.includes('Message ignored. Different origin') ||
+                msg.includes('Cross-Origin-Opener-Policy'));
+      };
+      
+      console.log = function(...args) {
+        if (shouldSuppress(args[0])) return;
+        originalLog.apply(console, args);
+      };
+      
+      console.warn = function(...args) {
+        if (shouldSuppress(args[0])) return;
+        originalWarn.apply(console, args);
+      };
+      
+      console.error = function(...args) {
+        if (shouldSuppress(args[0])) return;
+        originalError.apply(console, args);
+      };
+    })();
+  </script>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
