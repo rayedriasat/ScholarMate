@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user.dart';
+import 'storage_service.dart';
 
 /// Authentication service handling Google OAuth (google_sign_in ^7.x)
 class AuthService extends ChangeNotifier {
@@ -48,6 +49,12 @@ class AuthService extends ChangeNotifier {
     }
 
     try {
+      // Initialize storage service
+      await StorageService.initialize();
+
+      // Try to restore user from local storage
+      await _restoreUserFromStorage();
+
       // Initialize plugin
       await GoogleSignIn.instance.initialize(
         clientId: kIsWeb ? clientId : null,
@@ -55,13 +62,25 @@ class AuthService extends ChangeNotifier {
       );
 
       // Listen to authentication events
-      _authEventsSub = GoogleSignIn.instance.authenticationEvents
-          .listen(_handleAuthEvent, onError: _handleAuthError);
+      _authEventsSub = GoogleSignIn.instance.authenticationEvents.listen(
+        _handleAuthEvent,
+        onError: _handleAuthError,
+      );
 
       _isInitialized = true;
 
-      // Try lightweight authentication (may or may not return a Future)
-      GoogleSignIn.instance.attemptLightweightAuthentication();
+      // Only attempt lightweight authentication if we don't have valid tokens AND no current user
+      if (_currentUser == null &&
+          await StorageService.needsReAuthentication()) {
+        debugPrint(
+          'No valid tokens found, attempting lightweight authentication',
+        );
+        GoogleSignIn.instance.attemptLightweightAuthentication();
+      } else {
+        debugPrint(
+          'Valid tokens found or user already restored, skipping lightweight authentication',
+        );
+      }
 
       notifyListeners();
     } catch (e) {
@@ -74,13 +93,26 @@ class AuthService extends ChangeNotifier {
     switch (event) {
       case GoogleSignInAuthenticationEventSignIn():
         _account = event.user;
-        final user = await _createUserFromAccount(event.user);
-        _currentUser = user;
-        _authStateController.add(user);
-        notifyListeners();
+        try {
+          final user = await _createUserFromAccount(event.user);
+          _currentUser = user;
+
+          // Store user data locally
+          await StorageService.storeUser(user);
+
+          _authStateController.add(user);
+          notifyListeners();
+        } catch (e) {
+          debugPrint('Error creating user from account: $e');
+          // Don't update state if we can't get proper user data
+        }
       case GoogleSignInAuthenticationEventSignOut():
         _account = null;
         _currentUser = null;
+
+        // Clear stored user data
+        await StorageService.clearUser();
+
         _authStateController.add(null);
         notifyListeners();
     }
@@ -101,19 +133,33 @@ class AuthService extends ChangeNotifier {
     try {
       if (!GoogleSignIn.instance.supportsAuthenticate()) {
         throw UnsupportedError(
-            'Explicit authenticate() is not supported on this platform');
+          'Explicit authenticate() is not supported on this platform',
+        );
       }
 
-      // Hint to combine auth + authorization when supported
-      final account = await GoogleSignIn.instance
-          .authenticate(scopeHint: _scopes);
+      // Use authenticate with scopeHint to get both auth and authorization in one step
+      final account = await GoogleSignIn.instance.authenticate(
+        scopeHint: _scopes,
+      );
 
-      // Try to get tokens for required scopes; prompt if necessary
-      final authz = await account.authorizationClient
-          .authorizationForScopes(_scopes);
-      final accessToken = authz?.accessToken ??
-          (await account.authorizationClient.authorizeScopes(_scopes))
-              .accessToken;
+      // Get authorization - this should be available after authenticate with scopeHint
+      final authz = await account.authorizationClient.authorizationForScopes(
+        _scopes,
+      );
+
+      String? accessToken = authz?.accessToken;
+
+      // Only prompt for additional authorization if we don't have the access token
+      // This should rarely happen with scopeHint, but is a fallback
+      if (accessToken == null) {
+        debugPrint(
+          'Access token not available after authenticate, requesting authorization...',
+        );
+        final newAuthz = await account.authorizationClient.authorizeScopes(
+          _scopes,
+        );
+        accessToken = newAuthz.accessToken;
+      }
 
       final user = User.fromGoogleSignIn(
         id: account.id,
@@ -126,6 +172,10 @@ class AuthService extends ChangeNotifier {
 
       _account = account;
       _currentUser = user;
+
+      // Store user data locally
+      await StorageService.storeUser(user);
+
       _authStateController.add(user);
       notifyListeners();
       return user;
@@ -150,6 +200,9 @@ class AuthService extends ChangeNotifier {
     _setLoading(true);
     try {
       await GoogleSignIn.instance.signOut();
+
+      // Clear stored user data
+      await StorageService.clearUser();
     } catch (e) {
       debugPrint('Sign-out failed: $e');
       rethrow;
@@ -161,11 +214,44 @@ class AuthService extends ChangeNotifier {
   /// Get current access token
   /// Returns null if user is not authenticated or token is not available
   Future<String?> getAccessToken() async {
-    if (_account == null) return null;
+    // First check if we have a valid cached token
+    if (_currentUser?.accessToken != null &&
+        await StorageService.areTokensValid()) {
+      debugPrint('Using cached access token');
+      return _currentUser!.accessToken;
+    }
+
+    // If no account, return null
+    if (_account == null) {
+      debugPrint('No Google account available');
+      return null;
+    }
+
     try {
-      final authz = await _account!.authorizationClient
-          .authorizationForScopes(_scopes);
-      return authz?.accessToken;
+      // Try to get existing authorization without prompting
+      var authz = await _account!.authorizationClient.authorizationForScopes(
+        _scopes,
+      );
+
+      // If no authorization exists, try to authorize (may prompt user on web)
+      if (authz == null) {
+        debugPrint('No existing authorization, requesting scopes...');
+        authz = await _account!.authorizationClient.authorizeScopes(_scopes);
+      }
+
+      final token = authz.accessToken;
+      if (_currentUser != null) {
+        // Update current user with fresh token
+        _currentUser = _currentUser!.copyWith(accessToken: token);
+
+        // Update stored token with new expiry
+        await StorageService.updateAccessToken(token);
+
+        debugPrint('Updated access token and stored with new expiry');
+        notifyListeners();
+      }
+
+      return token;
     } catch (e) {
       debugPrint('Failed to get access token: $e');
       return null;
@@ -180,13 +266,20 @@ class AuthService extends ChangeNotifier {
           .authorizationForScopes(_scopes);
       if (existing != null) {
         // Invalidate cached token then re-read
-        await _account!.authorizationClient
-            .clearAuthorizationToken(accessToken: existing.accessToken);
+        await _account!.authorizationClient.clearAuthorizationToken(
+          accessToken: existing.accessToken,
+        );
       }
       final refreshed = await _account!.authorizationClient
           .authorizationForScopes(_scopes);
       if (refreshed != null) {
-        _currentUser = _currentUser?.copyWith(accessToken: refreshed.accessToken);
+        _currentUser = _currentUser!.copyWith(
+          accessToken: refreshed.accessToken,
+        );
+
+        // Update stored token
+        await StorageService.updateAccessToken(refreshed.accessToken);
+
         notifyListeners();
         return refreshed.accessToken;
       }
@@ -201,16 +294,50 @@ class AuthService extends ChangeNotifier {
   Future<User> _createUserFromAccount(GoogleSignInAccount account) async {
     // idToken is part of authentication; access token requires authorization
     final idToken = account.authentication.idToken;
-    final authz = await account.authorizationClient
-        .authorizationForScopes(_scopes);
+
+    // Try to get authorization, but don't prompt for additional scopes here
+    // The access token will be obtained when needed via getAccessToken()
+    String? accessToken;
+    try {
+      final authz = await account.authorizationClient.authorizationForScopes(
+        _scopes,
+      );
+      accessToken = authz?.accessToken;
+
+      // Don't prompt for authorization here - let getAccessToken() handle it
+      // This prevents double popups during the authentication flow
+      if (accessToken == null) {
+        debugPrint('No existing authorization found, will request when needed');
+      }
+    } catch (e) {
+      debugPrint('Could not get access token during user creation: $e');
+      // Continue without access token - it can be obtained later
+    }
+
     return User.fromGoogleSignIn(
       id: account.id,
       email: account.email,
       displayName: account.displayName,
       photoUrl: account.photoUrl,
-      accessToken: authz?.accessToken,
+      accessToken: accessToken,
       idToken: idToken,
     );
+  }
+
+  /// Restore user from local storage
+  Future<void> _restoreUserFromStorage() async {
+    try {
+      final storedUser = await StorageService.getStoredUser();
+      if (storedUser != null) {
+        _currentUser = storedUser;
+        _authStateController.add(storedUser);
+        debugPrint('Restored user from storage: ${storedUser.email}');
+      }
+    } catch (e) {
+      debugPrint('Failed to restore user from storage: $e');
+      // Clear corrupted data
+      await StorageService.clearUser();
+    }
   }
 
   /// Set loading state

@@ -107,6 +107,8 @@
     - _Requirements: 3.4_
 
 **Test Checkpoint**: User can browse Drive folders, upload files, create folders, and perform file operations with a modern, responsive UI.
+>> Works on Android, web gives no access token available error
+>> Now works on android and web, Log in and drive access tokens persists
 
 ## Phase 3: Offline Foundation & Local Cache (Testable Checkpoint)
 

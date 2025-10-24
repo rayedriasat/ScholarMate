@@ -17,25 +17,65 @@ class DriveService extends ChangeNotifier {
   DriveService({AuthService? authService})
     : _authService = authService ?? AuthService();
 
+  /// Get access token with retry logic
+  Future<String> _getAccessToken() async {
+    // First try to get current token (uses cache if valid)
+    var accessToken = await _authService.getAccessToken();
+
+    if (accessToken == null) {
+      debugPrint('No access token available, attempting to refresh...');
+      accessToken = await _authService.refreshToken();
+
+      if (accessToken == null) {
+        throw Exception('No access token available. Please sign in again.');
+      }
+    }
+
+    return accessToken;
+  }
+
+  /// Make HTTP request with automatic token refresh on 401 errors
+  Future<http.Response> _makeAuthenticatedRequest(
+    Future<http.Response> Function(String token) requestFunction,
+  ) async {
+    String accessToken = await _getAccessToken();
+
+    // Make the request
+    http.Response response = await requestFunction(accessToken);
+
+    // If unauthorized, try to refresh token and retry once
+    if (response.statusCode == 401) {
+      debugPrint('Access token expired, refreshing...');
+
+      final newToken = await _authService.refreshToken();
+      if (newToken != null) {
+        response = await requestFunction(newToken);
+      } else {
+        throw Exception(
+          'Unable to refresh access token. Please sign in again.',
+        );
+      }
+    }
+
+    return response;
+  }
+
   /// Get the ScholarMate app folder ID, creating it if necessary
   Future<String> getAppFolderId() async {
     if (_appFolderId != null) return _appFolderId!;
-
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
 
     // Search for existing ScholarMate folder
     final searchUrl =
         '$_baseUrl/files?q=name=\'$_appFolderName\' and mimeType=\'application/vnd.google-apps.folder\' and trashed=false';
 
-    final response = await http.get(
-      Uri.parse(searchUrl),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.get(
+        Uri.parse(searchUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -54,10 +94,7 @@ class DriveService extends ChangeNotifier {
 
   /// Create the ScholarMate app folder in Drive root
   Future<String> createAppFolder() async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     final folderMetadata = {
       'name': _appFolderName,
@@ -87,11 +124,6 @@ class DriveService extends ChangeNotifier {
 
   /// List files and folders in the specified folder
   Future<List<DriveFile>> listFiles([String? folderId]) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
-
     // Use app folder if no folder ID specified
     final targetFolderId = folderId ?? await getAppFolderId();
 
@@ -103,12 +135,14 @@ class DriveService extends ChangeNotifier {
     final url =
         '$_baseUrl/files?q=${Uri.encodeComponent(query)}&fields=$fields&orderBy=folder,name';
 
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -139,10 +173,7 @@ class DriveService extends ChangeNotifier {
     String? customName,
     void Function(double progress)? onProgress,
   }) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     final fileName = customName ?? file.path.split('/').last;
     final fileBytes = await file.readAsBytes();
@@ -216,10 +247,7 @@ class DriveService extends ChangeNotifier {
 
   /// Create a new folder
   Future<DriveFile> createFolder(String name, String parentId) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     final folderMetadata = {
       'name': name,
@@ -248,10 +276,7 @@ class DriveService extends ChangeNotifier {
 
   /// Delete a file or folder (move to trash)
   Future<void> deleteFile(String fileId) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     final response = await http.delete(
       Uri.parse('$_baseUrl/files/$fileId'),
@@ -267,10 +292,7 @@ class DriveService extends ChangeNotifier {
 
   /// Rename a file or folder
   Future<DriveFile> renameFile(String fileId, String newName) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     final updateData = {'name': newName};
 
@@ -295,10 +317,7 @@ class DriveService extends ChangeNotifier {
 
   /// Move a file or folder to a different parent
   Future<DriveFile> moveFile(String fileId, String newParentId) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     // First get current parents
     final getResponse = await http.get(
@@ -333,10 +352,7 @@ class DriveService extends ChangeNotifier {
 
   /// Download file content as bytes
   Future<Uint8List> downloadFile(String fileId) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     final response = await http.get(
       Uri.parse('$_baseUrl/files/$fileId?alt=media'),
@@ -354,10 +370,7 @@ class DriveService extends ChangeNotifier {
 
   /// Share a file with another user
   Future<void> shareFile(String fileId, String email, String role) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     final permissionData = {
       'type': 'user',
@@ -383,10 +396,7 @@ class DriveService extends ChangeNotifier {
 
   /// Create a public link for a file
   Future<String> createPublicLink(String fileId) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     final permissionData = {'type': 'anyone', 'role': 'reader'};
 
@@ -415,10 +425,7 @@ class DriveService extends ChangeNotifier {
     String parentId, {
     void Function(double progress)? onProgress,
   }) async {
-    final accessToken = await _authService.getAccessToken();
-    if (accessToken == null) {
-      throw Exception('No access token available');
-    }
+    final accessToken = await _getAccessToken();
 
     // Determine MIME type based on file extension
     String mimeType = 'application/octet-stream';
