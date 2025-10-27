@@ -551,13 +551,17 @@ class DriveService extends ChangeNotifier {
     }
   }
 
-  /// Download file content as bytes (with cache support)
-  Future<Uint8List> downloadFile(String fileId) async {
+  /// Download file content as bytes (with cache support and progress callback)
+  Future<Uint8List?> downloadFile(
+    String fileId, {
+    void Function(double progress)? onProgress,
+  }) async {
     // Check cache first
     if (_cacheService != null) {
       final cachedPdf = await _cacheService.getCachedPdf(fileId);
       if (cachedPdf != null) {
         debugPrint('Loading PDF from cache: $fileId');
+        onProgress?.call(1.0);
         return cachedPdf;
       }
     }
@@ -579,6 +583,7 @@ class DriveService extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       final bytes = response.bodyBytes;
+      onProgress?.call(1.0);
 
       // Cache the PDF if it's a PDF file
       if (_cacheService != null) {

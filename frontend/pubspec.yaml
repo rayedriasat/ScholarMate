@@ -59,6 +59,7 @@ dependencies:
   drift_flutter: ^0.2.7
   sqlite3_flutter_libs: ^0.5.40
   sqlite3_web: ^0.3.2
+  syncfusion_flutter_pdfviewer: ^31.2.3
 
 dev_dependencies:
   flutter_test:

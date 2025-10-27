@@ -8,6 +8,7 @@ import 'services/cache_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/drive_service.dart';
 import 'services/sync_manager.dart';
+import 'services/pdf_viewer_manager.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -82,6 +83,25 @@ class ScholarMateApp extends StatelessWidget {
             drive.setSyncManager(syncManager);
             return syncManager;
           },
+        ),
+        ChangeNotifierProxyProvider3<
+          CacheService,
+          DriveService,
+          ConnectivityService,
+          PdfViewerManager
+        >(
+          create: (context) => PdfViewerManager(
+            cacheService: cacheService,
+            driveService: context.read<DriveService>(),
+            connectivityService: context.read<ConnectivityService>(),
+          ),
+          update: (context, cache, drive, connectivity, previous) =>
+              previous ??
+              PdfViewerManager(
+                cacheService: cache,
+                driveService: drive,
+                connectivityService: connectivity,
+              ),
         ),
       ],
       child: MaterialApp(

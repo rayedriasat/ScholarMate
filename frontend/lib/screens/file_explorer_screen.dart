@@ -6,6 +6,7 @@ import '../widgets/file_card.dart';
 import '../widgets/breadcrumb_navigation.dart';
 import '../widgets/file_upload_widget.dart';
 import '../widgets/file_context_menu.dart';
+import 'pdf_viewer_screen.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -569,11 +570,18 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
     if (file.isFolder) {
       _navigateToFolder(file);
+    } else if (file.isPdf) {
+      // Open PDF in viewer
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => PdfViewerScreen(file: file)),
+      );
     } else {
-      // TODO: Open file (will be implemented in later phases)
+      // TODO: Open other file types (will be implemented in later phases)
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('File opening will be implemented in Phase 4'),
+        SnackBar(
+          content: Text(
+            'Opening ${file.extension?.toUpperCase() ?? 'this'} files is not yet supported',
+          ),
         ),
       );
     }
