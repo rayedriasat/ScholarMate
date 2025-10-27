@@ -552,12 +552,40 @@ class DriveService extends ChangeNotifier {
   }
 
   /// Download file content as bytes (with cache support and progress callback)
+  /// If online, checks for updates before returning cached version
   Future<Uint8List?> downloadFile(
     String fileId, {
     void Function(double progress)? onProgress,
+    bool forceRefresh = false,
   }) async {
-    // Check cache first
-    if (_cacheService != null) {
+    // If online, check if file has been updated on Drive
+    if (isOnline && _cacheService != null && !forceRefresh) {
+      try {
+        final cachedFile = await _cacheService.getCachedFile(fileId);
+        if (cachedFile != null) {
+          // Get current file metadata from Drive
+          final driveMetadata = await _getFileMetadata(fileId);
+
+          if (driveMetadata != null &&
+              driveMetadata.modifiedTime != null &&
+              cachedFile.modifiedTime != null) {
+            // Check if Drive version is newer
+            if (driveMetadata.modifiedTime!.isAfter(cachedFile.modifiedTime!)) {
+              debugPrint(
+                'File updated on Drive, downloading fresh copy: $fileId',
+              );
+              forceRefresh = true;
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Error checking for file updates: $e');
+        // Continue with normal flow
+      }
+    }
+
+    // Check cache first (unless force refresh)
+    if (!forceRefresh && _cacheService != null) {
       final cachedPdf = await _cacheService.getCachedPdf(fileId);
       if (cachedPdf != null) {
         debugPrint('Loading PDF from cache: $fileId');
@@ -590,7 +618,7 @@ class DriveService extends ChangeNotifier {
         final file = await _cacheService.getCachedFile(fileId);
         if (file?.isPdf == true) {
           await _cacheService.cachePdfBytes(fileId, bytes);
-          debugPrint('Cached PDF: $fileId');
+          debugPrint('Cached PDF: $fileId (${bytes.length} bytes)');
         }
       }
 
@@ -599,6 +627,37 @@ class DriveService extends ChangeNotifier {
       throw Exception(
         'Failed to download file: ${response.statusCode} ${response.body}',
       );
+    }
+  }
+
+  /// Get file metadata from Google Drive
+  Future<DriveFile?> _getFileMetadata(String fileId) async {
+    try {
+      final accessToken = await _getAccessToken();
+
+      final fields =
+          'id,name,mimeType,size,parents,modifiedTime,createdTime,thumbnailLink,shared';
+      final url = '$_baseUrl/files/$fileId?fields=$fields';
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return DriveFile.fromJson(data);
+      } else if (response.statusCode == 404) {
+        return null;
+      } else {
+        throw Exception('Failed to get file metadata: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error getting file metadata: $e');
+      return null;
     }
   }
 

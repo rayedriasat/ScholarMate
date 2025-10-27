@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 from dotenv import load_dotenv
-from .routers import auth, test_logging
+from .routers import auth, test_logging, annotations
 from .middleware import RequestLoggingMiddleware
 from .utils.logging_config import setup_logging, get_logger
 from .utils.exception_handlers import (
@@ -59,6 +59,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 # Include routers
 app.include_router(auth.router)
 app.include_router(test_logging.router)
+app.include_router(annotations.router)
 
 logger.info("Application configured successfully")
 

@@ -36,7 +36,11 @@ class PdfViewerManager extends ChangeNotifier {
   CacheService get cacheService => _cacheService;
 
   /// Load PDF from cache or download from Drive
-  Future<Uint8List?> loadPdf(DriveFile file) async {
+  /// Set forceRefresh to true to always download from Drive (ignoring cache)
+  Future<Uint8List?> loadPdf(
+    DriveFile file, {
+    bool forceRefresh = false,
+  }) async {
     _currentFile = file;
     _isLoading = true;
     _errorMessage = null;
@@ -45,17 +49,24 @@ class PdfViewerManager extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // First, try to load from cache
-      final cachedPdf = await _cacheService.getCachedPdf(file.id);
+      // If forceRefresh is true, skip cache and download from Drive
+      if (!forceRefresh) {
+        // First, try to load from cache
+        final cachedPdf = await _cacheService.getCachedPdf(file.id);
 
-      if (cachedPdf != null) {
-        debugPrint('PDF loaded from cache: ${file.name}');
-        _currentPdfBytes = cachedPdf;
-        _isFromCache = true;
-        _downloadProgress = 1.0;
-        _isLoading = false;
-        notifyListeners();
-        return cachedPdf;
+        if (cachedPdf != null) {
+          debugPrint('PDF loaded from cache: ${file.name}');
+          _currentPdfBytes = cachedPdf;
+          _isFromCache = true;
+          _downloadProgress = 1.0;
+          _isLoading = false;
+          notifyListeners();
+          return cachedPdf;
+        }
+      } else {
+        debugPrint(
+          'Force refresh requested, downloading from Drive: ${file.name}',
+        );
       }
 
       // If not cached and offline, return error
@@ -67,6 +78,7 @@ class PdfViewerManager extends ChangeNotifier {
       debugPrint('Downloading PDF from Drive: ${file.name}');
       final pdfBytes = await _driveService.downloadFile(
         file.id,
+        forceRefresh: forceRefresh,
         onProgress: (progress) {
           _downloadProgress = progress;
           notifyListeners();

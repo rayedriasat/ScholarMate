@@ -64,9 +64,45 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         _selectedAnnotationColor;
   }
 
-  Future<void> _loadPdf() async {
+  Future<void> _loadPdf({bool forceRefresh = false}) async {
     final pdfManager = context.read<PdfViewerManager>();
-    await pdfManager.loadPdf(widget.file);
+    await pdfManager.loadPdf(widget.file, forceRefresh: forceRefresh);
+  }
+
+  Future<void> _refreshPdf() async {
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 16),
+            Text('Checking for updates...'),
+          ],
+        ),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    // Force refresh from Drive
+    await _loadPdf(forceRefresh: true);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PDF refreshed from Google Drive'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   @override
@@ -495,6 +531,19 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           ],
         ),
         actions: [
+          // Refresh button - Check for updates from Drive
+          Consumer<ConnectivityService>(
+            builder: (context, connectivity, child) {
+              return IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: connectivity.isOnline ? _refreshPdf : null,
+                tooltip: connectivity.isOnline
+                    ? 'Refresh from Google Drive'
+                    : 'Offline - Cannot refresh',
+                color: connectivity.isOnline ? null : Colors.grey,
+              );
+            },
+          ),
           // Annotation toolbar toggle
           IconButton(
             icon: Icon(

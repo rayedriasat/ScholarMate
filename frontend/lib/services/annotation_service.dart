@@ -6,18 +6,26 @@ import 'package:drift/drift.dart';
 import '../models/annotation.dart';
 import '../database/database.dart';
 import 'cache_service.dart';
+import 'annotation_sync_service.dart';
+import 'connectivity_service.dart';
 
 /// Service for managing PDF annotations
 class AnnotationService extends ChangeNotifier {
   final AppDatabase _database;
   final CacheService _cacheService;
+  final AnnotationSyncService? _syncService;
+  final ConnectivityService? _connectivityService;
   final _uuid = const Uuid();
 
   AnnotationService({
     required AppDatabase database,
     required CacheService cacheService,
+    AnnotationSyncService? syncService,
+    ConnectivityService? connectivityService,
   }) : _database = database,
-       _cacheService = cacheService;
+       _cacheService = cacheService,
+       _syncService = syncService,
+       _connectivityService = connectivityService;
 
   /// Get all annotations for a file
   Future<List<PdfAnnotation>> getAnnotations(String fileId) async {
@@ -49,6 +57,29 @@ class AnnotationService extends ChangeNotifier {
       final annotationId = _uuid.v4();
       final now = DateTime.now();
 
+      // Check if online
+      final isOnline = _connectivityService?.isOnline ?? false;
+
+      if (isOnline && _syncService != null) {
+        // Create annotation online (immediate sync)
+        final annotation = await _syncService!.createAnnotationOnline(
+          fileId: fileId,
+          pageNumber: pageNumber,
+          type: type,
+          boundingBox: boundingBox,
+          color: color,
+          content: content,
+        );
+
+        if (annotation != null) {
+          // Embed annotation in PDF
+          await _embedAnnotationInPdf(fileId, annotation);
+          notifyListeners();
+          return annotation;
+        }
+      }
+
+      // Offline mode or sync failed - create locally
       final annotation = PdfAnnotation(
         id: annotationId,
         fileId: fileId,
@@ -81,6 +112,8 @@ class AnnotationService extends ChangeNotifier {
           createdAt: annotation.createdAt,
           modifiedAt: annotation.modifiedAt,
           isSynced: Value(annotation.isSynced),
+          authorId: Value(annotation.authorId),
+          authorName: Value(annotation.authorName),
         ),
       );
 
@@ -92,6 +125,41 @@ class AnnotationService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error creating annotation: $e');
       return null;
+    }
+  }
+
+  /// Sync annotations when connectivity is restored
+  Future<void> syncAnnotationsOnReconnect(String fileId) async {
+    if (_syncService == null || _connectivityService == null) return;
+
+    final isOnline = _connectivityService!.isOnline;
+    if (!isOnline) return;
+
+    try {
+      // Sync offline annotations
+      await _syncService!.syncOfflineAnnotations(fileId);
+
+      // Fetch latest annotations from server
+      await _syncService!.fetchAnnotations(fileId);
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error syncing annotations on reconnect: $e');
+    }
+  }
+
+  /// Fetch latest annotations from server on file open
+  Future<void> fetchLatestAnnotations(String fileId) async {
+    if (_syncService == null || _connectivityService == null) return;
+
+    final isOnline = _connectivityService!.isOnline;
+    if (!isOnline) return;
+
+    try {
+      await _syncService!.fetchAnnotations(fileId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching latest annotations: $e');
     }
   }
 
