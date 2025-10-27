@@ -82,8 +82,8 @@
 
 ## Phase 3: Offline Foundation & Local Cache (Testable Checkpoint)
 
-- [ ] 4. Implement local caching and offline support using Drift
-  - [ ] 4.1 Create Drift database schema and CacheService
+- [x] 4. Implement local caching and offline support using Drift
+  - [x] 4.1 Create Drift database schema and CacheService
     - Add drift, drift_flutter, and build_runner dependencies to pubspec.yaml
     - Define Drift tables: files, cached_pdfs, annotations, sync_queue
     - Generate Drift database code using build_runner
@@ -787,7 +787,7 @@ The next logical step is to implement offline support and local caching, which i
 4. UI indicators for online/offline status
 
 ### 📋 Dependencies to Add:
-- `sqflite` - Local SQLite database
+- `drift` - Local SQLite database
 - `connectivity_plus` - Network connectivity monitoring
 - `syncfusion_flutter_pdfviewer` - PDF viewing (Phase 4)
 - `camera` - Document scanning (Phase 8)

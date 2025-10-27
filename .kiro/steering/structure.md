@@ -80,7 +80,7 @@ backend/
 
 ### Offline-First (Frontend)
 
-1. **Local cache** (sqflite) mirrors Drive folder structure
+1. **Local cache** (Drift sqlite3) mirrors Drive folder structure
 2. **Offline queue** stores pending operations
 3. **Auto-sync** when connection restored
 4. **Conflict resolution**: Last-write-wins with history

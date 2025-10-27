@@ -186,7 +186,10 @@ All operations work offline and are automatically synced when online:
 
 ```yaml
 dependencies:
-  sqflite: ^2.4.2          # SQLite database
+  drift: ^2.29.0
+  drift_flutter: ^0.2.7
+  sqlite3_flutter_libs: ^0.5.40
+  sqlite3_web: ^0.3.2
   connectivity_plus: ^7.0.0 # Network connectivity monitoring
   path: ^1.9.1             # Path manipulation
 ```

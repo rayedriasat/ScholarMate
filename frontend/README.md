@@ -61,7 +61,7 @@ flutter pub add <package-name>
 
 Example:
 ```bash
-flutter pub add sqflite google_sign_in
+flutter pub add drift google_sign_in
 ```
 
 ## Database (Drift)
