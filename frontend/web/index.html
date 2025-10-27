@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -21,39 +22,45 @@
   <meta name="description" content="ScholarMate - Your AI Research Workspace">
 
   <!-- Google Sign-In -->
-  <meta name="google-signin-client_id" content="325415234543-menqofjbigrju70tbi7oab4p5ath82lc.apps.googleusercontent.com">
-  
+  <meta name="google-signin-client_id"
+    content="325415234543-menqofjbigrju70tbi7oab4p5ath82lc.apps.googleusercontent.com">
+
   <!-- Suppress noisy GSI console messages -->
   <script>
-    (function() {
+    (function () {
       // Suppress all GSI_LOGGER messages
       const originalLog = console.log;
       const originalWarn = console.warn;
       const originalError = console.error;
-      
+
       const shouldSuppress = (msg) => {
-        return msg && typeof msg === 'string' && 
-               (msg.includes('GSI_LOGGER') || 
-                msg.includes('Message ignored. Different origin') ||
-                msg.includes('Cross-Origin-Opener-Policy'));
+        return msg && typeof msg === 'string' &&
+          (msg.includes('GSI_LOGGER') ||
+            msg.includes('Message ignored. Different origin') ||
+            msg.includes('Cross-Origin-Opener-Policy'));
       };
-      
-      console.log = function(...args) {
+
+      console.log = function (...args) {
         if (shouldSuppress(args[0])) return;
         originalLog.apply(console, args);
       };
-      
-      console.warn = function(...args) {
+
+      console.warn = function (...args) {
         if (shouldSuppress(args[0])) return;
         originalWarn.apply(console, args);
       };
-      
-      console.error = function(...args) {
+
+      console.error = function (...args) {
         if (shouldSuppress(args[0])) return;
         originalError.apply(console, args);
       };
     })();
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+  <script type="text/javascript">
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
+  </script>
+
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -62,12 +69,14 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png" />
 
   <title>ScholarMate</title>
   <link rel="manifest" href="manifest.json">
 </head>
+
 <body>
   <script src="flutter_bootstrap.js" async></script>
 </body>
+
 </html>
