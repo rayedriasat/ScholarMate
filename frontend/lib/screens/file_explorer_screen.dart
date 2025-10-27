@@ -7,6 +7,7 @@ import '../widgets/breadcrumb_navigation.dart';
 import '../widgets/file_upload_widget.dart';
 import '../widgets/file_context_menu.dart';
 import 'pdf_viewer_screen.dart';
+import 'document_scanner_screen.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -189,6 +190,26 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       context: context,
       builder: (context) => _CreateFolderDialog(onCreateFolder: _createFolder),
     );
+  }
+
+  void _showScanDocument() async {
+    setState(() {
+      _showFABMenu = false;
+    });
+    if (_currentFolderId == null) return;
+
+    final result = await Navigator.push<DriveFile>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            DocumentScannerScreen(parentFolderId: _currentFolderId),
+      ),
+    );
+
+    if (result != null) {
+      // Refresh file list
+      await _loadFiles(_currentFolderId);
+    }
   }
 
   void _showUploadDialog() {
@@ -525,6 +546,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       children: [
         // Upload FAB
         if (_showFABMenu) ...[
+          FloatingActionButton(
+            heroTag: "scan",
+            onPressed: _showScanDocument,
+            tooltip: 'Scan document',
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            child: const Icon(Icons.document_scanner),
+          ),
+          const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: "upload",
             onPressed: _showUploadDialog,
