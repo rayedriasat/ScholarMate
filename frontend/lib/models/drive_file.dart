@@ -11,6 +11,7 @@ class DriveFile {
   final bool isFolder;
   final bool isShared;
   final List<String>? parents;
+  final String syncStatus; // 'synced', 'pending', 'failed'
 
   DriveFile({
     required this.id,
@@ -24,6 +25,7 @@ class DriveFile {
     this.isFolder = false,
     this.isShared = false,
     this.parents,
+    this.syncStatus = 'synced',
   });
 
   /// Create DriveFile from Google Drive API response
@@ -66,6 +68,7 @@ class DriveFile {
       'isFolder': isFolder,
       'isShared': isShared,
       'parents': parents,
+      'syncStatus': syncStatus,
     };
   }
 
@@ -82,6 +85,7 @@ class DriveFile {
     bool? isFolder,
     bool? isShared,
     List<String>? parents,
+    String? syncStatus,
   }) {
     return DriveFile(
       id: id ?? this.id,
@@ -95,6 +99,7 @@ class DriveFile {
       isFolder: isFolder ?? this.isFolder,
       isShared: isShared ?? this.isShared,
       parents: parents ?? this.parents,
+      syncStatus: syncStatus ?? this.syncStatus,
     );
   }
 

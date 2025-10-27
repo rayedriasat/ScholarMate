@@ -10,7 +10,7 @@ ScholarMate is an offline-first, Google-Drive-backed AI research workspace for m
 - **Flutter_Client**: The cross-platform mobile/web/desktop application built with Flutter
 - **FastAPI_Backend**: The Python backend service handling OCR, RAG indexing, and AI queries
 - **Google_Drive_Storage**: User's Google Drive app folder where all files are stored
-- **Local_Cache**: SQLite database (sqflite) storing offline copies and metadata
+- **Local_Cache**: Drift database storing offline copies and metadata (works on all platforms including web)
 - **Supabase_Metadata_DB**: PostgreSQL database storing user metadata, sharing info, and encrypted tokens
 - **ChromaDB_Vector_Store**: Self-hosted vector database for RAG embeddings with per-user collections
 - **LangChain_Framework**: Python framework for building LLM applications with document loaders, text splitters, and retrieval chains
@@ -68,7 +68,7 @@ ScholarMate is an offline-first, Google-Drive-backed AI research workspace for m
 
 #### Acceptance Criteria
 
-1. THE Flutter_Client SHALL initialize Local_Cache using sqflite on first launch
+1. THE Flutter_Client SHALL initialize Local_Cache using Drift database on first launch
 2. WHEN the Flutter_Client fetches files from Google_Drive_Storage, THE Flutter_Client SHALL store metadata in Local_Cache
 3. THE Flutter_Client SHALL display an online/offline indicator in the UI
 4. WHILE offline, THE Flutter_Client SHALL load folder structure from Local_Cache

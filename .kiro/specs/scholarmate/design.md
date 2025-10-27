@@ -31,8 +31,8 @@ This architecture ensures that switching AI providers requires minimal code chan
 ┌─────────────────────────────────────────────────────────────┐
 │                     Flutter Client                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │   UI Layer   │  │ Google Drive │  │   SQLite     │     │
-│  │              │  │   Service    │  │   Cache      │     │
+│  │   UI Layer   │  │ Google Drive │  │    Drift     │     │
+│  │              │  │   Service    │  │   Database   │     │
 │  └──────────────┘  └──────────────┘  └──────────────┘     │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
 │  │ Sync Manager │  │   Realtime   │  │     PDF      │     │
@@ -82,7 +82,7 @@ This architecture ensures that switching AI providers requires minimal code chan
 - Test: User can browse Drive, upload files, create folders
 
 **Phase 3: Offline Foundation & Local Cache (Testable Checkpoint)**
-- SQLite cache implementation
+- Drift database implementation (works on all platforms including web)
 - Online/offline detection
 - Metadata caching
 - Sync queue for offline actions
@@ -523,7 +523,7 @@ class BackendDriveService:
 
 ## Data Models
 
-### SQLite Schema (Flutter Client)
+### Drift Database Schema (Flutter Client)
 
 ```sql
 -- Files table
@@ -967,7 +967,7 @@ Each incremental phase includes specific tests:
 │  └─────────────┘    └─────────────┘   │
 │                                         │
 │  ┌─────────────┐    ┌─────────────┐   │
-│  │   SQLite    │    │  ChromaDB   │   │
+│  │    Drift    │    │  ChromaDB   │   │
 │  │   (local)   │    │   (local)   │   │
 │  └─────────────┘    └─────────────┘   │
 └─────────────────────────────────────────┘
@@ -989,7 +989,7 @@ Each incremental phase includes specific tests:
 │                                         │
 │  ┌─────────────────────────────────┐   │
 │  │      Flutter Application        │   │
-│  │      with SQLite Cache          │   │
+│  │      with Drift Database        │   │
 │  └─────────────────────────────────┘   │
 └─────────────────────────────────────────┘
            │                │

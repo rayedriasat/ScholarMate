@@ -55,7 +55,7 @@ Here is the **final authoritative `description.md`**:
 
 * **Frontend (Flutter)**
 
-  * Local DB / cache: **sqflite**
+  * Local DB / cache: **Drift** (cross-platform including web)
   * PDF Viewer / Annotation: **syncfusion_flutter_pdfviewer**
   * TTS: **flutter_tts**
   * Camera / scanner: Flutter camera + image processing plugins
@@ -105,7 +105,7 @@ Here is the **final authoritative `description.md`**:
 
 ## 6. Offline experience
 
-* Full folder navigation from local cache (sqflite), same as online, with offline indicator.
+* Full folder navigation from local cache (Drift database), same as online, with offline indicator.
 * Cached PDFs viewable offline.
 * Annotations offline: highlights, underline, comments (no freehand drawing). Embedded in PDF, metadata stored locally.
 * Offline actions queued for auto-sync when online.

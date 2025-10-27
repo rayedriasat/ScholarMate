@@ -11,7 +11,7 @@ Monorepo structure with separate frontend and backend:
 ### Core Technologies
 - **Framework**: Flutter 3.0+ (cross-platform: Android, iOS, Web, Windows, macOS, Linux)
 - **State Management**: Provider
-- **Local Database**: sqflite (offline-first cache)
+- **Local Database**: Drift (offline-first cache, works on all platforms including web)
 - **PDF Viewer**: syncfusion_flutter_pdfviewer (viewing + annotations)
 - **Text-to-Speech**: flutter_tts
 - **Authentication**: google_sign_in (v7+ with new API)

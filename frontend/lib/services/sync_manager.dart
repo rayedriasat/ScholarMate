@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:drift/drift.dart' as drift;
+import '../database/database.dart';
 import 'cache_service.dart';
 import 'connectivity_service.dart';
 import 'drive_service.dart';
@@ -70,17 +72,19 @@ class SyncManager extends ChangeNotifier {
     String? resourceId,
     required Map<String, dynamic> payload,
   }) async {
-    final db = await _cacheService.database;
+    final db = _cacheService.database;
 
-    await db.insert('sync_queue', {
-      'operation_type': operationType,
-      'resource_type': resourceType,
-      'resource_id': resourceId,
-      'payload': json.encode(payload),
-      'created_at': DateTime.now().toIso8601String(),
-      'retry_count': 0,
-      'status': 'pending',
-    });
+    await db.insertSyncOperation(
+      SyncQueueCompanion(
+        operationType: drift.Value(operationType),
+        resourceType: drift.Value(resourceType),
+        resourceId: drift.Value(resourceId),
+        payload: drift.Value(json.encode(payload)),
+        createdAt: drift.Value(DateTime.now()),
+        retryCount: const drift.Value(0),
+        status: const drift.Value('pending'),
+      ),
+    );
 
     await _updatePendingCount();
     notifyListeners();
@@ -111,35 +115,36 @@ class SyncManager extends ChangeNotifier {
     _updateSyncStatus(SyncStatus.syncing);
 
     try {
-      final db = await _cacheService.database;
+      final db = _cacheService.database;
 
       // Get pending actions
-      final actions = await db.query(
-        'sync_queue',
-        where: 'status = ?',
-        whereArgs: ['pending'],
-        orderBy: 'created_at ASC',
-      );
+      final allActions = await db.getPendingSyncOperations();
 
-      if (actions.isEmpty) {
+      if (allActions.isEmpty) {
         debugPrint('No pending actions to sync');
         _updateSyncStatus(SyncStatus.idle);
         _isSyncing = false;
         return;
       }
 
+      // Sort actions: folders first, then files
+      // This ensures parent folders are created before files are uploaded to them
+      var actions = _sortActionsByDependency(allActions);
+
       debugPrint('Processing ${actions.length} pending actions...');
 
       int successCount = 0;
       int failCount = 0;
+      int processedCount = 0;
 
-      for (final action in actions) {
-        final actionId = action['id'] as int;
-        final operationType = action['operation_type'] as String;
-        final resourceType = action['resource_type'] as String;
-        final resourceId = action['resource_id'] as String?;
-        final payload = json.decode(action['payload'] as String);
-        final retryCount = action['retry_count'] as int;
+      while (processedCount < actions.length) {
+        final action = actions[processedCount];
+        final actionId = action.id;
+        final operationType = action.operationType;
+        final resourceType = action.resourceType;
+        final resourceId = action.resourceId;
+        final payload = json.decode(action.payload) as Map<String, dynamic>;
+        final retryCount = action.retryCount;
 
         try {
           // Process the action based on type
@@ -151,37 +156,68 @@ class SyncManager extends ChangeNotifier {
           );
 
           // Remove successful action from queue
-          await db.delete('sync_queue', where: 'id = ?', whereArgs: [actionId]);
+          await db.deleteSyncOperation(actionId);
+
+          // Clean up temporary file for uploads
+          if (operationType == 'upload' && resourceType == 'file') {
+            try {
+              // Find and delete the temporary file in cache
+              final fileName = payload['file_name'] as String;
+              final parentId = payload['parent_id'] as String;
+              final cachedFiles = await _cacheService.getCachedFiles(parentId);
+
+              // Find temp file with matching name
+              final tempFiles = cachedFiles
+                  .where((f) => f.name == fileName && f.id.startsWith('temp_'))
+                  .toList();
+
+              // Delete all matching temp files
+              for (final tempFile in tempFiles) {
+                await _cacheService.deleteCachedFile(tempFile.id);
+                debugPrint('Cleaned up temp file: ${tempFile.id}');
+              }
+            } catch (e) {
+              // Non-critical error, just log it
+              debugPrint('Warning: Could not clean up temp file: $e');
+            }
+          }
 
           successCount++;
           debugPrint('✓ Synced: $operationType $resourceType');
+
+          // If we just created a folder, reload the queue to get updated parent_ids
+          if (operationType == 'create' && resourceType == 'folder') {
+            final remainingActions = await db.getPendingSyncOperations();
+            actions = _sortActionsByDependency(remainingActions);
+            processedCount = 0; // Reset to reprocess with updated IDs
+            continue;
+          }
         } catch (e) {
           failCount++;
           final newRetryCount = retryCount + 1;
-          final maxRetries = 5;
+          const maxRetries = 5;
 
           debugPrint('✗ Failed to sync: $operationType $resourceType - $e');
 
           if (newRetryCount >= maxRetries) {
             // Mark as failed after max retries
-            await db.update(
-              'sync_queue',
-              {
-                'status': 'failed',
-                'last_error': e.toString(),
-                'retry_count': newRetryCount,
-              },
-              where: 'id = ?',
-              whereArgs: [actionId],
+            await db.updateSyncOperation(
+              SyncQueueCompanion(
+                id: drift.Value(actionId),
+                status: const drift.Value('failed'),
+                lastError: drift.Value(e.toString()),
+                retryCount: drift.Value(newRetryCount),
+              ),
             );
             debugPrint('Action marked as failed after $maxRetries retries');
           } else {
             // Increment retry count with exponential backoff
-            await db.update(
-              'sync_queue',
-              {'retry_count': newRetryCount, 'last_error': e.toString()},
-              where: 'id = ?',
-              whereArgs: [actionId],
+            await db.updateSyncOperation(
+              SyncQueueCompanion(
+                id: drift.Value(actionId),
+                retryCount: drift.Value(newRetryCount),
+                lastError: drift.Value(e.toString()),
+              ),
             );
 
             // Wait before next retry (exponential backoff)
@@ -189,6 +225,8 @@ class SyncManager extends ChangeNotifier {
             await Future.delayed(Duration(seconds: backoffSeconds));
           }
         }
+
+        processedCount++;
       }
 
       debugPrint('Sync complete: $successCount succeeded, $failCount failed');
@@ -243,9 +281,19 @@ class SyncManager extends ChangeNotifier {
     switch (operationType) {
       case 'upload':
         // Upload file from cached bytes
-        final fileBytes = payload['file_bytes'] as List<int>;
+        // Convert List<dynamic> from JSON to List<int>
+        final fileBytesRaw = payload['file_bytes'] as List<dynamic>;
+        final fileBytes = fileBytesRaw.map((e) => e as int).toList();
         final fileName = payload['file_name'] as String;
         final parentId = payload['parent_id'] as String;
+
+        // Check if parent is still a temp ID (shouldn't happen if folder sync worked)
+        if (parentId.startsWith('temp_')) {
+          throw Exception(
+            'Cannot upload file to temporary folder ID: $parentId. '
+            'Parent folder may not have synced yet.',
+          );
+        }
 
         await _driveService.uploadFileFromBytes(
           Uint8List.fromList(fileBytes),
@@ -256,12 +304,22 @@ class SyncManager extends ChangeNotifier {
 
       case 'delete':
         if (resourceId != null) {
+          // Skip delete if it's a temp file (doesn't exist in Drive)
+          if (resourceId.startsWith('temp_')) {
+            debugPrint('Skipping delete of temp file: $resourceId');
+            return;
+          }
           await _driveService.deleteFile(resourceId);
         }
         break;
 
       case 'rename':
         if (resourceId != null) {
+          // Skip rename if it's a temp file (doesn't exist in Drive)
+          if (resourceId.startsWith('temp_')) {
+            debugPrint('Skipping rename of temp file: $resourceId');
+            return;
+          }
           final newName = payload['new_name'] as String;
           await _driveService.renameFile(resourceId, newName);
         }
@@ -269,6 +327,11 @@ class SyncManager extends ChangeNotifier {
 
       case 'move':
         if (resourceId != null) {
+          // Skip move if it's a temp file (doesn't exist in Drive)
+          if (resourceId.startsWith('temp_')) {
+            debugPrint('Skipping move of temp file: $resourceId');
+            return;
+          }
           final newParentId = payload['new_parent_id'] as String;
           await _driveService.moveFile(resourceId, newParentId);
         }
@@ -289,17 +352,41 @@ class SyncManager extends ChangeNotifier {
       case 'create':
         final name = payload['name'] as String;
         final parentId = payload['parent_id'] as String;
-        await _driveService.createFolder(name, parentId);
+
+        // Check if parent is still a temp ID (nested temp folders)
+        if (parentId.startsWith('temp_')) {
+          throw Exception(
+            'Cannot create folder in temporary parent folder ID: $parentId. '
+            'Parent folder may not have synced yet.',
+          );
+        }
+
+        final createdFolder = await _driveService.createFolder(name, parentId);
+
+        // If this was a temp folder, update any pending operations that reference it
+        if (resourceId != null && resourceId.startsWith('temp_')) {
+          await _updatePendingOperationsParentId(resourceId, createdFolder.id);
+        }
         break;
 
       case 'delete':
         if (resourceId != null) {
+          // Skip delete if it's a temp file (doesn't exist in Drive)
+          if (resourceId.startsWith('temp_')) {
+            debugPrint('Skipping delete of temp file: $resourceId');
+            return;
+          }
           await _driveService.deleteFile(resourceId);
         }
         break;
 
       case 'rename':
         if (resourceId != null) {
+          // Skip rename if it's a temp file (doesn't exist in Drive)
+          if (resourceId.startsWith('temp_')) {
+            debugPrint('Skipping rename of temp file: $resourceId');
+            return;
+          }
           final newName = payload['new_name'] as String;
           await _driveService.renameFile(resourceId, newName);
         }
@@ -307,6 +394,42 @@ class SyncManager extends ChangeNotifier {
 
       default:
         throw Exception('Unknown folder operation: $operationType');
+    }
+  }
+
+  /// Update parent_id in pending operations when a temp folder gets a real ID
+  Future<void> _updatePendingOperationsParentId(
+    String oldParentId,
+    String newParentId,
+  ) async {
+    final db = _cacheService.database;
+    final pendingActions = await db.getPendingSyncOperations();
+
+    for (final action in pendingActions) {
+      try {
+        final payload = json.decode(action.payload) as Map<String, dynamic>;
+        bool needsUpdate = false;
+
+        // Check if this action references the old parent ID
+        if (payload['parent_id'] == oldParentId) {
+          payload['parent_id'] = newParentId;
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          await db.updateSyncOperation(
+            SyncQueueCompanion(
+              id: drift.Value(action.id),
+              payload: drift.Value(json.encode(payload)),
+            ),
+          );
+          debugPrint(
+            'Updated parent_id in pending operation ${action.id}: $oldParentId -> $newParentId',
+          );
+        }
+      } catch (e) {
+        debugPrint('Error updating pending operation ${action.id}: $e');
+      }
     }
   }
 
@@ -322,14 +445,9 @@ class SyncManager extends ChangeNotifier {
 
   /// Update pending action count
   Future<void> _updatePendingCount() async {
-    final db = await _cacheService.database;
-
-    final result = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM sync_queue WHERE status = ?',
-      ['pending'],
-    );
-
-    _pendingActionCount = Sqflite.firstIntValue(result) ?? 0;
+    final db = _cacheService.database;
+    final pendingActions = await db.getPendingSyncOperations();
+    _pendingActionCount = pendingActions.length;
     notifyListeners();
   }
 
@@ -351,23 +469,51 @@ class SyncManager extends ChangeNotifier {
 
   /// Clear failed actions
   Future<void> clearFailedActions() async {
-    final db = await _cacheService.database;
+    final db = _cacheService.database;
+    final allActions = await (db.select(
+      db.syncQueue,
+    )..where((s) => s.status.equals('failed'))).get();
 
-    await db.delete('sync_queue', where: 'status = ?', whereArgs: ['failed']);
+    for (final action in allActions) {
+      await db.deleteSyncOperation(action.id);
+    }
 
     await _updatePendingCount();
     notifyListeners();
   }
 
   /// Get failed actions for debugging
-  Future<List<Map<String, dynamic>>> getFailedActions() async {
-    final db = await _cacheService.database;
+  Future<List<SyncQueueData>> getFailedActions() async {
+    final db = _cacheService.database;
+    return await (db.select(
+      db.syncQueue,
+    )..where((s) => s.status.equals('failed'))).get();
+  }
 
-    return await db.query(
-      'sync_queue',
-      where: 'status = ?',
-      whereArgs: ['failed'],
-    );
+  /// Sort actions by dependency order
+  /// Priority: 1. Folder creates, 2. File uploads, 3. Everything else
+  List<SyncQueueData> _sortActionsByDependency(List<SyncQueueData> actions) {
+    final folderCreates = <SyncQueueData>[];
+    final fileUploads = <SyncQueueData>[];
+    final others = <SyncQueueData>[];
+
+    for (final action in actions) {
+      if (action.resourceType == 'folder' && action.operationType == 'create') {
+        folderCreates.add(action);
+      } else if (action.resourceType == 'file' &&
+          action.operationType == 'upload') {
+        fileUploads.add(action);
+      } else {
+        others.add(action);
+      }
+    }
+
+    // Sort folder creates by creation time to handle nested folders
+    // (parent folders should be created before child folders)
+    folderCreates.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    // Combine in order: folders first, then file uploads, then everything else
+    return [...folderCreates, ...fileUploads, ...others];
   }
 
   @override

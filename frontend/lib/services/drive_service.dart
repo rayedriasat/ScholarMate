@@ -233,15 +233,23 @@ class DriveService extends ChangeNotifier {
         },
       );
 
-      // Return a temporary DriveFile object
-      return DriveFile(
+      // Create a temporary DriveFile object with pending status
+      final tempFile = DriveFile(
         id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
         name: fileName,
         parentId: parentId,
         size: fileBytes.length,
         createdTime: DateTime.now(),
         modifiedTime: DateTime.now(),
+        syncStatus: 'pending',
       );
+
+      // Cache the temporary file so it appears in the UI
+      if (_cacheService != null) {
+        await _cacheService.cacheFileMetadata(tempFile);
+      }
+
+      return tempFile;
     }
 
     // Online: Upload immediately
@@ -320,20 +328,24 @@ class DriveService extends ChangeNotifier {
     if (!isOnline && _syncManager != null) {
       debugPrint('Offline: Queuing folder creation for $name');
 
-      await _syncManager!.queueAction(
-        operationType: 'create',
-        resourceType: 'folder',
-        payload: {'name': name, 'parent_id': parentId},
-      );
-
-      // Return a temporary DriveFile object
+      // Create a temporary DriveFile object
+      final tempFolderId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
       final tempFolder = DriveFile(
-        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        id: tempFolderId,
         name: name,
         parentId: parentId,
         isFolder: true,
         createdTime: DateTime.now(),
         modifiedTime: DateTime.now(),
+        syncStatus: 'pending',
+      );
+
+      // Queue with the temp ID as resourceId so we can update references later
+      await _syncManager!.queueAction(
+        operationType: 'create',
+        resourceType: 'folder',
+        resourceId: tempFolderId,
+        payload: {'name': name, 'parent_id': parentId},
       );
 
       // Cache the temporary folder

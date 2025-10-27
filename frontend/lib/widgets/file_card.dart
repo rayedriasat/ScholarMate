@@ -149,6 +149,12 @@ class FileCard extends StatelessWidget {
                   ),
                 ],
               ),
+
+              // Sync status indicator
+              if (file.syncStatus != 'synced') ...[
+                const SizedBox(height: 8),
+                _buildSyncStatusBadge(),
+              ],
             ],
           ),
         ),
@@ -217,5 +223,50 @@ class FileCard extends StatelessWidget {
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
+  }
+
+  Widget _buildSyncStatusBadge() {
+    Color badgeColor;
+    IconData badgeIcon;
+    String badgeText;
+
+    switch (file.syncStatus) {
+      case 'pending':
+        badgeColor = Colors.orange;
+        badgeIcon = Icons.cloud_upload;
+        badgeText = 'Pending upload';
+        break;
+      case 'failed':
+        badgeColor = Colors.red;
+        badgeIcon = Icons.error_outline;
+        badgeText = 'Upload failed';
+        break;
+      default:
+        return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(badgeIcon, size: 14, color: badgeColor),
+          const SizedBox(width: 4),
+          Text(
+            badgeText,
+            style: TextStyle(
+              color: badgeColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

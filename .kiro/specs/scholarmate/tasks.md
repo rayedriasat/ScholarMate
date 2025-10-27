@@ -82,14 +82,15 @@
 
 ## Phase 3: Offline Foundation & Local Cache (Testable Checkpoint)
 
-- [x] 4. Implement local caching and offline support
-  - [x] 4.1 Create SQLite database schema and CacheService
-    - Added sqflite, connectivity_plus, and path dependencies to pubspec.yaml
-    - Initialized sqflite database with tables: files, cached_pdfs, annotations, sync_queue
-    - Implemented cacheFileMetadata() and getCachedFiles() methods
-    - Implemented cachePdfBytes() and getCachedPdf() methods
-    - Implemented cacheAnnotation() and getCachedAnnotations() methods
-    - Added cache statistics and management methods
+- [ ] 4. Implement local caching and offline support using Drift
+  - [ ] 4.1 Create Drift database schema and CacheService
+    - Add drift, drift_flutter, and build_runner dependencies to pubspec.yaml
+    - Define Drift tables: files, cached_pdfs, annotations, sync_queue
+    - Generate Drift database code using build_runner
+    - Implement cacheFileMetadata() and getCachedFiles() methods
+    - Implement cachePdfBytes() and getCachedPdf() methods
+    - Implement cacheAnnotation() and getCachedAnnotations() methods
+    - Add cache statistics and management methods
     - _Requirements: 4.1, 4.2_
   
   - [x] 4.2 Create ConnectivityService for online/offline detection
@@ -116,7 +117,18 @@
     - _Requirements: 4.3, 4.4_
 
 **Test Checkpoint**: User can browse cached files offline, perform actions that queue for sync, and see automatic synchronization when connectivity is restored.
-✅ **COMPLETED AND VERIFIED** - Works on Android, syncs back renames.
+
+  - [x] 4.5 Migrate from sqflite to Drift for cross-platform support
+    - ✅ Created Drift database schema with tables (Files, CachedPdfs, Annotations, SyncQueue)
+    - ✅ Implemented AppDatabase class with type-safe queries
+    - ✅ Updated CacheService to use Drift instead of sqflite
+    - ✅ Added web support with SQLite WASM (sqlite3_web package)
+    - ✅ Created drift_worker.dart for non-blocking web operations
+    - ✅ Generated database code with build_runner
+    - ✅ Tested on Android and Web platforms
+    - ✅ Created DRIFT_MIGRATION.md documentation
+    - _Requirements: Cross-platform offline support including web_
+    - **Files**: `lib/database/database.dart`, `lib/database/tables.dart`, `lib/database/drift_worker.dart`, `lib/services/cache_service.dart`
 
 ## Phase 4: PDF Viewing (Testable Checkpoint)
 
@@ -448,7 +460,7 @@
 
 - [ ] 14. Implement tag management system
   - [ ] 14.1 Create tag database schema and service
-    - Add tags and file_tags tables to SQLite schema
+    - Add tags and file_tags tables to Drift schema
     - Add tags and file_tags tables to Supabase schema with RLS policies
     - Create TagService in Flutter with CRUD operations
     - Implement tag synchronization between local cache and Supabase

@@ -35,7 +35,7 @@ ScholarMate (Monorepo)
 ### Tech Stack
 
 **Frontend (Flutter)**
-- Local cache: `sqflite`
+- Local cache: `drift` (cross-platform including web)
 - PDF viewer: `syncfusion_flutter_pdfviewer`
 - Text-to-speech: `flutter_tts`
 - Camera/scanner: Flutter camera plugins

@@ -21,7 +21,7 @@ void main() async {
 
   // Initialize cache service
   final cacheService = CacheService();
-  await cacheService.database; // Initialize database
+  // Database is initialized automatically when accessed
 
   runApp(ScholarMateApp(cacheService: cacheService));
 }

@@ -184,6 +184,9 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
       _isUploading = false;
     });
 
+    // Notify parent that all uploads are complete so UI can refresh
+    widget.onUploadComplete?.call();
+
     // Clear completed tasks after a delay
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
@@ -194,7 +197,6 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
                 task.status == UploadStatus.cancelled,
           );
         });
-        widget.onUploadComplete?.call();
       }
     });
   }
