@@ -34,14 +34,21 @@ Drift uses SQLite WASM to run on web browsers:
 
 ### Required Files
 
-- `web/sqlite3.wasm` - SQLite compiled to WebAssembly
-- `web/sqlite3.wasm.js` - JavaScript loader for WASM
-- `web/drift_worker.js` - Web worker script (optional, for better performance)
+- `web/sqlite3.wasm` - SQLite compiled to WebAssembly (~731 KB)
+- `web/drift_worker.dart.js` - Precompiled Drift web worker (~355 KB)
 
 ### Setup for Web
 
-1. The `sqlite3_web` package is included in dependencies
-2. The WASM files are loaded automatically by the package
+1. Download the required files by running:
+   ```bash
+   cd frontend
+   download_sqlite_wasm.bat
+   ```
+
+2. This downloads:
+   - `sqlite3.wasm` from sqlite3.dart releases
+   - `drift_worker.dart.js` from Drift releases
+
 3. The database runs in a web worker to avoid blocking the UI
 
 ## Usage
@@ -175,15 +182,16 @@ The migration is complete. Key changes:
 
 ## Troubleshooting
 
-### Web: "Failed to load sqlite3.wasm"
+### Web: "Failed to load sqlite3.wasm" or WASM magic word error
 
-Make sure the WASM files are in the `web/` directory. Run:
+Download the required WASM files:
 
 ```bash
-flutter pub get
+cd frontend
+download_sqlite_wasm.bat
 ```
 
-The `sqlite3_web` package should handle this automatically.
+This downloads the prebuilt `sqlite3.wasm` and `drift_worker.dart.js` files from official releases.
 
 ### Build errors after schema changes
 
