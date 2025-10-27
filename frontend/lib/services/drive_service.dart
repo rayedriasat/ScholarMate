@@ -4,18 +4,38 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/drive_file.dart';
 import 'auth_service.dart';
+import 'cache_service.dart';
+import 'connectivity_service.dart';
+import 'sync_manager.dart';
 
-/// Service for interacting with Google Drive API
+/// Service for interacting with Google Drive API with offline support
 class DriveService extends ChangeNotifier {
   static const String _baseUrl = 'https://www.googleapis.com/drive/v3';
   static const String _uploadUrl = 'https://www.googleapis.com/upload/drive/v3';
   static const String _appFolderName = 'ScholarMate';
 
   final AuthService _authService;
+  final CacheService? _cacheService;
+  final ConnectivityService? _connectivityService;
+  SyncManager? _syncManager;
+
   String? _appFolderId;
 
-  DriveService({AuthService? authService})
-    : _authService = authService ?? AuthService();
+  DriveService({
+    AuthService? authService,
+    CacheService? cacheService,
+    ConnectivityService? connectivityService,
+  }) : _authService = authService ?? AuthService(),
+       _cacheService = cacheService,
+       _connectivityService = connectivityService;
+
+  /// Set sync manager (must be called after initialization)
+  void setSyncManager(SyncManager syncManager) {
+    _syncManager = syncManager;
+  }
+
+  /// Check if currently online
+  bool get isOnline => _connectivityService?.isOnline ?? true;
 
   /// Get access token with retry logic
   Future<String> _getAccessToken() async {
@@ -122,61 +142,110 @@ class DriveService extends ChangeNotifier {
     }
   }
 
-  /// List files and folders in the specified folder
+  /// List files and folders in the specified folder (with offline support)
   Future<List<DriveFile>> listFiles([String? folderId]) async {
     // Use app folder if no folder ID specified
     final targetFolderId = folderId ?? await getAppFolderId();
 
-    // Query for files in the specified folder
-    final query = '\'$targetFolderId\' in parents and trashed=false';
-    final fields =
-        'files(id,name,mimeType,size,parents,modifiedTime,createdTime,thumbnailLink,shared)';
-
-    final url =
-        '$_baseUrl/files?q=${Uri.encodeComponent(query)}&fields=$fields&orderBy=folder,name';
-
-    final response = await _makeAuthenticatedRequest(
-      (token) => http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ),
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final files = (data['files'] as List)
-          .map((file) => DriveFile.fromJson(file as Map<String, dynamic>))
-          .toList();
-
-      // Sort folders first, then files
-      files.sort((a, b) {
-        if (a.isFolder && !b.isFolder) return -1;
-        if (!a.isFolder && b.isFolder) return 1;
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
-
-      return files;
-    } else {
-      throw Exception(
-        'Failed to list files: ${response.statusCode} ${response.body}',
+    // If offline, return cached files
+    if (!isOnline && _cacheService != null) {
+      debugPrint(
+        'Offline: Loading files from cache for folder $targetFolderId',
       );
+      return await _cacheService!.getCachedFiles(targetFolderId);
+    }
+
+    // Online: Fetch from Drive API
+    try {
+      // Query for files in the specified folder
+      final query = '\'$targetFolderId\' in parents and trashed=false';
+      final fields =
+          'files(id,name,mimeType,size,parents,modifiedTime,createdTime,thumbnailLink,shared)';
+
+      final url =
+          '$_baseUrl/files?q=${Uri.encodeComponent(query)}&fields=$fields&orderBy=folder,name';
+
+      final response = await _makeAuthenticatedRequest(
+        (token) => http.get(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final files = (data['files'] as List)
+            .map((file) => DriveFile.fromJson(file as Map<String, dynamic>))
+            .toList();
+
+        // Sort folders first, then files
+        files.sort((a, b) {
+          if (a.isFolder && !b.isFolder) return -1;
+          if (!a.isFolder && b.isFolder) return 1;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+
+        // Cache the files if cache service is available
+        if (_cacheService != null) {
+          await _cacheService!.cacheFileMetadataList(files);
+        }
+
+        return files;
+      } else {
+        throw Exception(
+          'Failed to list files: ${response.statusCode} ${response.body}',
+        );
+      }
+    } catch (e) {
+      // If online request fails and we have cache, fall back to cache
+      if (_cacheService != null) {
+        debugPrint('Error fetching files, falling back to cache: $e');
+        return await _cacheService!.getCachedFiles(targetFolderId);
+      }
+      rethrow;
     }
   }
 
-  /// Upload a file to Google Drive
+  /// Upload a file to Google Drive (with offline queue support)
   Future<DriveFile> uploadFile(
     File file,
     String parentId, {
     String? customName,
     void Function(double progress)? onProgress,
   }) async {
-    final accessToken = await _getAccessToken();
-
     final fileName = customName ?? file.path.split('/').last;
     final fileBytes = await file.readAsBytes();
+
+    // If offline, queue the upload
+    if (!isOnline && _syncManager != null) {
+      debugPrint('Offline: Queuing file upload for $fileName');
+
+      await _syncManager!.queueAction(
+        operationType: 'upload',
+        resourceType: 'file',
+        payload: {
+          'file_bytes': fileBytes,
+          'file_name': fileName,
+          'parent_id': parentId,
+        },
+      );
+
+      // Return a temporary DriveFile object
+      return DriveFile(
+        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        name: fileName,
+        parentId: parentId,
+        size: fileBytes.length,
+        createdTime: DateTime.now(),
+        modifiedTime: DateTime.now(),
+      );
+    }
+
+    // Online: Upload immediately
+    final accessToken = await _getAccessToken();
 
     // Determine MIME type based on file extension
     String mimeType = 'application/octet-stream';
@@ -245,8 +314,37 @@ class DriveService extends ChangeNotifier {
     }
   }
 
-  /// Create a new folder
+  /// Create a new folder (with offline queue support)
   Future<DriveFile> createFolder(String name, String parentId) async {
+    // If offline, queue the folder creation
+    if (!isOnline && _syncManager != null) {
+      debugPrint('Offline: Queuing folder creation for $name');
+
+      await _syncManager!.queueAction(
+        operationType: 'create',
+        resourceType: 'folder',
+        payload: {'name': name, 'parent_id': parentId},
+      );
+
+      // Return a temporary DriveFile object
+      final tempFolder = DriveFile(
+        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        name: name,
+        parentId: parentId,
+        isFolder: true,
+        createdTime: DateTime.now(),
+        modifiedTime: DateTime.now(),
+      );
+
+      // Cache the temporary folder
+      if (_cacheService != null) {
+        await _cacheService!.cacheFileMetadata(tempFolder);
+      }
+
+      return tempFolder;
+    }
+
+    // Online: Create immediately
     final accessToken = await _getAccessToken();
 
     final folderMetadata = {
@@ -266,7 +364,14 @@ class DriveService extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return DriveFile.fromJson(data);
+      final folder = DriveFile.fromJson(data);
+
+      // Cache the folder
+      if (_cacheService != null) {
+        await _cacheService!.cacheFileMetadata(folder);
+      }
+
+      return folder;
     } else {
       throw Exception(
         'Failed to create folder: ${response.statusCode} ${response.body}',
@@ -274,8 +379,28 @@ class DriveService extends ChangeNotifier {
     }
   }
 
-  /// Delete a file or folder (move to trash)
+  /// Delete a file or folder (with offline queue support)
   Future<void> deleteFile(String fileId) async {
+    // If offline, queue the deletion
+    if (!isOnline && _syncManager != null) {
+      debugPrint('Offline: Queuing file deletion for $fileId');
+
+      await _syncManager!.queueAction(
+        operationType: 'delete',
+        resourceType: 'file',
+        resourceId: fileId,
+        payload: {},
+      );
+
+      // Remove from cache
+      if (_cacheService != null) {
+        await _cacheService!.deleteCachedFile(fileId);
+      }
+
+      return;
+    }
+
+    // Online: Delete immediately
     final accessToken = await _getAccessToken();
 
     final response = await http.delete(
@@ -290,8 +415,34 @@ class DriveService extends ChangeNotifier {
     }
   }
 
-  /// Rename a file or folder
+  /// Rename a file or folder (with offline queue support)
   Future<DriveFile> renameFile(String fileId, String newName) async {
+    // If offline, queue the rename
+    if (!isOnline && _syncManager != null) {
+      debugPrint('Offline: Queuing file rename for $fileId');
+
+      await _syncManager!.queueAction(
+        operationType: 'rename',
+        resourceType: 'file',
+        resourceId: fileId,
+        payload: {'new_name': newName},
+      );
+
+      // Update cache
+      if (_cacheService != null) {
+        final cachedFile = await _cacheService!.getCachedFile(fileId);
+        if (cachedFile != null) {
+          final updatedFile = cachedFile.copyWith(name: newName);
+          await _cacheService!.cacheFileMetadata(updatedFile);
+          return updatedFile;
+        }
+      }
+
+      // Return a temporary updated file
+      return DriveFile(id: fileId, name: newName, modifiedTime: DateTime.now());
+    }
+
+    // Online: Rename immediately
     final accessToken = await _getAccessToken();
 
     final updateData = {'name': newName};
@@ -307,7 +458,14 @@ class DriveService extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return DriveFile.fromJson(data);
+      final renamedFile = DriveFile.fromJson(data);
+
+      // Update cache
+      if (_cacheService != null) {
+        await _cacheService!.cacheFileMetadata(renamedFile);
+      }
+
+      return renamedFile;
     } else {
       throw Exception(
         'Failed to rename file: ${response.statusCode} ${response.body}',
@@ -315,8 +473,39 @@ class DriveService extends ChangeNotifier {
     }
   }
 
-  /// Move a file or folder to a different parent
+  /// Move a file or folder to a different parent (with offline queue support)
   Future<DriveFile> moveFile(String fileId, String newParentId) async {
+    // If offline, queue the move
+    if (!isOnline && _syncManager != null) {
+      debugPrint('Offline: Queuing file move for $fileId');
+
+      await _syncManager!.queueAction(
+        operationType: 'move',
+        resourceType: 'file',
+        resourceId: fileId,
+        payload: {'new_parent_id': newParentId},
+      );
+
+      // Update cache
+      if (_cacheService != null) {
+        final cachedFile = await _cacheService!.getCachedFile(fileId);
+        if (cachedFile != null) {
+          final updatedFile = cachedFile.copyWith(parentId: newParentId);
+          await _cacheService!.cacheFileMetadata(updatedFile);
+          return updatedFile;
+        }
+      }
+
+      // Return a temporary updated file
+      return DriveFile(
+        id: fileId,
+        parentId: newParentId,
+        name: 'moved_file',
+        modifiedTime: DateTime.now(),
+      );
+    }
+
+    // Online: Move immediately
     final accessToken = await _getAccessToken();
 
     // First get current parents
@@ -350,8 +539,25 @@ class DriveService extends ChangeNotifier {
     }
   }
 
-  /// Download file content as bytes
+  /// Download file content as bytes (with cache support)
   Future<Uint8List> downloadFile(String fileId) async {
+    // Check cache first
+    if (_cacheService != null) {
+      final cachedPdf = await _cacheService!.getCachedPdf(fileId);
+      if (cachedPdf != null) {
+        debugPrint('Loading PDF from cache: $fileId');
+        return cachedPdf;
+      }
+    }
+
+    // If offline and not cached, throw error
+    if (!isOnline) {
+      throw Exception(
+        'File not available offline. Please connect to download.',
+      );
+    }
+
+    // Online: Download from Drive
     final accessToken = await _getAccessToken();
 
     final response = await http.get(
@@ -360,7 +566,18 @@ class DriveService extends ChangeNotifier {
     );
 
     if (response.statusCode == 200) {
-      return response.bodyBytes;
+      final bytes = response.bodyBytes;
+
+      // Cache the PDF if it's a PDF file
+      if (_cacheService != null) {
+        final file = await _cacheService!.getCachedFile(fileId);
+        if (file?.isPdf == true) {
+          await _cacheService!.cachePdfBytes(fileId, bytes);
+          debugPrint('Cached PDF: $fileId');
+        }
+      }
+
+      return bytes;
     } else {
       throw Exception(
         'Failed to download file: ${response.statusCode} ${response.body}',

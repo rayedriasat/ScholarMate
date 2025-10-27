@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/drive_file.dart';
 import '../services/drive_service.dart';
-import '../services/auth_service.dart';
 import '../widgets/file_card.dart';
 import '../widgets/breadcrumb_navigation.dart';
 import '../widgets/file_upload_widget.dart';
@@ -33,7 +32,7 @@ class FileExplorerNavigationHandler {
 }
 
 class _FileExplorerScreenState extends State<FileExplorerScreen> {
-  late DriveService _driveService;
+  DriveService? _driveService;
   List<DriveFile> _files = [];
   List<DriveFile> _navigationPath = [];
   bool _isLoading = true;
@@ -46,8 +45,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   void initState() {
     super.initState();
     FileExplorerNavigationHandler._setInstance(this);
-    _driveService = DriveService(authService: context.read<AuthService>());
     _loadInitialFolder();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Get DriveService from Provider
+    _driveService = context.read<DriveService>();
   }
 
   @override
@@ -63,8 +68,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _error = null;
       });
 
+      // Ensure DriveService is available
+      if (_driveService == null) {
+        _driveService = context.read<DriveService>();
+      }
+
       // Get app folder ID and create root navigation item
-      final appFolderId = await _driveService.getAppFolderId();
+      final appFolderId = await _driveService!.getAppFolderId();
       _currentFolderId = appFolderId;
 
       final rootFolder = DriveFile(
@@ -91,7 +101,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _error = null;
       });
 
-      final files = await _driveService.listFiles(folderId ?? _currentFolderId);
+      final files = await _driveService!.listFiles(
+        folderId ?? _currentFolderId,
+      );
 
       setState(() {
         _files = files;
@@ -208,7 +220,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               const SizedBox(height: 24),
               FileUploadWidget(
                 parentFolderId: _currentFolderId!,
-                driveService: _driveService,
+                driveService: _driveService!,
                 onUploadComplete: () {
                   _loadFiles();
                   Navigator.of(context).pop();
@@ -235,7 +247,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     try {
       if (_currentFolderId == null) return;
 
-      await _driveService.createFolder(name, _currentFolderId!);
+      await _driveService!.createFolder(name, _currentFolderId!);
       await _loadFiles();
 
       if (mounted) {
@@ -277,7 +289,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   Future<void> _renameFile(DriveFile file, String newName) async {
     try {
-      await _driveService.renameFile(file.id, newName);
+      await _driveService!.renameFile(file.id, newName);
       await _loadFiles();
 
       if (mounted) {
@@ -317,7 +329,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   Future<void> _deleteFile(DriveFile file) async {
     try {
-      await _driveService.deleteFile(file.id);
+      await _driveService!.deleteFile(file.id);
       await _loadFiles();
 
       if (mounted) {
@@ -604,7 +616,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
     try {
       for (final fileId in filesToDelete) {
-        await _driveService.deleteFile(fileId);
+        await _driveService!.deleteFile(fileId);
       }
 
       await _loadFiles();

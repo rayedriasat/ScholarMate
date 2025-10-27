@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
 import 'services/config_service.dart';
 import 'services/api_service.dart';
+import 'services/cache_service.dart';
+import 'services/connectivity_service.dart';
+import 'services/drive_service.dart';
+import 'services/sync_manager.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -15,16 +19,71 @@ void main() async {
   final configService = ConfigService();
   await configService.initialize();
 
-  runApp(const ScholarMateApp());
+  // Initialize cache service
+  final cacheService = CacheService();
+  await cacheService.database; // Initialize database
+
+  runApp(ScholarMateApp(cacheService: cacheService));
 }
 
 class ScholarMateApp extends StatelessWidget {
-  const ScholarMateApp({super.key});
+  final CacheService cacheService;
+
+  const ScholarMateApp({super.key, required this.cacheService});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthService(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider.value(value: cacheService),
+        ChangeNotifierProvider(create: (_) => ConnectivityService()),
+        ChangeNotifierProxyProvider2<
+          AuthService,
+          ConnectivityService,
+          DriveService
+        >(
+          create: (context) => DriveService(
+            authService: context.read<AuthService>(),
+            cacheService: cacheService,
+            connectivityService: context.read<ConnectivityService>(),
+          ),
+          update: (context, auth, connectivity, previous) =>
+              previous ??
+              DriveService(
+                authService: auth,
+                cacheService: cacheService,
+                connectivityService: connectivity,
+              ),
+        ),
+        ChangeNotifierProxyProvider3<
+          CacheService,
+          ConnectivityService,
+          DriveService,
+          SyncManager
+        >(
+          create: (context) {
+            final syncManager = SyncManager(
+              cacheService: cacheService,
+              connectivityService: context.read<ConnectivityService>(),
+              driveService: context.read<DriveService>(),
+            );
+            // Set sync manager reference in DriveService
+            context.read<DriveService>().setSyncManager(syncManager);
+            return syncManager;
+          },
+          update: (context, cache, connectivity, drive, previous) {
+            if (previous != null) return previous;
+            final syncManager = SyncManager(
+              cacheService: cache,
+              connectivityService: connectivity,
+              driveService: drive,
+            );
+            drive.setSyncManager(syncManager);
+            return syncManager;
+          },
+        ),
+      ],
       child: MaterialApp(
         title: 'ScholarMate',
         debugShowCheckedModeBanner: false,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/drive_file.dart';
+import '../services/cache_service.dart';
 import 'file_context_menu.dart';
 
 /// A card widget displaying file or folder information
@@ -47,7 +49,42 @@ class FileCard extends StatelessWidget {
               // Icon and name row
               Row(
                 children: [
-                  _buildFileIcon(),
+                  Stack(
+                    children: [
+                      _buildFileIcon(),
+                      if (file.isPdf)
+                        FutureBuilder<bool>(
+                          future: context.read<CacheService>().isPdfCached(
+                            file.id,
+                          ),
+                          builder: (context, snapshot) {
+                            if (snapshot.data == true) {
+                              return Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                    ],
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

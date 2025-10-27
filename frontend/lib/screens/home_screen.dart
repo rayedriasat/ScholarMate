@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../widgets/connectivity_indicator.dart';
 import 'file_explorer_screen.dart';
 
 /// Home screen shown after successful authentication
@@ -99,6 +100,11 @@ class _HomeScreenState extends State<HomeScreen> {
           elevation: 0,
           automaticallyImplyLeading: false, // Remove default back button
           actions: [
+            // Connectivity indicator
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
+              child: ConnectivityIndicator(),
+            ),
             // User Profile
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
