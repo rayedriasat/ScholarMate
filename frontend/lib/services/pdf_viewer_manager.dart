@@ -33,6 +33,7 @@ class PdfViewerManager extends ChangeNotifier {
   double get downloadProgress => _downloadProgress;
   String? get errorMessage => _errorMessage;
   bool get isFromCache => _isFromCache;
+  CacheService get cacheService => _cacheService;
 
   /// Load PDF from cache or download from Drive
   Future<Uint8List?> loadPdf(DriveFile file) async {

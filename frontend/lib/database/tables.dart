@@ -40,6 +40,8 @@ class Annotations extends Table {
   TextColumn get content => text().nullable()();
   TextColumn get position => text().nullable()();
   TextColumn get color => text().nullable()();
+  TextColumn get authorId => text().nullable()();
+  TextColumn get authorName => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get modifiedAt => dateTime()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();

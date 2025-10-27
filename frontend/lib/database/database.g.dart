@@ -1176,6 +1176,28 @@ class $AnnotationsTable extends Annotations
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _authorIdMeta = const VerificationMeta(
+    'authorId',
+  );
+  @override
+  late final GeneratedColumn<String> authorId = GeneratedColumn<String>(
+    'author_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _authorNameMeta = const VerificationMeta(
+    'authorName',
+  );
+  @override
+  late final GeneratedColumn<String> authorName = GeneratedColumn<String>(
+    'author_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1222,6 +1244,8 @@ class $AnnotationsTable extends Annotations
     content,
     position,
     color,
+    authorId,
+    authorName,
     createdAt,
     modifiedAt,
     isSynced,
@@ -1288,6 +1312,18 @@ class $AnnotationsTable extends Annotations
         color.isAcceptableOrUnknown(data['color']!, _colorMeta),
       );
     }
+    if (data.containsKey('author_id')) {
+      context.handle(
+        _authorIdMeta,
+        authorId.isAcceptableOrUnknown(data['author_id']!, _authorIdMeta),
+      );
+    }
+    if (data.containsKey('author_name')) {
+      context.handle(
+        _authorNameMeta,
+        authorName.isAcceptableOrUnknown(data['author_name']!, _authorNameMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1347,6 +1383,14 @@ class $AnnotationsTable extends Annotations
         DriftSqlType.string,
         data['${effectivePrefix}color'],
       ),
+      authorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_id'],
+      ),
+      authorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_name'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1376,6 +1420,8 @@ class Annotation extends DataClass implements Insertable<Annotation> {
   final String? content;
   final String? position;
   final String? color;
+  final String? authorId;
+  final String? authorName;
   final DateTime createdAt;
   final DateTime modifiedAt;
   final bool isSynced;
@@ -1387,6 +1433,8 @@ class Annotation extends DataClass implements Insertable<Annotation> {
     this.content,
     this.position,
     this.color,
+    this.authorId,
+    this.authorName,
     required this.createdAt,
     required this.modifiedAt,
     required this.isSynced,
@@ -1406,6 +1454,12 @@ class Annotation extends DataClass implements Insertable<Annotation> {
     }
     if (!nullToAbsent || color != null) {
       map['color'] = Variable<String>(color);
+    }
+    if (!nullToAbsent || authorId != null) {
+      map['author_id'] = Variable<String>(authorId);
+    }
+    if (!nullToAbsent || authorName != null) {
+      map['author_name'] = Variable<String>(authorName);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['modified_at'] = Variable<DateTime>(modifiedAt);
@@ -1428,6 +1482,12 @@ class Annotation extends DataClass implements Insertable<Annotation> {
       color: color == null && nullToAbsent
           ? const Value.absent()
           : Value(color),
+      authorId: authorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorId),
+      authorName: authorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorName),
       createdAt: Value(createdAt),
       modifiedAt: Value(modifiedAt),
       isSynced: Value(isSynced),
@@ -1447,6 +1507,8 @@ class Annotation extends DataClass implements Insertable<Annotation> {
       content: serializer.fromJson<String?>(json['content']),
       position: serializer.fromJson<String?>(json['position']),
       color: serializer.fromJson<String?>(json['color']),
+      authorId: serializer.fromJson<String?>(json['authorId']),
+      authorName: serializer.fromJson<String?>(json['authorName']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       modifiedAt: serializer.fromJson<DateTime>(json['modifiedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
@@ -1463,6 +1525,8 @@ class Annotation extends DataClass implements Insertable<Annotation> {
       'content': serializer.toJson<String?>(content),
       'position': serializer.toJson<String?>(position),
       'color': serializer.toJson<String?>(color),
+      'authorId': serializer.toJson<String?>(authorId),
+      'authorName': serializer.toJson<String?>(authorName),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'modifiedAt': serializer.toJson<DateTime>(modifiedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
@@ -1477,6 +1541,8 @@ class Annotation extends DataClass implements Insertable<Annotation> {
     Value<String?> content = const Value.absent(),
     Value<String?> position = const Value.absent(),
     Value<String?> color = const Value.absent(),
+    Value<String?> authorId = const Value.absent(),
+    Value<String?> authorName = const Value.absent(),
     DateTime? createdAt,
     DateTime? modifiedAt,
     bool? isSynced,
@@ -1488,6 +1554,8 @@ class Annotation extends DataClass implements Insertable<Annotation> {
     content: content.present ? content.value : this.content,
     position: position.present ? position.value : this.position,
     color: color.present ? color.value : this.color,
+    authorId: authorId.present ? authorId.value : this.authorId,
+    authorName: authorName.present ? authorName.value : this.authorName,
     createdAt: createdAt ?? this.createdAt,
     modifiedAt: modifiedAt ?? this.modifiedAt,
     isSynced: isSynced ?? this.isSynced,
@@ -1505,6 +1573,10 @@ class Annotation extends DataClass implements Insertable<Annotation> {
       content: data.content.present ? data.content.value : this.content,
       position: data.position.present ? data.position.value : this.position,
       color: data.color.present ? data.color.value : this.color,
+      authorId: data.authorId.present ? data.authorId.value : this.authorId,
+      authorName: data.authorName.present
+          ? data.authorName.value
+          : this.authorName,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       modifiedAt: data.modifiedAt.present
           ? data.modifiedAt.value
@@ -1523,6 +1595,8 @@ class Annotation extends DataClass implements Insertable<Annotation> {
           ..write('content: $content, ')
           ..write('position: $position, ')
           ..write('color: $color, ')
+          ..write('authorId: $authorId, ')
+          ..write('authorName: $authorName, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt, ')
           ..write('isSynced: $isSynced')
@@ -1539,6 +1613,8 @@ class Annotation extends DataClass implements Insertable<Annotation> {
     content,
     position,
     color,
+    authorId,
+    authorName,
     createdAt,
     modifiedAt,
     isSynced,
@@ -1554,6 +1630,8 @@ class Annotation extends DataClass implements Insertable<Annotation> {
           other.content == this.content &&
           other.position == this.position &&
           other.color == this.color &&
+          other.authorId == this.authorId &&
+          other.authorName == this.authorName &&
           other.createdAt == this.createdAt &&
           other.modifiedAt == this.modifiedAt &&
           other.isSynced == this.isSynced);
@@ -1567,6 +1645,8 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
   final Value<String?> content;
   final Value<String?> position;
   final Value<String?> color;
+  final Value<String?> authorId;
+  final Value<String?> authorName;
   final Value<DateTime> createdAt;
   final Value<DateTime> modifiedAt;
   final Value<bool> isSynced;
@@ -1579,6 +1659,8 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
     this.content = const Value.absent(),
     this.position = const Value.absent(),
     this.color = const Value.absent(),
+    this.authorId = const Value.absent(),
+    this.authorName = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.modifiedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
@@ -1592,6 +1674,8 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
     this.content = const Value.absent(),
     this.position = const Value.absent(),
     this.color = const Value.absent(),
+    this.authorId = const Value.absent(),
+    this.authorName = const Value.absent(),
     required DateTime createdAt,
     required DateTime modifiedAt,
     this.isSynced = const Value.absent(),
@@ -1610,6 +1694,8 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
     Expression<String>? content,
     Expression<String>? position,
     Expression<String>? color,
+    Expression<String>? authorId,
+    Expression<String>? authorName,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? modifiedAt,
     Expression<bool>? isSynced,
@@ -1623,6 +1709,8 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
       if (content != null) 'content': content,
       if (position != null) 'position': position,
       if (color != null) 'color': color,
+      if (authorId != null) 'author_id': authorId,
+      if (authorName != null) 'author_name': authorName,
       if (createdAt != null) 'created_at': createdAt,
       if (modifiedAt != null) 'modified_at': modifiedAt,
       if (isSynced != null) 'is_synced': isSynced,
@@ -1638,6 +1726,8 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
     Value<String?>? content,
     Value<String?>? position,
     Value<String?>? color,
+    Value<String?>? authorId,
+    Value<String?>? authorName,
     Value<DateTime>? createdAt,
     Value<DateTime>? modifiedAt,
     Value<bool>? isSynced,
@@ -1651,6 +1741,8 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
       content: content ?? this.content,
       position: position ?? this.position,
       color: color ?? this.color,
+      authorId: authorId ?? this.authorId,
+      authorName: authorName ?? this.authorName,
       createdAt: createdAt ?? this.createdAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
       isSynced: isSynced ?? this.isSynced,
@@ -1682,6 +1774,12 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
     if (color.present) {
       map['color'] = Variable<String>(color.value);
     }
+    if (authorId.present) {
+      map['author_id'] = Variable<String>(authorId.value);
+    }
+    if (authorName.present) {
+      map['author_name'] = Variable<String>(authorName.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1707,6 +1805,8 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
           ..write('content: $content, ')
           ..write('position: $position, ')
           ..write('color: $color, ')
+          ..write('authorId: $authorId, ')
+          ..write('authorName: $authorName, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt, ')
           ..write('isSynced: $isSynced, ')
@@ -2837,6 +2937,8 @@ typedef $$AnnotationsTableCreateCompanionBuilder =
       Value<String?> content,
       Value<String?> position,
       Value<String?> color,
+      Value<String?> authorId,
+      Value<String?> authorName,
       required DateTime createdAt,
       required DateTime modifiedAt,
       Value<bool> isSynced,
@@ -2851,6 +2953,8 @@ typedef $$AnnotationsTableUpdateCompanionBuilder =
       Value<String?> content,
       Value<String?> position,
       Value<String?> color,
+      Value<String?> authorId,
+      Value<String?> authorName,
       Value<DateTime> createdAt,
       Value<DateTime> modifiedAt,
       Value<bool> isSynced,
@@ -2898,6 +3002,16 @@ class $$AnnotationsTableFilterComposer
 
   ColumnFilters<String> get color => $composableBuilder(
     column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorId => $composableBuilder(
+    column: $table.authorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorName => $composableBuilder(
+    column: $table.authorName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2961,6 +3075,16 @@ class $$AnnotationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get authorId => $composableBuilder(
+    column: $table.authorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3010,6 +3134,14 @@ class $$AnnotationsTableAnnotationComposer
 
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<String> get authorId =>
+      $composableBuilder(column: $table.authorId, builder: (column) => column);
+
+  GeneratedColumn<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -3061,6 +3193,8 @@ class $$AnnotationsTableTableManager
                 Value<String?> content = const Value.absent(),
                 Value<String?> position = const Value.absent(),
                 Value<String?> color = const Value.absent(),
+                Value<String?> authorId = const Value.absent(),
+                Value<String?> authorName = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> modifiedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
@@ -3073,6 +3207,8 @@ class $$AnnotationsTableTableManager
                 content: content,
                 position: position,
                 color: color,
+                authorId: authorId,
+                authorName: authorName,
                 createdAt: createdAt,
                 modifiedAt: modifiedAt,
                 isSynced: isSynced,
@@ -3087,6 +3223,8 @@ class $$AnnotationsTableTableManager
                 Value<String?> content = const Value.absent(),
                 Value<String?> position = const Value.absent(),
                 Value<String?> color = const Value.absent(),
+                Value<String?> authorId = const Value.absent(),
+                Value<String?> authorName = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime modifiedAt,
                 Value<bool> isSynced = const Value.absent(),
@@ -3099,6 +3237,8 @@ class $$AnnotationsTableTableManager
                 content: content,
                 position: position,
                 color: color,
+                authorId: authorId,
+                authorName: authorName,
                 createdAt: createdAt,
                 modifiedAt: modifiedAt,
                 isSynced: isSynced,

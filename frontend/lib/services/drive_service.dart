@@ -728,6 +728,52 @@ class DriveService extends ChangeNotifier {
     }
   }
 
+  /// Update an existing file in Google Drive with new content
+  Future<DriveFile> updateFile(
+    String fileId,
+    Uint8List fileBytes,
+    String fileName, {
+    void Function(double progress)? onProgress,
+  }) async {
+    final accessToken = await _getAccessToken();
+
+    // Determine MIME type based on file extension
+    String mimeType = 'application/octet-stream';
+    final extension = fileName.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        mimeType = 'application/pdf';
+        break;
+      case 'md':
+      case 'markdown':
+        mimeType = 'text/markdown';
+        break;
+      case 'txt':
+        mimeType = 'text/plain';
+        break;
+    }
+
+    // Update file content using PATCH with uploadType=media
+    final response = await http.patch(
+      Uri.parse('$_uploadUrl/files/$fileId?uploadType=media'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': mimeType,
+        'Content-Length': fileBytes.length.toString(),
+      },
+      body: fileBytes,
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return DriveFile.fromJson(data);
+    } else {
+      throw Exception(
+        'Failed to update file: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
   /// Clear cached app folder ID (useful for testing or when folder is deleted)
   void clearAppFolderCache() {
     _appFolderId = null;

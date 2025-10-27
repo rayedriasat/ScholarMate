@@ -9,6 +9,7 @@ import 'services/connectivity_service.dart';
 import 'services/drive_service.dart';
 import 'services/sync_manager.dart';
 import 'services/pdf_viewer_manager.dart';
+import 'services/annotation_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -102,6 +103,15 @@ class ScholarMateApp extends StatelessWidget {
                 driveService: drive,
                 connectivityService: connectivity,
               ),
+        ),
+        ChangeNotifierProxyProvider<CacheService, AnnotationService>(
+          create: (context) => AnnotationService(
+            database: cacheService.database,
+            cacheService: cacheService,
+          ),
+          update: (context, cache, previous) =>
+              previous ??
+              AnnotationService(database: cache.database, cacheService: cache),
         ),
       ],
       child: MaterialApp(

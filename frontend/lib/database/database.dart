@@ -14,7 +14,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -26,6 +26,11 @@ class AppDatabase extends _$AppDatabase {
         if (from < 2) {
           // Migration from version 1 to 2
           // Add any schema changes here if needed
+        }
+        if (from < 3) {
+          // Migration from version 2 to 3: Add author fields to annotations
+          await m.addColumn(annotations, annotations.authorId);
+          await m.addColumn(annotations, annotations.authorName);
         }
       },
     );

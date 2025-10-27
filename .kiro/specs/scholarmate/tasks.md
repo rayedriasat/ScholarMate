@@ -163,22 +163,22 @@
 
 ## Phase 5: PDF Annotations (Testable Checkpoint)
 
-- [ ] 6. Implement PDF annotation system
-  - [ ] 6.1 Create annotation tools in PDF viewer
+- [x] 6. Implement PDF annotation system
+  - [x] 6.1 Create annotation tools in PDF viewer
     - Add annotation toolbar with highlight, underline, and comment tools
     - Implement color picker for annotations (modern color palette)
     - Create text input dialog for comment annotations
     - Implement annotation selection and editing
     - _Requirements: 6.1_
   
-  - [ ] 6.2 Implement annotation embedding in PDF
+  - [x] 6.2 Implement annotation embedding in PDF
     - Embed annotations directly in PDF bytes using syncfusion PDF library
     - Store annotation metadata in Local_Cache annotations table
     - Generate unique annotation_id for each annotation
     - Track author_id, author_name, timestamps, type, page, bounding_box, content
     - _Requirements: 6.2, 6.3_
   
-  - [ ] 6.3 Build annotation list panel
+  - [x] 6.3 Build annotation list panel
     - Create side panel (desktop) or bottom sheet (mobile) showing all annotations
     - Display annotations grouped by page with author info and timestamps
     - Implement click-to-navigate functionality
@@ -186,13 +186,14 @@
     - Design with modern card-based layout
     - _Requirements: 6.4, 6.5_
   
-  - [ ] 6.4 Enable offline annotation creation
+  - [x] 6.4 Enable offline annotation creation
     - Allow annotation creation while offline
     - Queue annotations in sync_queue for later sync
     - Show sync status indicator for pending annotations
     - _Requirements: 6.6_
 
 **Test Checkpoint**: User can create, view, and navigate annotations in PDFs both online and offline, with annotations persisting locally.
+>> Works, limitation: drive shows only yellow, but app and web shows fine
 
 ## Phase 6: Backend Infrastructure & Supabase (Testable Checkpoint) ✅ PARTIALLY COMPLETED
 

@@ -1,10 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../models/drive_file.dart';
 import '../services/pdf_viewer_manager.dart';
+import '../services/auth_service.dart';
+import '../services/drive_service.dart';
+import '../services/connectivity_service.dart';
+import '../widgets/annotation_toolbar.dart';
+import '../widgets/annotation_list_panel.dart';
 
-/// Full-screen PDF viewer with navigation controls
+/// Full-screen PDF viewer with navigation controls and annotations
 class PdfViewerScreen extends StatefulWidget {
   final DriveFile file;
 
@@ -23,10 +29,39 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
 
+  // Annotation state
+  bool _showAnnotations = false;
+  bool _showAnnotationToolbar = false;
+  Color _selectedAnnotationColor = const Color(0xFFFFEB3B); // Yellow
+  List<Annotation> _annotations = [];
+
   @override
   void initState() {
     super.initState();
     _loadPdf();
+    _initializeAnnotationSettings();
+  }
+
+  void _initializeAnnotationSettings() {
+    // Set default author for all annotations
+    final authService = context.read<AuthService>();
+    final user = authService.currentUser;
+    if (user != null) {
+      _pdfViewerController.annotationSettings.author =
+          user.displayName ?? user.email;
+    }
+
+    // Set default colors for each annotation type
+    _pdfViewerController.annotationSettings.highlight.color =
+        _selectedAnnotationColor;
+    _pdfViewerController.annotationSettings.underline.color =
+        _selectedAnnotationColor;
+    _pdfViewerController.annotationSettings.strikethrough.color =
+        _selectedAnnotationColor;
+    _pdfViewerController.annotationSettings.squiggly.color =
+        _selectedAnnotationColor;
+    _pdfViewerController.annotationSettings.stickyNote.color =
+        _selectedAnnotationColor;
   }
 
   Future<void> _loadPdf() async {
@@ -36,6 +71,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
   @override
   void dispose() {
+    // Save to Drive when closing PDF if there are annotations
+    if (_annotations.isNotEmpty) {
+      _savePdfWithAnnotations(uploadToDrive: true);
+    }
     _pdfViewerController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -117,6 +156,325 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     }
   }
 
+  void _toggleAnnotationPanel() {
+    // On mobile, show bottom sheet
+    if (MediaQuery.of(context).size.width < 600) {
+      _showMobileAnnotationPanel();
+    } else {
+      // On desktop, toggle side panel
+      setState(() {
+        _showAnnotations = !_showAnnotations;
+      });
+    }
+  }
+
+  void _showMobileAnnotationPanel() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => AnnotationListPanel(
+          annotations: _annotations,
+          onAnnotationTap: (annotation) {
+            Navigator.pop(context);
+            _onAnnotationTap(annotation);
+          },
+          onAnnotationDelete: _onAnnotationDelete,
+        ),
+      ),
+    );
+  }
+
+  void _toggleAnnotationToolbar() {
+    setState(() {
+      _showAnnotationToolbar = !_showAnnotationToolbar;
+      if (!_showAnnotationToolbar) {
+        _pdfViewerController.annotationMode = PdfAnnotationMode.none;
+      }
+    });
+  }
+
+  void _onAnnotationModeChanged(PdfAnnotationMode mode) {
+    setState(() {
+      _pdfViewerController.annotationMode = mode;
+    });
+  }
+
+  void _onAnnotationColorChanged(Color color) {
+    setState(() {
+      _selectedAnnotationColor = color;
+      // Update annotation settings with new color for all types
+      final settings = _pdfViewerController.annotationSettings;
+      settings.highlight.color = color;
+      settings.underline.color = color;
+      settings.strikethrough.color = color;
+      settings.squiggly.color = color;
+      settings.stickyNote.color = color;
+    });
+  }
+
+  Future<void> _savePdfWithAnnotations({bool uploadToDrive = false}) async {
+    try {
+      // Save the PDF document with annotations
+      final List<int> bytes = await _pdfViewerController.saveDocument();
+
+      // Convert to Uint8List
+      final Uint8List pdfBytes = Uint8List.fromList(bytes);
+
+      // Update the cached PDF with annotations
+      final cacheService = context.read<PdfViewerManager>().cacheService;
+      await cacheService.cachePdfBytes(widget.file.id, pdfBytes);
+
+      debugPrint('PDF with annotations saved to cache');
+
+      // Upload to Google Drive only if explicitly requested
+      if (uploadToDrive) {
+        final driveService = context.read<DriveService>();
+        final connectivityService = context.read<ConnectivityService>();
+
+        if (connectivityService.isOnline) {
+          try {
+            await driveService.updateFile(
+              widget.file.id,
+              pdfBytes,
+              widget.file.name,
+            );
+            debugPrint('PDF with annotations uploaded to Google Drive');
+          } catch (e) {
+            debugPrint('Error uploading to Drive: $e');
+            // Don't fail the save if Drive upload fails
+          }
+        } else {
+          debugPrint('Offline - PDF will sync to Drive when online');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error saving PDF with annotations: $e');
+    }
+  }
+
+  void _onAnnotationAdded(Annotation annotation) {
+    setState(() {
+      _annotations = _pdfViewerController.getAnnotations();
+    });
+
+    // Auto-save to local cache only (not Drive)
+    _savePdfWithAnnotations();
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Annotation added'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _onAnnotationTap(Annotation annotation) {
+    // Navigate to the page with the annotation
+    _jumpToPage(annotation.pageNumber);
+    // Select the annotation
+    _pdfViewerController.selectAnnotation(annotation);
+
+    // Close annotation panel on mobile
+    if (MediaQuery.of(context).size.width < 600) {
+      setState(() {
+        _showAnnotations = false;
+      });
+    }
+  }
+
+  void _onAnnotationDelete(Annotation annotation) {
+    _pdfViewerController.removeAnnotation(annotation);
+    setState(() {
+      _annotations = _pdfViewerController.getAnnotations();
+    });
+
+    // Auto-save PDF with annotations
+    _savePdfWithAnnotations();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Annotation deleted'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showAnnotationContextMenu(Annotation annotation) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                children: [
+                  Icon(_getAnnotationIcon(annotation), color: annotation.color),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Annotation Options',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+            ),
+
+            // Change Color
+            ListTile(
+              leading: const Icon(Icons.palette),
+              title: const Text('Change Color'),
+              onTap: () {
+                Navigator.pop(context);
+                _showColorPickerForAnnotation(annotation);
+              },
+            ),
+
+            // Delete
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete Annotation'),
+              textColor: Colors.red,
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDeleteAnnotation(annotation);
+              },
+            ),
+
+            // Cancel
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getAnnotationIcon(Annotation annotation) {
+    if (annotation is HighlightAnnotation) return Icons.highlight;
+    if (annotation is UnderlineAnnotation) return Icons.format_underlined;
+    if (annotation is StrikethroughAnnotation) {
+      return Icons.format_strikethrough;
+    }
+    if (annotation is SquigglyAnnotation) return Icons.waves;
+    if (annotation is StickyNoteAnnotation) return Icons.note;
+    return Icons.bookmark;
+  }
+
+  void _showColorPickerForAnnotation(Annotation annotation) {
+    final colors = [
+      const Color(0xFFFFEB3B), // Yellow
+      const Color(0xFFFF9800), // Orange
+      const Color(0xFFF44336), // Red
+      const Color(0xFFE91E63), // Pink
+      const Color(0xFF9C27B0), // Purple
+      const Color(0xFF3F51B5), // Indigo
+      const Color(0xFF2196F3), // Blue
+      const Color(0xFF00BCD4), // Cyan
+      const Color(0xFF009688), // Teal
+      const Color(0xFF4CAF50), // Green
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Choose Color'),
+        content: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: colors.map((color) {
+            return InkWell(
+              onTap: () {
+                Navigator.pop(context);
+                _changeAnnotationColor(annotation, color);
+              },
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: annotation.color.value == color.value
+                        ? Colors.black
+                        : Colors.grey[300]!,
+                    width: annotation.color.value == color.value ? 3 : 1,
+                  ),
+                ),
+                child: annotation.color.value == color.value
+                    ? const Icon(Icons.check, color: Colors.white)
+                    : null,
+              ),
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _changeAnnotationColor(Annotation annotation, Color color) {
+    // Remove the old annotation
+    _pdfViewerController.removeAnnotation(annotation);
+
+    // Create a new annotation with the same properties but different color
+
+    // Auto-save after color change
+    _savePdfWithAnnotations();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Annotation color changed'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _confirmDeleteAnnotation(Annotation annotation) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Annotation'),
+        content: const Text(
+          'Are you sure you want to delete this annotation? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _onAnnotationDelete(annotation);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,6 +495,41 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           ],
         ),
         actions: [
+          // Annotation toolbar toggle
+          IconButton(
+            icon: Icon(
+              _showAnnotationToolbar ? Icons.edit_off : Icons.edit,
+              color: _showAnnotationToolbar ? Colors.blue : null,
+            ),
+            onPressed: _toggleAnnotationToolbar,
+            tooltip: 'Annotations',
+          ),
+          // Annotation list toggle
+          IconButton(
+            icon: Icon(
+              Icons.bookmark,
+              color: _showAnnotations ? Colors.blue : null,
+            ),
+            onPressed: _toggleAnnotationPanel,
+            tooltip: 'Show annotations',
+          ),
+          // Save button
+          if (_annotations.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.cloud_upload),
+              onPressed: () async {
+                await _savePdfWithAnnotations(uploadToDrive: true);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('PDF saved and uploaded to Google Drive'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              tooltip: 'Upload to Drive',
+            ),
           // Search button
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -255,6 +648,14 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                     ],
                   ),
                 ),
+              // Annotation toolbar
+              if (_showAnnotationToolbar)
+                AnnotationToolbar(
+                  selectedMode: _pdfViewerController.annotationMode,
+                  selectedColor: _selectedAnnotationColor,
+                  onModeChanged: _onAnnotationModeChanged,
+                  onColorChanged: _onAnnotationColorChanged,
+                ),
               // Cached indicator
               if (pdfManager.isFromCache)
                 Container(
@@ -282,22 +683,68 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                     ],
                   ),
                 ),
-              // PDF Viewer
+              // PDF Viewer with annotation panel
               Expanded(
-                child: SfPdfViewer.memory(
-                  pdfManager.currentPdfBytes!,
-                  key: _pdfViewerKey,
-                  controller: _pdfViewerController,
-                  onDocumentLoaded: (PdfDocumentLoadedDetails details) {
-                    setState(() {
-                      _totalPages = details.document.pages.count;
-                    });
-                  },
-                  onPageChanged: (PdfPageChangedDetails details) {
-                    setState(() {
-                      _currentPage = details.newPageNumber;
-                    });
-                  },
+                child: Row(
+                  children: [
+                    // PDF Viewer
+                    Expanded(
+                      child: SfPdfViewer.memory(
+                        pdfManager.currentPdfBytes!,
+                        key: _pdfViewerKey,
+                        controller: _pdfViewerController,
+                        onDocumentLoaded: (PdfDocumentLoadedDetails details) {
+                          setState(() {
+                            _totalPages = details.document.pages.count;
+                            _annotations = _pdfViewerController
+                                .getAnnotations();
+                          });
+                        },
+                        onPageChanged: (PdfPageChangedDetails details) {
+                          setState(() {
+                            _currentPage = details.newPageNumber;
+                          });
+                        },
+                        onAnnotationAdded: (Annotation annotation) {
+                          _onAnnotationAdded(annotation);
+                        },
+                        onAnnotationSelected: (Annotation annotation) {
+                          // Show context menu for annotation
+                          _showAnnotationContextMenu(annotation);
+                        },
+                        onAnnotationDeselected: (Annotation annotation) {
+                          // Annotation deselected
+                        },
+                        onAnnotationEdited: (Annotation annotation) {
+                          setState(() {
+                            _annotations = _pdfViewerController
+                                .getAnnotations();
+                          });
+                          // Auto-save when annotation is edited
+                          _savePdfWithAnnotations();
+                        },
+                        onAnnotationRemoved: (Annotation annotation) {
+                          setState(() {
+                            _annotations = _pdfViewerController
+                                .getAnnotations();
+                          });
+                          // Auto-save when annotation is removed
+                          _savePdfWithAnnotations();
+                        },
+                      ),
+                    ),
+                    // Annotation panel (desktop) or bottom sheet (mobile)
+                    if (_showAnnotations &&
+                        MediaQuery.of(context).size.width >= 600)
+                      SizedBox(
+                        width: 300,
+                        child: AnnotationListPanel(
+                          annotations: _annotations,
+                          onAnnotationTap: _onAnnotationTap,
+                          onAnnotationDelete: _onAnnotationDelete,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               // Bottom navigation bar
