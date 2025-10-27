@@ -112,11 +112,12 @@ cp ../frontend.env.template .env
 flutter pub get
 
 # Run on your preferred platform
-flutter run -d chrome        # Web
-flutter run -d windows       # Windows
-flutter run -d macos         # macOS
-flutter run -d linux         # Linux
-flutter run                  # Mobile (connected device/emulator)
+flutter run -d chrome --web-port=8080 # Chrome
+flutter run -d edge --web-port=8080   # Edge 
+flutter run -d windows                # Windows
+flutter run -d macos                  # macOS
+flutter run -d linux                  # Linux
+flutter run                           # Mobile (connected device/emulator)
 ```
 
 ### Google OAuth Setup

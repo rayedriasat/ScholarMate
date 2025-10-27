@@ -69,9 +69,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       });
 
       // Ensure DriveService is available
-      if (_driveService == null) {
-        _driveService = context.read<DriveService>();
-      }
+      _driveService ??= context.read<DriveService>();
 
       // Get app folder ID and create root navigation item
       final appFolderId = await _driveService!.getAppFolderId();

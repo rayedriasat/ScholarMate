@@ -152,7 +152,7 @@ class DriveService extends ChangeNotifier {
       debugPrint(
         'Offline: Loading files from cache for folder $targetFolderId',
       );
-      return await _cacheService!.getCachedFiles(targetFolderId);
+      return await _cacheService.getCachedFiles(targetFolderId);
     }
 
     // Online: Fetch from Drive API
@@ -190,7 +190,7 @@ class DriveService extends ChangeNotifier {
 
         // Cache the files if cache service is available
         if (_cacheService != null) {
-          await _cacheService!.cacheFileMetadataList(files);
+          await _cacheService.cacheFileMetadataList(files);
         }
 
         return files;
@@ -203,7 +203,7 @@ class DriveService extends ChangeNotifier {
       // If online request fails and we have cache, fall back to cache
       if (_cacheService != null) {
         debugPrint('Error fetching files, falling back to cache: $e');
-        return await _cacheService!.getCachedFiles(targetFolderId);
+        return await _cacheService.getCachedFiles(targetFolderId);
       }
       rethrow;
     }
@@ -338,7 +338,7 @@ class DriveService extends ChangeNotifier {
 
       // Cache the temporary folder
       if (_cacheService != null) {
-        await _cacheService!.cacheFileMetadata(tempFolder);
+        await _cacheService.cacheFileMetadata(tempFolder);
       }
 
       return tempFolder;
@@ -368,7 +368,7 @@ class DriveService extends ChangeNotifier {
 
       // Cache the folder
       if (_cacheService != null) {
-        await _cacheService!.cacheFileMetadata(folder);
+        await _cacheService.cacheFileMetadata(folder);
       }
 
       return folder;
@@ -394,7 +394,7 @@ class DriveService extends ChangeNotifier {
 
       // Remove from cache
       if (_cacheService != null) {
-        await _cacheService!.deleteCachedFile(fileId);
+        await _cacheService.deleteCachedFile(fileId);
       }
 
       return;
@@ -430,10 +430,10 @@ class DriveService extends ChangeNotifier {
 
       // Update cache
       if (_cacheService != null) {
-        final cachedFile = await _cacheService!.getCachedFile(fileId);
+        final cachedFile = await _cacheService.getCachedFile(fileId);
         if (cachedFile != null) {
           final updatedFile = cachedFile.copyWith(name: newName);
-          await _cacheService!.cacheFileMetadata(updatedFile);
+          await _cacheService.cacheFileMetadata(updatedFile);
           return updatedFile;
         }
       }
@@ -462,7 +462,7 @@ class DriveService extends ChangeNotifier {
 
       // Update cache
       if (_cacheService != null) {
-        await _cacheService!.cacheFileMetadata(renamedFile);
+        await _cacheService.cacheFileMetadata(renamedFile);
       }
 
       return renamedFile;
@@ -488,10 +488,10 @@ class DriveService extends ChangeNotifier {
 
       // Update cache
       if (_cacheService != null) {
-        final cachedFile = await _cacheService!.getCachedFile(fileId);
+        final cachedFile = await _cacheService.getCachedFile(fileId);
         if (cachedFile != null) {
           final updatedFile = cachedFile.copyWith(parentId: newParentId);
-          await _cacheService!.cacheFileMetadata(updatedFile);
+          await _cacheService.cacheFileMetadata(updatedFile);
           return updatedFile;
         }
       }
@@ -543,7 +543,7 @@ class DriveService extends ChangeNotifier {
   Future<Uint8List> downloadFile(String fileId) async {
     // Check cache first
     if (_cacheService != null) {
-      final cachedPdf = await _cacheService!.getCachedPdf(fileId);
+      final cachedPdf = await _cacheService.getCachedPdf(fileId);
       if (cachedPdf != null) {
         debugPrint('Loading PDF from cache: $fileId');
         return cachedPdf;
@@ -570,9 +570,9 @@ class DriveService extends ChangeNotifier {
 
       // Cache the PDF if it's a PDF file
       if (_cacheService != null) {
-        final file = await _cacheService!.getCachedFile(fileId);
+        final file = await _cacheService.getCachedFile(fileId);
         if (file?.isPdf == true) {
-          await _cacheService!.cachePdfBytes(fileId, bytes);
+          await _cacheService.cachePdfBytes(fileId, bytes);
           debugPrint('Cached PDF: $fileId');
         }
       }
