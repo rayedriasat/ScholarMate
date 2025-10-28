@@ -8,6 +8,9 @@ flutter pub get
 flutter analyze
 flutter build web
 
+dart run build_runner clean
+dart run build_runner build --delete-conflicting-outputs
+
 In backend/ folder
 uv sync
 uv run run.py

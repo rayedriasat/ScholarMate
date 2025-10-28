@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +11,8 @@ import 'package:path/path.dart' as path;
 import '../services/ocr_service.dart';
 import '../services/drive_service.dart';
 import '../services/cache_service.dart';
+import 'markdown_editor_screen.dart';
+import 'package:universal_html/html.dart' as html;
 
 class DocumentScannerScreen extends StatefulWidget {
   final String? parentFolderId;
@@ -21,7 +25,7 @@ class DocumentScannerScreen extends StatefulWidget {
 
 class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
   CameraController? _cameraController;
-  List<File> _capturedImages = [];
+  final List<XFile> _capturedImages = [];
   bool _isProcessing = false;
   bool _isCameraInitialized = false;
   String? _errorMessage;
@@ -30,7 +34,16 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
+    if (!kIsWeb) {
+      _initializeCamera();
+    } else {
+      // On web, skip camera and go straight to file picker mode
+      setState(() {
+        _isCameraInitialized = true;
+        _errorMessage =
+            'Camera not supported on web. Use file picker to select images.';
+      });
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -76,7 +89,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
     try {
       final image = await _cameraController!.takePicture();
       setState(() {
-        _capturedImages.add(File(image.path));
+        _capturedImages.add(image);
       });
     } catch (e) {
       _showError('Failed to capture image: $e');
@@ -90,7 +103,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
       );
       if (image != null) {
         setState(() {
-          _capturedImages.add(File(image.path));
+          _capturedImages.add(image);
         });
       }
     } catch (e) {
@@ -113,11 +126,11 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
   }
 
   Future<File> _createSearchablePDF(
-    List<File> images,
+    List<XFile> images,
     OCRResult ocrResult,
     String fileName,
   ) async {
-    print('🔵 Creating searchable PDF...');
+    print('🔵 Creating text-only PDF...');
 
     // Create a new PDF document
     final PdfDocument document = PdfDocument();
@@ -125,69 +138,117 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
     for (int i = 0; i < images.length; i++) {
       // Add a new page
       final PdfPage page = document.pages.add();
-
-      // Load and draw the image
-      final imageBytes = await images[i].readAsBytes();
-      final PdfBitmap image = PdfBitmap(imageBytes);
-
-      // Calculate size to fit page while maintaining aspect ratio
       final Size pageSize = page.getClientSize();
-      final double imageAspect = image.width / image.height;
-      final double pageAspect = pageSize.width / pageSize.height;
 
-      double drawWidth, drawHeight;
-      if (imageAspect > pageAspect) {
-        // Image is wider than page
-        drawWidth = pageSize.width;
-        drawHeight = pageSize.width / imageAspect;
-      } else {
-        // Image is taller than page
-        drawHeight = pageSize.height;
-        drawWidth = pageSize.height * imageAspect;
-      }
-
-      // Draw the image
-      page.graphics.drawImage(
-        image,
-        Rect.fromLTWH(0, 0, drawWidth, drawHeight),
-      );
-
-      // Add OCR text as invisible layer for searchability
+      // Add OCR text as visible, readable text (no image)
       if (i < ocrResult.pages.length) {
         final ocrPage = ocrResult.pages[i];
         if (ocrPage.text.isNotEmpty) {
-          // Create a text element with very small, transparent font
-          final PdfFont font = PdfStandardFont(PdfFontFamily.helvetica, 1);
-          final PdfBrush brush = PdfSolidBrush(
-            PdfColor(255, 255, 255, 1), // Almost transparent white
+          print(
+            '🔵 Adding text for page ${i + 1}: ${ocrPage.text.length} characters',
           );
 
-          // Draw the OCR text in small font at bottom of page
-          // This makes the PDF searchable without visible text overlay
+          // Use readable font size with black color
+          final PdfFont font = PdfStandardFont(PdfFontFamily.helvetica, 12);
+          final PdfBrush brush = PdfSolidBrush(PdfColor(0, 0, 0)); // Black text
+
+          // Add page header
+          final PdfFont headerFont = PdfStandardFont(
+            PdfFontFamily.helvetica,
+            14,
+            style: PdfFontStyle.bold,
+          );
           page.graphics.drawString(
-            ocrPage.text,
-            font,
-            bounds: Rect.fromLTWH(0, pageSize.height - 10, pageSize.width, 10),
+            'Page ${i + 1}',
+            headerFont,
+            bounds: Rect.fromLTWH(40, 30, pageSize.width - 80, 20),
             brush: brush,
           );
+
+          // Draw a line under header
+          page.graphics.drawLine(
+            PdfPen(PdfColor(0, 0, 0), width: 0.5),
+            Offset(40, 55),
+            Offset(pageSize.width - 40, 55),
+          );
+
+          // Split text into lines and draw
+          final lines = ocrPage.text.split('\n');
+          final lineHeight = 16.0;
+          double yPosition = 70.0;
+          PdfPage currentPage = page;
+
+          for (final line in lines) {
+            if (line.trim().isNotEmpty) {
+              // Check if we need a new page
+              if (yPosition > pageSize.height - 50) {
+                // Add new page and reset position
+                currentPage = document.pages.add();
+                yPosition = 40.0;
+              }
+
+              currentPage.graphics.drawString(
+                line,
+                font,
+                bounds: Rect.fromLTWH(
+                  40,
+                  yPosition,
+                  pageSize.width - 80,
+                  lineHeight,
+                ),
+                brush: brush,
+                format: PdfStringFormat(
+                  alignment: PdfTextAlignment.left,
+                  lineAlignment: PdfVerticalAlignment.top,
+                ),
+              );
+              yPosition += lineHeight;
+            }
+          }
+
+          print('🔵 Text added successfully');
         }
       }
     }
 
-    // Save the PDF to a temporary file
+    // Save the PDF
     final List<int> bytes = await document.save();
     document.dispose();
 
-    // Get temporary directory
-    final Directory tempDir = await getTemporaryDirectory();
-    final String filePath = path.join(tempDir.path, fileName);
-    final File pdfFile = File(filePath);
+    if (kIsWeb) {
+      // On web, trigger download instead of saving to file system
+      print(
+        '🔵 PDF created in memory for web: $fileName (${bytes.length} bytes)',
+      );
 
-    // Write PDF bytes to file
-    await pdfFile.writeAsBytes(bytes);
+      // Convert to Uint8List for proper blob creation
+      final uint8list = Uint8List.fromList(bytes);
 
-    print('🔵 PDF created: $filePath');
-    return pdfFile;
+      // Trigger browser download
+      final blob = html.Blob([uint8list], 'application/pdf');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      // ignore: unused_local_variable
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute('download', fileName)
+        ..click();
+      html.Url.revokeObjectUrl(url);
+
+      print('🔵 PDF downloaded: $fileName');
+
+      // Return a dummy file (won't be used for upload on web)
+      return File(fileName);
+    } else {
+      // On mobile/desktop, use actual file system
+      final Directory tempDir = await getTemporaryDirectory();
+      final String filePath = path.join(tempDir.path, fileName);
+      final File pdfFile = File(filePath);
+
+      // Write PDF bytes to file
+      await pdfFile.writeAsBytes(bytes);
+
+      print('🔵 PDF created: $filePath');
+      return pdfFile;
+    }
   }
 
   Future<void> _processAndSave() async {
@@ -214,13 +275,18 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const AlertDialog(
+        builder: (context) => AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children: const [
               CircularProgressIndicator(),
               SizedBox(height: 16),
               Text('Processing OCR...'),
+              SizedBox(height: 8),
+              Text(
+                'Detecting best OCR mode...',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
             ],
           ),
         ),
@@ -240,14 +306,20 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
       }
 
       print('🔵 Showing OCR preview...');
-      // Show OCR preview
-      final shouldSave = await _showOCRPreview(ocrResult);
-      print('🔵 User chose to save: $shouldSave');
+      // Show OCR preview with mode indicator
+      final action = await _showOCRPreview(ocrResult);
+      print('🔵 User chose action: $action');
 
-      if (!shouldSave) {
+      if (action == null || action == 'cancel') {
         setState(() {
           _isProcessing = false;
         });
+        return;
+      }
+
+      // Handle convert to Markdown action
+      if (action == 'markdown') {
+        await _convertToMarkdown(ocrResult);
         return;
       }
 
@@ -299,32 +371,47 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         ),
       );
 
-      print('🔵 Uploading PDF to Drive...');
-      // Upload PDF to Drive
-      final driveFile = await driveService.uploadFile(
-        pdfFile,
-        widget.parentFolderId ?? '',
-        customName: fileName,
-      );
+      if (kIsWeb) {
+        // On web, file was already downloaded, just show success
+        if (!mounted) return;
+        Navigator.pop(context); // Close upload dialog
 
-      print('🔵 Upload complete, caching metadata...');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF downloaded: $fileName'),
+            backgroundColor: Colors.green,
+          ),
+        );
 
-      // Cache the file metadata
-      await cacheService.cacheFileMetadata(driveFile);
+        Navigator.pop(context);
+      } else {
+        // On mobile/desktop, upload to Drive
+        print('🔵 Uploading PDF to Drive...');
+        final driveFile = await driveService.uploadFile(
+          pdfFile,
+          widget.parentFolderId ?? '',
+          customName: fileName,
+        );
 
-      if (!mounted) return;
-      Navigator.pop(context); // Close upload dialog
+        print('🔵 Upload complete, caching metadata...');
 
-      // Show success and return
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Document saved: $fileName'),
-          backgroundColor: Colors.green,
-        ),
-      );
+        // Cache the file metadata
+        await cacheService.cacheFileMetadata(driveFile);
 
-      Navigator.pop(context, driveFile);
+        if (!mounted) return;
+        Navigator.pop(context); // Close upload dialog
+
+        // Show success and return
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Document saved: $fileName'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Navigator.pop(context, driveFile);
+      }
     } catch (e, stackTrace) {
       print('❌ Error in _processAndSave: $e');
       print('Stack trace: $stackTrace');
@@ -344,11 +431,46 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
     }
   }
 
-  Future<bool> _showOCRPreview(OCRResult ocrResult) async {
-    final result = await showDialog<bool>(
+  Future<String?> _showOCRPreview(OCRResult ocrResult) async {
+    final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('OCR Preview'),
+        title: Row(
+          children: [
+            const Text('OCR Preview'),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: ocrResult.mode == OCRMode.online
+                    ? Colors.green
+                    : Colors.orange,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    ocrResult.mode == OCRMode.online
+                        ? Icons.cloud
+                        : Icons.offline_bolt,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    ocrResult.mode == OCRMode.online ? 'Online' : 'Offline',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -390,17 +512,57 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context, 'cancel'),
             child: const Text('Cancel'),
           ),
+          if (ocrResult.mode == OCRMode.online)
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'markdown'),
+              child: const Text('Save as Markdown'),
+            ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Save'),
+            onPressed: () => Navigator.pop(context, 'pdf'),
+            child: const Text('Save as PDF'),
           ),
         ],
       ),
     );
-    return result ?? false;
+    return result;
+  }
+
+  Future<void> _convertToMarkdown(OCRResult ocrResult) async {
+    try {
+      // Combine all pages into one markdown document
+      final markdownContent = ocrResult.pages
+          .map((page) => '# Page ${page.pageNumber}\n\n${page.text}\n\n---\n')
+          .join('\n');
+
+      if (!mounted) return;
+
+      // Navigate to markdown editor
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MarkdownEditorScreen(
+            initialContent: markdownContent,
+            fileName: 'Scanned_${DateTime.now().millisecondsSinceEpoch}.md',
+            parentFolderId: widget.parentFolderId,
+          ),
+        ),
+      );
+
+      if (mounted) {
+        Navigator.pop(context); // Return to file explorer
+      }
+    } catch (e) {
+      _showError('Failed to convert to Markdown: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
   }
 
   void _showError(String message) {
@@ -430,7 +592,9 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
             ),
         ],
       ),
-      body: _errorMessage != null
+      body: kIsWeb
+          ? _buildWebUI()
+          : _errorMessage != null
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -471,11 +635,25 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                           children: [
                             Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: Image.file(
-                                _capturedImages[index],
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
+                              child: FutureBuilder<Uint8List>(
+                                future: _capturedImages[index].readAsBytes(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasData) {
+                                    return Image.memory(
+                                      snapshot.data!,
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    );
+                                  }
+                                  return const SizedBox(
+                                    width: 100,
+                                    height: 100,
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                             Positioned(
@@ -530,6 +708,175 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildWebUI() {
+    return Column(
+      children: [
+        // Header with instructions
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.blue[50],
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Colors.blue),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Select images from your computer to extract text using OCR',
+                  style: TextStyle(color: Colors.blue[900]),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Image preview or empty state
+        Expanded(
+          child: _capturedImages.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_outlined,
+                        size: 100,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'No images selected',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Click the button below to select images',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton.icon(
+                        onPressed: _pickFromGallery,
+                        icon: const Icon(Icons.add_photo_alternate),
+                        label: const Text('Select Images'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: _capturedImages.length,
+                  itemBuilder: (context, index) {
+                    return Stack(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: FutureBuilder<Uint8List>(
+                              future: _capturedImages[index].readAsBytes(),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  return Image.memory(
+                                    snapshot.data!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  );
+                                }
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => _removeImage(index),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              padding: const EdgeInsets.all(4),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+        ),
+
+        // Bottom action bar
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              if (_capturedImages.isNotEmpty) ...[
+                Text(
+                  '${_capturedImages.length} image(s) selected',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: _pickFromGallery,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add More'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: _isProcessing ? null : _processAndSave,
+                  icon: _isProcessing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check),
+                  label: const Text('Process OCR'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -149,18 +149,6 @@ class AuthService extends ChangeNotifier {
 
       String? accessToken = authz?.accessToken;
 
-      // Only prompt for additional authorization if we don't have the access token
-      // This should rarely happen with scopeHint, but is a fallback
-      if (accessToken == null) {
-        debugPrint(
-          'Access token not available after authenticate, requesting authorization...',
-        );
-        final newAuthz = await account.authorizationClient.authorizeScopes(
-          _scopes,
-        );
-        accessToken = newAuthz.accessToken;
-      }
-
       final user = User.fromGoogleSignIn(
         id: account.id,
         email: account.email,
@@ -303,12 +291,6 @@ class AuthService extends ChangeNotifier {
         _scopes,
       );
       accessToken = authz?.accessToken;
-
-      // Don't prompt for authorization here - let getAccessToken() handle it
-      // This prevents double popups during the authentication flow
-      if (accessToken == null) {
-        debugPrint('No existing authorization found, will request when needed');
-      }
     } catch (e) {
       debugPrint('Could not get access token during user creation: $e');
       // Continue without access token - it can be obtained later
