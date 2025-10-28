@@ -153,18 +153,20 @@ ScholarMate is an offline-first, Google-Drive-backed AI research workspace for m
 5. THE FastAPI_Backend SHALL implement health check endpoints for monitoring
 6. THE FastAPI_Backend SHALL log all requests and errors for debugging
 
-### Requirement 11: OCR Processing
+### Requirement 11: OCR Processing with Hybrid Online/Offline Mode
 
-**User Story:** As a user, I want to scan documents with my camera and convert them to searchable PDFs, so that I can digitize paper documents.
+**User Story:** As a user, I want to scan documents with my camera and convert them to searchable PDFs or Markdown, so that I can digitize paper documents with high accuracy online or basic OCR offline.
 
 #### Acceptance Criteria
 
 1. THE Flutter_Client SHALL provide camera capture interface for document scanning
 2. THE Flutter_Client SHALL perform perspective correction on captured images
-3. WHEN a user completes scanning, THE Flutter_Client SHALL send images to FastAPI_Backend for OCR
-4. THE FastAPI_Backend SHALL process images using Tesseract or EasyOCR to extract text
-5. THE FastAPI_Backend SHALL return OCR text to Flutter_Client for preview
+3. WHEN a user completes scanning online, THE Flutter_Client SHALL send images to FastAPI_Backend for DeepSeek OCR processing
+4. THE FastAPI_Backend SHALL process images using DeepSeek OCR API to extract text with high accuracy and structure preservation
+5. WHEN a user completes scanning offline on Android, THE Flutter_Client SHALL use flutter_tesseract_ocr for local OCR processing
 6. THE Flutter_Client SHALL create a searchable PDF with embedded OCR text and save to Google_Drive_Storage
+7. THE FastAPI_Backend SHALL provide PDF to Markdown conversion using DeepSeek OCR
+8. THE Flutter_Client SHALL provide Markdown preview and editor with live rendering and formatting toolbar
 
 ### Requirement 12: AI Model Provider Abstraction
 

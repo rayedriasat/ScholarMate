@@ -14,7 +14,9 @@ ScholarMate is an offline-first, Google-Drive-backed AI research workspace for m
 
 - Google OAuth authentication with Drive integration
 - PDF viewing with annotations (highlight, underline, comments)
-- Document scanning with OCR (Tesseract/EasyOCR)
+- Document scanning with hybrid OCR (DeepSeek online / Tesseract offline)
+- PDF to Markdown conversion with structure preservation
+- Markdown preview and editor with live rendering
 - AI chat with RAG-based semantic search and citations
 - Text-to-speech (read aloud) for PDFs
 - Role-based sharing (Viewer/Editor) with public links

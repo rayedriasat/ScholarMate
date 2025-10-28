@@ -117,9 +117,12 @@ This architecture ensures that switching AI providers requires minimal code chan
 **Phase 8: OCR & Document Scanning (Testable Checkpoint)**
 - Camera integration
 - Image capture and cropping
-- OCR backend service
+- DeepSeek OCR backend service (online mode)
+- Flutter Tesseract OCR (offline Android mode)
 - Searchable PDF generation
-- Test: User can scan documents and create searchable PDFs
+- PDF to Markdown conversion
+- Markdown preview and editor
+- Test: User can scan documents, create searchable PDFs, convert to Markdown, and edit Markdown files
 
 **Phase 9: AI Provider Abstraction (Testable Checkpoint)**
 - AIModelProvider interface
@@ -301,6 +304,28 @@ class TagService {
 }
 ```
 
+#### 9. OCR Service (Flutter Client)
+```dart
+class OCRService {
+  Future<String> processImageOnline(Uint8List imageBytes);
+  Future<String> processImageOffline(Uint8List imageBytes);
+  Future<String> processImage(Uint8List imageBytes);
+  Future<bool> isOnline();
+  Future<void> downloadTesseractData();
+}
+```
+
+#### 10. Markdown Service
+```dart
+class MarkdownService {
+  Future<String> convertPdfToMarkdown(String fileId);
+  Future<void> saveMarkdown(String content, String fileName);
+  Future<String> loadMarkdown(String fileId);
+  String renderMarkdown(String content);
+  Future<void> cacheMarkdown(String fileId, String content);
+}
+```
+
 ### FastAPI Backend Components
 
 #### 1. API Routes
@@ -311,6 +336,7 @@ GET /api/auth/refresh-token
 
 # OCR
 POST /api/ocr/process
+POST /api/ocr/pdf-to-markdown
 
 # RAG Indexing
 POST /api/ingest/start
@@ -345,11 +371,14 @@ GET /api/tags/statistics
 GET /api/health
 ```
 
-#### 2. OCR Service
+#### 2. OCR Service with DeepSeek OCR
 ```python
 class OCRService:
-    async def process_image(self, image_bytes: bytes) -> str:
-        """Extract text from image using Tesseract/EasyOCR"""
+    async def process_image_deepseek(self, image_bytes: bytes) -> Dict[str, Any]:
+        """Extract text from image using DeepSeek OCR API with structure preservation"""
+        
+    async def pdf_to_markdown(self, pdf_bytes: bytes) -> str:
+        """Convert PDF to Markdown using DeepSeek OCR"""
         
     async def create_searchable_pdf(
         self, 

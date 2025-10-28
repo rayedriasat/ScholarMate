@@ -13,6 +13,8 @@ Monorepo structure with separate frontend and backend:
 - **State Management**: Provider
 - **Local Database**: Drift (offline-first cache, works on all platforms including web)
 - **PDF Viewer**: syncfusion_flutter_pdfviewer (viewing + annotations)
+- **OCR (Offline)**: flutter_tesseract_ocr (Android offline mode)
+- **Markdown**: flutter_markdown, markdown_editable_textinput (preview + editor)
 - **Text-to-Speech**: flutter_tts
 - **Authentication**: google_sign_in (v7+ with new API)
 - **HTTP Client**: http package
@@ -55,7 +57,7 @@ flutter build windows        # Windows
 - **Package Manager**: uv (with pyproject.toml)
 - **Python Version**: 3.12+
 - **Database Client**: Supabase Python SDK
-- **OCR**: Tesseract or EasyOCR
+- **OCR**: DeepSeek OCR (online mode, high accuracy with structure preservation)
 - **Vector Database**: ChromaDB (self-hosted)
 - **AI Orchestration**: LangChain (planned)
 - **Encryption**: cryptography (Fernet)
