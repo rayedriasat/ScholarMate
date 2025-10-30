@@ -1,137 +1,72 @@
+---
+inclusion: always
+---
+
 # Technology Stack
 
-## Architecture
+## Package Management (Critical)
 
-Monorepo structure with separate frontend and backend:
-- `frontend/` - Flutter cross-platform client
-- `backend/` - FastAPI backend service
+**Flutter**: ONLY use `flutter pub add <package>` - never manually edit `pubspec.yaml`
+**Python**: ONLY use `uv add <package>` - never use `requirements.txt` or manually edit `pyproject.toml`
 
-## Frontend (Flutter)
+## Frontend Stack (Flutter 3.0+)
 
-### Core Technologies
-- **Framework**: Flutter 3.0+ (cross-platform: Android, iOS, Web, Windows, macOS, Linux)
-- **State Management**: Provider
-- **Local Database**: Drift (offline-first cache, works on all platforms including web)
-- **PDF Viewer**: syncfusion_flutter_pdfviewer (viewing + annotations)
-- **OCR (Offline)**: flutter_tesseract_ocr (Android offline mode)
-- **Markdown**: flutter_markdown, markdown_editable_textinput (preview + editor)
-- **Text-to-Speech**: flutter_tts
-- **Authentication**: google_sign_in (v7+ with new API)
-- **HTTP Client**: http package
-- **Environment**: flutter_dotenv
+- **State**: Provider pattern for dependency injection
+- **Database**: Drift (sqlite3, offline-first, all platforms including web)
+- **PDF**: syncfusion_flutter_pdfviewer (viewing + annotations)
+- **OCR**: flutter_tesseract_ocr (offline Android only)
+- **Markdown**: flutter_markdown, markdown_editable_textinput
+- **Auth**: google_sign_in v7+ (new API)
+- **TTS**: flutter_tts
+- **HTTP**: http package
+- **Env**: flutter_dotenv
 
-### Package Management
-Always use Flutter's package manager:
-```bash
-flutter pub add <package-name>
-```
+## Backend Stack (FastAPI)
 
-Never manually edit `pubspec.yaml` for dependencies.
-
-### Common Commands
-```bash
-# Install dependencies
-flutter pub get
-
-# Run on different platforms
-flutter run -d chrome        # Web
-flutter run -d windows       # Windows
-flutter run -d macos         # macOS
-flutter run -d linux         # Linux
-flutter run                  # Mobile (connected device/emulator)
-
-# Testing
-flutter test
-
-# Build for production
-flutter build apk            # Android
-flutter build ios            # iOS
-flutter build web            # Web
-flutter build windows        # Windows
-```
-
-## Backend (FastAPI)
-
-### Core Technologies
-- **Framework**: FastAPI
+- **Framework**: FastAPI with async/await
+- **Python**: 3.12+
 - **Package Manager**: uv (with pyproject.toml)
-- **Python Version**: 3.12+
-- **Database Client**: Supabase Python SDK
-- **OCR**: DeepSeek OCR (online mode, high accuracy with structure preservation)
-- **Vector Database**: ChromaDB (self-hosted)
-- **AI Orchestration**: LangChain (planned)
+- **Database**: Supabase Python SDK (PostgreSQL + Realtime)
+- **OCR**: DeepSeek OCR (online, high accuracy)
+- **Vector DB**: ChromaDB (self-hosted)
 - **Encryption**: cryptography (Fernet)
 
-### Package Management
-Always use `uv` for package management:
+## Infrastructure Constraints
+
+**Storage**: Google Drive ONLY (app folder scope `drive.file`) - NO Supabase Storage
+**Auth**: Google OAuth 2.0 ONLY - NO Supabase Auth
+**Backend**: FastAPI ONLY - NO Supabase Edge Functions
+**Cost**: Free tier ONLY - NO paid services
+
+## AI Providers (Pluggable)
+
+OpenRouter (default), OpenAI, Claude, Gemini, Grok - user-provided API keys (encrypted)
+
+## Common Commands
+
 ```bash
-uv add <package-name>
+# Flutter
+flutter pub get                    # Install deps
+flutter run -d chrome              # Run web
+flutter run -d windows             # Run Windows
+flutter test                       # Run tests
+flutter build apk                  # Build Android
+
+# Python (backend)
+uv sync                            # Install deps
+uv run python run.py               # Dev server (auto-reload)
+uv run pytest                      # Run tests
 ```
 
-Never use `requirements.txt` or manually edit `pyproject.toml` dependencies.
+## Environment Files
 
-### Common Commands
-```bash
-# Install dependencies
-uv sync
+`.env` files (never commit):
+- `backend/.env` - Backend config
+- `frontend/.env` - Frontend config
+- Templates: `backend.env.template`, `frontend.env.template`
 
-# Run development server (with auto-reload)
-uv run python run.py
-# or
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+## API Endpoints (when backend running)
 
-# Run production server
-uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-# Testing
-uv run pytest
-```
-
-## Infrastructure
-
-### Metadata & Realtime
-- **Database**: Supabase PostgreSQL (free tier)
-- **Realtime**: Supabase Realtime (free tier, no Edge Functions)
-- **Authentication**: Google OAuth 2.0 (not Supabase Auth)
-
-### File Storage
-- **Primary Storage**: Google Drive (user-owned, app folder only)
-- **Scope**: `drive.file` (access only to app-created files)
-- **No Supabase Storage**: All files in Google Drive
-
-### AI Providers
-Pluggable provider layer supporting:
-- OpenRouter (default)
-- OpenAI
-- Claude (Anthropic)
-- Gemini (Google)
-- Grok (xAI)
-
-Users can provide their own API keys (stored encrypted).
-
-## Non-Negotiable Rules
-
-1. **Free-tier only**: No paid services or features
-2. **No Supabase Edge Functions**: Use FastAPI backend instead
-3. **No Supabase Storage**: Google Drive only
-4. **Package managers**: `flutter pub add` for Flutter, `uv add` for Python
-5. **Monorepo structure**: Keep frontend and backend in same repository
-6. **Google OAuth only**: No Supabase Auth
-7. **Offline-first**: All features must work offline with sync queue
-
-## Environment Variables
-
-Both frontend and backend use `.env` files (not committed to git):
-- `backend/.env` - Backend configuration
-- `frontend/.env` - Frontend configuration
-
-Templates provided:
-- `backend.env.template`
-- `frontend.env.template`
-
-## API Documentation
-
-When backend is running:
-- Swagger UI: http://localhost:8000/docs
+- Swagger: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
-- Health check: http://localhost:8000/api/health
+- Health: http://localhost:8000/api/health

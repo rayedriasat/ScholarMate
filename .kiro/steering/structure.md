@@ -1,137 +1,81 @@
-# Project Structure
+---
+inclusion: always
+---
 
-## Monorepo Layout
+# Project Structure & Conventions
 
-```
-ScholarMate/
-├── frontend/              # Flutter cross-platform client
-├── backend/               # FastAPI backend service
-├── .kiro/                 # Kiro IDE configuration
-│   ├── steering/          # AI assistant steering rules
-│   └── specs/             # Project specifications
-├── README.md              # Main project documentation
-├── description.md         # Detailed project description
-├── backend.env.template   # Backend environment template
-├── frontend.env.template  # Frontend environment template
-├── start-backend.bat      # Windows backend launcher
-└── start-frontend.bat     # Windows frontend launcher
-```
+## Directory Layout
 
-## Frontend Structure
+**Monorepo**: `frontend/` (Flutter) + `backend/` (FastAPI)
 
-```
-frontend/
-├── lib/
-│   ├── models/            # Data models (User, File, Folder, Annotation, etc.)
-│   ├── services/          # Business logic services
-│   │                      # (AuthService, DriveService, CacheService, etc.)
-│   ├── screens/           # UI screens (LoginScreen, HomeScreen, PDFViewer, etc.)
-│   ├── widgets/           # Reusable UI components
-│   └── main.dart          # Application entry point
-├── test/                  # Unit and widget tests
-├── assets/                # Images, fonts, and other assets
-├── android/               # Android-specific configuration
-├── ios/                   # iOS-specific configuration
-├── web/                   # Web-specific configuration
-├── windows/               # Windows-specific configuration
-├── macos/                 # macOS-specific configuration
-├── linux/                 # Linux-specific configuration
-├── pubspec.yaml           # Flutter dependencies
-├── .env                   # Environment variables (not in git)
-└── README.md              # Frontend documentation
-```
+### Frontend (`frontend/lib/`)
+- `models/` - Data classes with `fromJson`/`toJson`
+- `services/` - Business logic (AuthService, DriveService, CacheService, etc.)
+- `screens/` - Full-page views (typically StatefulWidget)
+- `widgets/` - Reusable UI components (prefer StatelessWidget)
+- `main.dart` - Entry point
 
-### Frontend Conventions
+### Backend (`backend/app/`)
+- `routers/` - API endpoints grouped by domain (auth.py, files.py, ai.py)
+- `services/` - Business logic (ocr_service.py, rag_service.py)
+- `models/` - Pydantic request/response models
+- `utils/` - Pure utility functions
+- `main.py` - FastAPI app setup
 
-- **Models**: Plain Dart classes with `fromJson`/`toJson` methods
-- **Services**: Business logic separated from UI, injectable via Provider
-- **Screens**: Full-page views, typically stateful widgets
-- **Widgets**: Reusable components, prefer stateless when possible
-- **State Management**: Provider pattern for dependency injection and state
+## Code Conventions
 
-## Backend Structure
-
-```
-backend/
-├── app/
-│   ├── routers/           # API route handlers (auth.py, files.py, ai.py, etc.)
-│   ├── services/          # Business logic services
-│   │                      # (ocr_service.py, rag_service.py, etc.)
-│   ├── models/            # Pydantic models for request/response
-│   ├── utils/             # Utility functions (encryption, validation, etc.)
-│   └── main.py            # FastAPI application setup
-├── migrations/            # Database migrations (if needed)
-├── pyproject.toml         # Python dependencies (managed by uv)
-├── uv.lock                # Locked dependency versions
-├── run.py                 # Development server runner
-├── .env                   # Environment variables (not in git)
-└── README.md              # Backend documentation
-```
-
-### Backend Conventions
-
-- **Routers**: Group related endpoints (e.g., `/api/auth/*`, `/api/files/*`)
-- **Services**: Business logic separated from route handlers
-- **Models**: Pydantic models for validation and serialization
-- **Utils**: Pure functions for common operations
-- **Async/await**: Use async handlers for I/O operations
-
-## Key Architectural Patterns
-
-### Offline-First (Frontend)
-
-1. **Local cache** (Drift sqlite3) mirrors Drive folder structure
-2. **Offline queue** stores pending operations
-3. **Auto-sync** when connection restored
-4. **Conflict resolution**: Last-write-wins with history
-
-### Minimal Backend Responsibilities
-
-Backend only handles:
-- Background indexing (RAG)
-- OCR processing
-- AI queries
-- Metadata management in Supabase
-
-Frontend handles:
-- Direct Google Drive operations
-- Local caching and offline support
-- UI and user interactions
-
-### Security Layers
-
-1. **Google OAuth**: User authentication and Drive access
-2. **Encrypted storage**: Tokens and API keys encrypted in Supabase
-3. **Row Level Security**: Supabase RLS policies
-4. **HTTPS only**: All communication encrypted
-5. **Audit logs**: Track sensitive operations
-
-## File Naming Conventions
-
-### Frontend (Dart)
+### Dart (Frontend)
 - Files: `snake_case.dart`
 - Classes: `PascalCase`
-- Variables/functions: `camelCase`
+- Functions/variables: `camelCase`
 - Constants: `SCREAMING_SNAKE_CASE`
+- State: Provider pattern for dependency injection
+- Separation: Business logic in services, not widgets
 
-### Backend (Python)
+### Python (Backend)
 - Files: `snake_case.py`
 - Classes: `PascalCase`
 - Functions/variables: `snake_case`
 - Constants: `SCREAMING_SNAKE_CASE`
+- Async: Use async/await for I/O operations
+- Validation: Pydantic models for all API boundaries
 
-## Configuration Files
+## Architecture Patterns
 
-- `.env` files: Environment-specific configuration (never commit)
-- `*.template` files: Templates for `.env` files (commit these)
-- `.gitignore`: Excludes `.env`, build artifacts, dependencies
-- `pyproject.toml`: Python dependencies and project metadata
-- `pubspec.yaml`: Flutter dependencies and assets
+### Offline-First (Frontend)
+1. Drift sqlite3 cache mirrors Google Drive structure
+2. Offline queue stores pending operations
+3. Auto-sync on reconnection
+4. Conflict resolution: last-write-wins
 
-## Development Workflow
+### Backend Responsibilities (Minimal)
+- RAG indexing and semantic search
+- OCR processing (DeepSeek online, Tesseract offline)
+- AI query orchestration
+- Supabase metadata management
 
-1. **Feature branches**: Create from main for new features
-2. **Spec-driven**: Refer to `.kiro/specs/scholarmate/` for requirements
-3. **Incremental**: Follow 18-phase development plan in tasks.md
-4. **Test locally**: Use provided batch scripts or commands
-5. **Document**: Update relevant README files for significant changes
+### Frontend Responsibilities (Primary)
+- Direct Google Drive operations
+- Local caching and offline support
+- All UI and user interactions
+
+### Security
+- Google OAuth for authentication
+- Encrypted token storage in Supabase
+- Row Level Security policies
+- HTTPS only
+
+## Configuration
+
+- `.env` files: Never commit, use `*.template` for examples
+- `pyproject.toml`: Python deps (managed by `uv add`)
+- `pubspec.yaml`: Flutter deps (managed by `flutter pub add`)
+
+## Development Rules
+
+1. **Offline-first**: Every feature must work offline or degrade gracefully
+2. **Minimize backend**: Frontend handles Drive directly
+3. **Separation of concerns**: Services contain logic, UI components render
+4. **Async patterns**: Use async/await, never block UI thread
+5. **Error handling**: Provide clear user actions on failure
+6. **Optimistic updates**: Update UI immediately, rollback on error
