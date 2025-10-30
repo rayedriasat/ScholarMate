@@ -8,14 +8,16 @@ ScholarMate is an offline-first, Google-Drive-backed AI research workspace for m
 
 - **ScholarMate_System**: The complete application including Flutter frontend and FastAPI backend
 - **Flutter_Client**: The cross-platform mobile/web/desktop application built with Flutter
-- **FastAPI_Backend**: The Python backend service handling OCR, RAG indexing, and AI queries
-- **Google_Drive_Storage**: User's Google Drive app folder where all files are stored
+- **FastAPI_Backend**: The Python backend service handling OCR, RAG indexing, and AI queries using GROQ
+- **Google_Drive_Storage**: User's Google Drive app folder where all files are stored (source of truth)
 - **Local_Cache**: Drift database storing offline copies and metadata (works on all platforms including web)
 - **Supabase_Metadata_DB**: PostgreSQL database storing user metadata, sharing info, and encrypted tokens
 - **ChromaDB_Vector_Store**: Self-hosted vector database for RAG embeddings with per-user collections
 - **LangChain_Framework**: Python framework for building LLM applications with document loaders, text splitters, and retrieval chains
+- **GROQ**: AI provider used for chat completions and embeddings, configured via backend environment variables
 - **Annotation**: User-created highlights, underlines, or comments embedded in PDF files
-- **RAG_System**: Retrieval-Augmented Generation system for semantic search and AI chat using LangChain
+- **RAG_System**: Retrieval-Augmented Generation system for semantic search and AI chat using LangChain and GROQ
+- **Citation**: Reference to source document with file_id, file_name, and page_number, clickable to open PDF viewer
 - **Tag**: User-defined label for organizing and categorizing PDFs and notes
 - **Sync_Queue**: Local queue of offline actions pending synchronization
 - **Viewer_Role**: Read-only permission level for shared content
@@ -168,18 +170,18 @@ ScholarMate is an offline-first, Google-Drive-backed AI research workspace for m
 7. THE FastAPI_Backend SHALL provide PDF to Markdown conversion using DeepSeek OCR
 8. THE Flutter_Client SHALL provide Markdown preview and editor with live rendering and formatting toolbar
 
-### Requirement 12: AI Model Provider Abstraction
+### Requirement 12: AI Chat with GROQ
 
-**User Story:** As a user, I want to use different AI providers, so that I can choose based on cost and performance.
+**User Story:** As a user, I want to use AI chat powered by GROQ, so that I can ask questions about my documents.
 
 #### Acceptance Criteria
 
-1. THE FastAPI_Backend SHALL implement an AIModelProvider abstract base class with chat and embed methods
-2. THE FastAPI_Backend SHALL provide concrete implementations for OpenRouter, OpenAI, Claude, Gemini, and Grok
-3. THE FastAPI_Backend SHALL allow users to configure their preferred provider via API
-4. WHEN a user provides an API key, THE FastAPI_Backend SHALL encrypt and store it in Supabase_Metadata_DB
-5. THE FastAPI_Backend SHALL use user-provided API keys when available, falling back to system defaults
-6. THE FastAPI_Backend SHALL handle provider-specific errors and rate limits gracefully
+1. THE FastAPI_Backend SHALL use GROQ as the AI provider for chat and embeddings
+2. THE FastAPI_Backend SHALL load the GROQ API key from environment variables (.env file)
+3. THE FastAPI_Backend SHALL implement chat() and embed() methods using GROQ API
+4. THE FastAPI_Backend SHALL handle GROQ-specific errors and rate limits gracefully
+5. THE ScholarMate_System SHALL ensure all users share the same GROQ API key from backend configuration
+6. THE FastAPI_Backend SHALL log GROQ API usage for monitoring and debugging
 
 ### Requirement 13: RAG Indexing System with LangChain
 
@@ -187,33 +189,38 @@ ScholarMate is an offline-first, Google-Drive-backed AI research workspace for m
 
 #### Acceptance Criteria
 
-1. WHEN a user uploads a PDF, THE Flutter_Client SHALL trigger indexing by calling FastAPI_Backend
-2. THE FastAPI_Backend SHALL fetch the file from Google_Drive_Storage using encrypted refresh tokens
+1. WHEN a user uploads a PDF, THE Flutter_Client SHALL trigger indexing by calling FastAPI_Backend with user_id and file_id
+2. THE FastAPI_Backend SHALL fetch the file from Google_Drive_Storage using the user's encrypted refresh tokens stored in Supabase_Metadata_DB
 3. THE FastAPI_Backend SHALL extract text from PDFs and apply OCR if needed using LangChain document loaders
 4. THE FastAPI_Backend SHALL chunk text into semantic segments with overlap using LangChain text splitters
-5. THE FastAPI_Backend SHALL generate embeddings using the configured AI provider through LangChain embedding models and store in ChromaDB_Vector_Store
-6. THE FastAPI_Backend SHALL create a separate ChromaDB collection for each user to ensure data isolation
-7. THE FastAPI_Backend SHALL store chunk metadata including file_id, page_number, and citation mapping in ChromaDB_Vector_Store
-8. THE FastAPI_Backend SHALL track indexing job status as pending, processing, completed, or failed in Supabase_Metadata_DB
-9. THE Flutter_Client SHALL display indexing status and allow manual re-indexing
-10. THE ScholarMate_System SHALL ensure users can only query their own vector database collection
+5. THE FastAPI_Backend SHALL generate embeddings using GROQ through LangChain embedding models and store in ChromaDB_Vector_Store
+6. THE FastAPI_Backend SHALL create a separate ChromaDB collection for each user (naming: user_{user_id}_documents) to ensure complete data isolation
+7. THE FastAPI_Backend SHALL store chunk metadata including file_id, page_number, chunk_index, and citation mapping in ChromaDB_Vector_Store
+8. THE FastAPI_Backend SHALL track indexing job status as pending, processing, completed, or failed in Supabase_Metadata_DB with progress tracking
+9. THE Flutter_Client SHALL display indexing status badges on files (indexed, indexing, pending, failed) with progress percentage
+10. THE Flutter_Client SHALL provide a manual "Reindex" button in file context menu to trigger re-indexing
+11. THE Flutter_Client SHALL show an indexing progress panel listing all files with their indexing status
+12. THE ScholarMate_System SHALL ensure users can only query their own vector database collection and cannot access other users' data
 
 ### Requirement 14: AI Chat with RAG and Source Selection
 
-**User Story:** As a user, I want to ask questions about selected documents, so that I can quickly find relevant information from specific sources.
+**User Story:** As a user, I want to ask questions about selected documents, so that I can quickly find relevant information from specific sources with clickable citations.
 
 #### Acceptance Criteria
 
 1. THE Flutter_Client SHALL provide a chat interface for asking questions with source selection options
 2. THE Flutter_Client SHALL allow users to select or deselect specific files or folders as sources for AI chat
-3. WHEN a user submits a question, THE Flutter_Client SHALL send it to FastAPI_Backend with selected source filters
-4. THE FastAPI_Backend SHALL use LangChain retrieval chains to generate embeddings and query the user's ChromaDB collection for relevant chunks
-5. THE FastAPI_Backend SHALL filter results to only include chunks from user-selected sources
-6. THE FastAPI_Backend SHALL construct a prompt with retrieved context using LangChain prompt templates and send to the AI provider
-7. THE FastAPI_Backend SHALL return the AI response with citations including file_id and page_number
-8. THE Flutter_Client SHALL display citations as clickable links that open the PDF to the referenced page
-9. THE Flutter_Client SHALL provide an option to save chat responses as Markdown notes to Google_Drive_Storage
-10. THE Flutter_Client SHALL persist source selection preferences for future chat sessions
+3. WHEN a user submits a question, THE Flutter_Client SHALL send it to FastAPI_Backend with user_id and selected source file_ids
+4. THE FastAPI_Backend SHALL use LangChain retrieval chains to generate embeddings using GROQ and query the user's ChromaDB collection for relevant chunks
+5. THE FastAPI_Backend SHALL filter results to only include chunks from user-selected sources using metadata filtering
+6. THE FastAPI_Backend SHALL construct a prompt with retrieved context using LangChain prompt templates and send to GROQ
+7. THE FastAPI_Backend SHALL return the AI response with citations array containing file_id, file_name, and page_number for each source
+8. THE Flutter_Client SHALL display citations as clickable chips below AI messages
+9. WHEN a user clicks a citation, THE Flutter_Client SHALL open the PDF viewer (using syncfusion_flutter_pdfviewer) and navigate to the referenced page_number
+10. THE Flutter_Client SHALL highlight or indicate the referenced section in the PDF viewer when opened via citation
+11. THE Flutter_Client SHALL provide an option to save chat responses as Markdown notes to Google_Drive_Storage
+12. THE Flutter_Client SHALL persist source selection preferences for future chat sessions
+13. THE ScholarMate_System SHALL ensure users can only receive citations from their own documents and selected sources
 
 ### Requirement 15: Sharing with Roles
 

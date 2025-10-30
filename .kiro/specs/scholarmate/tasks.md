@@ -334,117 +334,106 @@
 **Test Checkpoint**: User can scan documents with camera, OCR processes images using DeepSeek (online) or Tesseract (offline), searchable PDFs are created, and PDFs can be converted to Markdown with preview/editing capabilities.
 ✅ **COMPLETED** - Hybrid OCR with DeepSeek (online) and Tesseract (offline), automatic mode detection, OCR mode indicator, searchable PDF generation, Markdown conversion and editor with formatting toolbar implemented. See TASK_10_HYBRID_OCR_COMPLETE.md for details.
 
-## Phase 9: AI Provider Abstraction (Testable Checkpoint)
+## Phase 9: GROQ AI Integration (Testable Checkpoint)
 
-- [ ] 11. Implement AI model provider system
-  - [ ] 11.1 Create AIModelProvider abstract base class
-    - Add LangChain dependencies to pyproject.toml
-    - Define abstract methods: chat() and embed()
-    - Create provider configuration data models
-    - _Requirements: 12.1_
+- [ ] 11. Implement GROQ AI service
+  - [ ] 11.1 Set up GROQ integration in backend
+    - Add GROQ SDK dependencies to pyproject.toml (groq, langchain-groq)
+    - Add GROQ_API_KEY to backend/.env configuration
+    - Create GROQService class with chat() and embed() methods
+    - Implement error handling for GROQ API errors and rate limits
+    - Add logging for GROQ API usage and errors
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.6_
   
-  - [ ] 11.2 Implement concrete AI provider classes
-    - Create OpenRouterProvider implementation
-    - Create OpenAIProvider implementation
-    - Create ClaudeProvider implementation
-    - Create GeminiProvider implementation
-    - Create GrokProvider implementation
-    - Handle provider-specific API formats and errors
-    - _Requirements: 12.2, 12.6_
-  
-  - [ ] 11.3 Create API key management endpoints
-    - Implement POST /api/api-keys to store encrypted user API keys
-    - Implement GET /api/api-keys to list configured providers
-    - Implement DELETE /api/api-keys/{provider} to remove keys
-    - _Requirements: 12.4_
-  
-  - [ ] 11.4 Build AI settings UI in Flutter
-    - Create settings screen with provider selection
-    - Add API key input fields for each provider
-    - Show provider status (configured/not configured)
-    - Implement secure key storage and transmission
-    - Design modern settings UI with provider logos
+  - [ ] 11.2 Test GROQ integration
+    - Create test endpoint POST /api/ai/test-groq for testing GROQ connectivity
+    - Test chat completion with sample prompts
+    - Test embedding generation with sample texts
+    - Verify error handling and rate limiting
     - _Requirements: 12.3, 12.4_
-  
-  - [ ] 11.5 Implement provider selection logic
-    - Use user-provided API keys when available
-    - Fall back to system default provider
-    - Handle rate limits and provider errors
-    - _Requirements: 12.5, 12.6_
 
-**Test Checkpoint**: User can configure different AI providers with custom API keys, and the system uses the selected provider for AI operations.
+**Test Checkpoint**: GROQ API integration works correctly for chat and embeddings, with proper error handling and logging.
 
-## Phase 10: RAG Indexing with LangChain (Testable Checkpoint)
+## Phase 10: RAG Indexing with LangChain and GROQ (Testable Checkpoint)
 
 - [ ] 12. Implement RAG indexing system with LangChain
   - [ ] 12.1 Set up ChromaDB with per-user collections
-    - Add ChromaDB dependencies to pyproject.toml (chromadb, langchain, langchain-chroma)
-    - Install and configure ChromaDB
+    - Add ChromaDB dependencies to pyproject.toml (chromadb, langchain, langchain-chroma, langchain-groq)
+    - Install and configure ChromaDB (self-hosted)
     - Install LangChain and LangChain-Chroma integration
     - Implement user-specific collection creation (naming: user_{user_id}_documents)
     - Implement ChromaDB client in backend with collection management
     - Create BackendDriveService for fetching files from Google Drive using user's encrypted tokens
-    - _Requirements: 13.5, 13.6, 13.10_
+    - Test user isolation by verifying separate collections per user
+    - _Requirements: 13.2, 13.6, 13.12_
   
-  - [ ] 12.2 Create RAGIndexer service with LangChain
-    - Implement indexFile() to start indexing jobs
+  - [ ] 12.2 Create RAGIndexer service with LangChain and GROQ
+    - Implement indexFile() to start indexing jobs with user_id and file_id
     - Integrate LangChain PyPDFLoader for PDF text extraction
     - Implement extractAndChunkText() using LangChain RecursiveCharacterTextSplitter
     - Configure chunk size (1000) and overlap (200) parameters
-    - Implement generateEmbeddings() using LangChain embedding models with configured AI provider
-    - Implement storeEmbeddings() to save in user-specific ChromaDB collection with metadata
+    - Implement generateEmbeddings() using LangChain GROQ embedding models
+    - Implement storeEmbeddings() to save in user-specific ChromaDB collection with metadata (file_id, page_number, chunk_index)
     - Implement getUserCollection() to get or create user's vector store
-    - _Requirements: 13.2, 13.3, 13.4, 13.5, 13.6_
+    - Ensure Google Drive is the source of truth by fetching files directly from Drive
+    - _Requirements: 13.2, 13.3, 13.4, 13.5, 13.6, 13.7_
   
   - [ ] 12.3 Create indexing API endpoints
-    - Implement POST /api/ingest/start to trigger indexing with user_id
-    - Implement GET /api/ingest/status/{job_id} for status tracking
+    - Implement POST /api/ingest/start to trigger indexing with user_id and file_id
+    - Implement GET /api/ingest/status/{job_id} for status tracking with progress
+    - Implement GET /api/ingest/list/{user_id} to list all indexing jobs for user
     - Implement POST /api/ingest/reindex/{file_id} for manual re-indexing
-    - Ensure all endpoints enforce user isolation
-    - _Requirements: 13.1, 13.8, 13.10_
+    - Ensure all endpoints enforce user isolation (only access own data)
+    - _Requirements: 13.1, 13.10, 13.12_
   
-  - [ ] 12.4 Implement async job processing
+  - [ ] 12.4 Implement async job processing with progress tracking
     - Create background task queue for indexing jobs
     - Track job status in ingestion_jobs table (pending, processing, completed, failed)
-    - Update progress (chunks_processed, total_chunks)
-    - Handle indexing errors and retries
-    - _Requirements: 13.7_
-  
-  - [ ] 12.5 Build indexing status UI in Flutter
-    - Show indexing status badge on files (indexed, indexing, failed)
-    - Create indexing progress indicator with percentage
-    - Add manual re-index option in file context menu
-    - Display indexing errors with details
+    - Update progress (chunks_processed, total_chunks, progress_percentage)
+    - Handle indexing errors and retries with exponential backoff
+    - Store error messages for failed jobs
     - _Requirements: 13.8_
   
+  - [ ] 12.5 Build indexing status UI in Flutter
+    - Show indexing status badge on files (indexed ✓, indexing ⟳, pending ⏳, failed ✗)
+    - Create indexing progress panel showing all files with status and percentage
+    - Add manual "Reindex" button in file context menu
+    - Display indexing errors with details in error dialog
+    - Show which files are indexed and which are pending
+    - Add "Reindex All" button to reindex all PDFs
+    - Update UI in realtime as indexing progresses
+    - _Requirements: 13.9, 13.10, 13.11_
+  
   - [ ] 12.6 Trigger automatic indexing on upload
-    - Call indexing API when user uploads PDF
+    - Call indexing API when user uploads PDF with user_id
     - Show indexing started notification
-    - Update UI when indexing completes
+    - Update UI when indexing completes or fails
+    - Fetch file from Google Drive (source of truth) for indexing
     - _Requirements: 13.1_
 
-**Test Checkpoint**: Documents are automatically indexed in user-specific collections after upload, indexing status is tracked and displayed, users cannot access other users' vector data, and manual re-indexing works.
+**Test Checkpoint**: Documents are automatically indexed in user-specific collections after upload using GROQ embeddings, indexing status is tracked and displayed with progress, users cannot access other users' vector data, manual re-indexing works, and Google Drive is the source of truth for all files.
 
-## Phase 11: AI Chat with RAG and Source Selection (Testable Checkpoint)
+## Phase 11: AI Chat with RAG, Source Selection, and Clickable Citations (Testable Checkpoint)
 
-- [ ] 13. Implement AI chat with semantic search and source filtering
-  - [ ] 13.1 Create RAGQueryService with LangChain
+- [ ] 13. Implement AI chat with semantic search and source filtering using GROQ
+  - [ ] 13.1 Create RAGQueryService with LangChain and GROQ
     - Implement query() method for end-to-end RAG pipeline with source filtering
-    - Integrate LangChain RetrievalQA chain for question answering
+    - Integrate LangChain RetrievalQA chain for question answering using GROQ
     - Implement retrieveContext() to query user's ChromaDB collection with metadata filtering
     - Use LangChain retriever with file_id filtering for selected sources
-    - Implement generateResponse() using LangChain prompt templates and chains
-    - Extract file_id and page_number for citations from retrieved documents
+    - Implement generateResponse() using LangChain prompt templates and GROQ
+    - Extract file_id, file_name, and page_number for citations from retrieved documents
     - Implement getUserVectorstore() to access user-specific collection
-    - _Requirements: 14.3, 14.4, 14.5, 14.6_
+    - Ensure user isolation (only query user's own collection)
+    - _Requirements: 14.3, 14.4, 14.5, 14.6, 14.13_
   
   - [ ] 13.2 Create AI chat API endpoint with source filtering
     - Implement POST /api/ai/chat endpoint accepting question, user_id, and selected_file_ids
-    - Filter retrieval results to only include chunks from selected sources
-    - Return AI response with citations array
-    - Handle errors and timeouts
+    - Filter retrieval results to only include chunks from selected sources using metadata
+    - Return AI response with citations array containing {file_id, file_name, page_number}
+    - Handle GROQ errors and timeouts gracefully
     - Ensure user isolation (only query user's own collection)
-    - _Requirements: 14.2, 14.3, 14.5_
+    - _Requirements: 14.3, 14.5, 14.7, 14.13_
   
   - [ ] 13.3 Build modern chat interface with source selection in Flutter
     - Create chat screen with message list and input field
@@ -453,30 +442,33 @@
     - Show selected source count in chat input area
     - Design message bubbles (user vs AI) with modern styling
     - Show typing indicator while AI is responding
-    - Display citations as clickable chips below AI messages
+    - Display citations as clickable chips below AI messages with file name and page number
     - Implement smooth scrolling and animations
     - Make responsive for all screen sizes
-    - _Requirements: 14.1, 14.2, 14.8, 14.9_
+    - _Requirements: 14.1, 14.2, 14.8_
   
-  - [ ] 13.4 Implement source selection persistence
-    - Store selected sources in local database
+  - [ ] 13.4 Implement clickable citations with PDF navigation
+    - Make citation chips clickable with tap gesture
+    - WHEN user clicks citation, open PDF viewer using syncfusion_flutter_pdfviewer
+    - Navigate to the referenced page_number using jumpToPage() method
+    - Highlight or indicate the referenced section in the PDF viewer
+    - Show citation source info (file name, page) in PDF viewer toolbar
+    - Handle errors if file is not cached (download from Google Drive first)
+    - _Requirements: 14.8, 14.9, 14.10_
+  
+  - [ ] 13.5 Implement source selection persistence
+    - Store selected sources in local Drift database
     - Load previous source selection when opening chat
     - Allow "Select All" and "Clear All" options
     - Show visual indicator for selected sources
-    - _Requirements: 14.10_
-  
-  - [ ] 13.5 Implement citation navigation
-    - Make citation chips clickable
-    - Open PDF to referenced page when citation clicked
-    - Highlight referenced section if available
-    - _Requirements: 14.8_
+    - _Requirements: 14.12_
   
   - [ ] 13.6 Add save chat response feature
     - Implement "Save as Note" button on AI messages
-    - Create Markdown file with chat response
+    - Create Markdown file with chat response and citations
     - Save to Google Drive in Notes folder
     - Show success notification
-    - _Requirements: 14.9_
+    - _Requirements: 14.11_
   
   - [ ] 13.7 Add chat history and context
     - Store chat history with source selection in local database
@@ -485,7 +477,7 @@
     - Implement clear chat option
     - _Requirements: 14.1_
 
-**Test Checkpoint**: User can ask questions with selected sources, receive AI responses with citations only from selected documents, click citations to view source, persist source preferences, and save responses as notes.
+**Test Checkpoint**: User can ask questions with selected sources using GROQ, receive AI responses with citations only from selected documents, click citations to open PDF viewer at the exact page, persist source preferences, and save responses as notes. All data is isolated per user.
 
 ## Phase 12: File Organization with Tags (Testable Checkpoint)
 

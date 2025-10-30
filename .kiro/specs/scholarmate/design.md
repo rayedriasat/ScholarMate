@@ -11,17 +11,17 @@ The architecture follows a clear separation of concerns:
 - Google Drive provides file storage with built-in sharing and permissions
 - LangChain provides model-agnostic RAG implementation with document loaders, text splitters, and retrieval chains
 
-### Model Agnosticism and LangChain Integration
+### GROQ AI Integration with LangChain
 
-The system is designed to be model-agnostic, allowing users to choose their preferred AI provider (OpenRouter, OpenAI, Claude, Gemini, Grok). LangChain serves as the abstraction layer for:
-- **Document Processing**: PyPDFLoader for PDF text extraction
+The system uses GROQ as the AI provider for chat and embeddings, configured via backend environment variables. LangChain serves as the abstraction layer for:
+- **Document Processing**: PyPDFLoader for PDF text extraction from Google Drive files
 - **Text Chunking**: RecursiveCharacterTextSplitter for semantic segmentation
-- **Embeddings**: LangChain embedding models wrapping provider-specific APIs
-- **Vector Storage**: Chroma vectorstore integration with per-user collections
+- **Embeddings**: LangChain GROQ embedding models for vector generation
+- **Vector Storage**: Chroma vectorstore integration with per-user collections (user_{user_id}_documents)
 - **Retrieval**: LangChain retrievers with metadata filtering for source selection
-- **Question Answering**: RetrievalQA chains with custom prompt templates
+- **Question Answering**: RetrievalQA chains with custom prompt templates using GROQ
 
-This architecture ensures that switching AI providers requires minimal code changes and maintains consistent behavior across different models.
+The backend fetches files directly from Google Drive (source of truth) using encrypted user tokens for RAG indexing. All users share the same GROQ API key from backend configuration, with complete data isolation through per-user ChromaDB collections.
 
 ## Architecture
 
@@ -124,73 +124,76 @@ This architecture ensures that switching AI providers requires minimal code chan
 - Markdown preview and editor
 - Test: User can scan documents, create searchable PDFs, convert to Markdown, and edit Markdown files
 
-**Phase 9: AI Provider Abstraction (Testable Checkpoint)**
-- AIModelProvider interface
-- Provider implementations (OpenRouter, OpenAI, etc.)
-- User API key management
-- Test: User can configure providers and use custom API keys
+**Phase 9: GROQ AI Integration (Testable Checkpoint)**
+- GROQ SDK integration in backend
+- Chat and embedding methods using GROQ
+- Environment variable configuration
+- Test: GROQ API works for chat and embeddings
 
-**Phase 10: RAG Indexing with LangChain (Testable Checkpoint)**
+**Phase 10: RAG Indexing with LangChain and GROQ (Testable Checkpoint)**
 - ChromaDB setup with per-user collections
 - LangChain document loaders and text splitters
-- Embedding generation using LangChain
-- Indexing job tracking
-- Test: Documents get indexed in user-specific collections, status tracked correctly
+- Embedding generation using GROQ
+- Backend Drive service to fetch files from Google Drive
+- Indexing job tracking with progress
+- Indexing status UI with reindex button
+- Test: Documents get indexed in user-specific collections, status tracked with progress, reindex works
 
-**Phase 11: AI Chat with RAG and Source Selection (Testable Checkpoint)**
+**Phase 11: AI Chat with RAG, Source Selection, and Clickable Citations (Testable Checkpoint)**
 - Chat UI with source selection
-- LangChain retrieval chains for RAG pipeline
+- LangChain retrieval chains for RAG pipeline using GROQ
 - Source filtering for selected documents
-- Citation generation
+- Citation generation with file_id, file_name, and page_number
+- Clickable citations that open PDF viewer at specific page
 - Save responses as Markdown
-- Test: User can ask questions with selected sources and get cited answers
+- Test: User can ask questions with selected sources, get cited answers, and click citations to view source pages
 
-**Phase 11.5: File Organization with Tags (Testable Checkpoint)**
+**Phase 12: File Organization with Tags (Testable Checkpoint)**
 - Tag management UI
 - Tag application and filtering
 - Tag-based search and sorting
 - Tag synchronization
 - Test: User can tag files, filter by tags, and tags sync across devices
 
-**Phase 12: Sharing & Permissions (Testable Checkpoint)**
+**Phase 13: Sharing & Permissions (Testable Checkpoint)**
 - Sharing dialog UI
 - Role-based permissions (Viewer/Editor)
 - Google Drive sharing integration
 - Sharing metadata storage
 - Test: User can share files with roles, permissions enforced
 
-**Phase 13: Public Links (Testable Checkpoint)**
+**Phase 14: Public Links (Testable Checkpoint)**
 - Public link generation
 - View-only access for public links
 - Link revocation
 - Test: Public links work without authentication
 
-**Phase 14: Realtime Annotations (Testable Checkpoint)**
+**Phase 15: Realtime Annotations (Testable Checkpoint)**
 - Supabase Realtime integration
 - Annotation event broadcasting
 - Real-time UI updates
 - Typing indicators
 - Test: Collaborators see annotations in realtime
 
-**Phase 15: Realtime File Operations (Testable Checkpoint)**
+**Phase 16: Realtime File Operations (Testable Checkpoint)**
 - File operation event broadcasting
 - Explorer real-time updates
 - Permission change events
 - Test: File changes appear instantly for collaborators
 
-**Phase 16: Presence & Activity (Testable Checkpoint)**
+**Phase 17: Presence & Activity (Testable Checkpoint)**
 - Presence broadcasting
 - Avatar display
 - Page tracking
 - Test: Users see who's viewing and what page they're on
 
-**Phase 17: Read Aloud (Testable Checkpoint)**
+**Phase 18: Read Aloud (Testable Checkpoint)**
 - TTS integration
 - Read-aloud controls
 - Auto-page advancement
 - Test: User can listen to PDFs with TTS
 
-**Phase 18: Performance & Polish (Testable Checkpoint)**
+**Phase 19: Performance & Polish (Testable Checkpoint)**
 - Caching optimizations
 - Pagination
 - Rate limiting
@@ -271,6 +274,10 @@ class PdfViewerManager {
   Future<Uint8List> savePdfWithAnnotations();
   void jumpToPage(int pageNumber);
   void jumpToAnnotation(String annotationId);
+  
+  // Citation navigation
+  Future<void> openPdfFromCitation(String fileId, int pageNumber);
+  void highlightCitationArea(int pageNumber);
 }
 ```
 
@@ -326,6 +333,37 @@ class MarkdownService {
 }
 ```
 
+#### 11. AI Chat Service
+```dart
+class AIChatService {
+  Future<ChatResponse> sendMessage(
+    String message, 
+    String userId, 
+    List<String> selectedFileIds
+  );
+  Future<void> saveChatAsNote(ChatMessage message);
+  Future<List<ChatHistory>> getChatHistory();
+  Future<void> clearChat();
+  
+  // Citation handling
+  void onCitationClicked(Citation citation);
+  Future<void> openCitationInPdfViewer(Citation citation);
+}
+
+class Citation {
+  final String fileId;
+  final String fileName;
+  final int pageNumber;
+  final String snippet;
+}
+
+class ChatResponse {
+  final String message;
+  final List<Citation> citations;
+  final String timestamp;
+}
+```
+
 ### FastAPI Backend Components
 
 #### 1. API Routes
@@ -353,10 +391,8 @@ POST /api/annotations/sync
 PUT /api/annotations/{annotation_id}
 DELETE /api/annotations/{annotation_id}
 
-# API Keys
-POST /api/api-keys
-GET /api/api-keys
-DELETE /api/api-keys/{provider}
+# AI Testing
+POST /api/ai/test-groq
 
 # Tags
 GET /api/tags
@@ -388,58 +424,59 @@ class OCRService:
         """Create PDF with embedded OCR text"""
 ```
 
-#### 3. AI Model Provider Abstraction
+#### 3. GROQ AI Service
 ```python
-class AIModelProvider(ABC):
-    @abstractmethod
+from groq import Groq
+from langchain_groq import ChatGroq, GroqEmbeddings
+
+class GROQService:
+    def __init__(self):
+        self.api_key = os.getenv("GROQ_API_KEY")
+        self.client = Groq(api_key=self.api_key)
+        self.chat_model = ChatGroq(api_key=self.api_key)
+        self.embeddings = GroqEmbeddings(api_key=self.api_key)
+    
     async def chat(
         self, 
         prompt: str, 
         context: List[str],
-        config: Dict,
-        api_key: Optional[str] = None
+        config: Dict
     ) -> ChatResponse:
-        """Generate chat response"""
+        """Generate chat response using GROQ"""
         
-    @abstractmethod
     async def embed(
         self, 
-        texts: List[str],
-        config: Dict,
-        api_key: Optional[str] = None
+        texts: List[str]
     ) -> List[List[float]]:
-        """Generate embeddings"""
-
-class OpenRouterProvider(AIModelProvider):
-    # Implementation
-    
-class OpenAIProvider(AIModelProvider):
-    # Implementation
-    
-class ClaudeProvider(AIModelProvider):
-    # Implementation
+        """Generate embeddings using GROQ"""
+        
+    def handle_error(self, error: Exception):
+        """Handle GROQ-specific errors and rate limits"""
 ```
 
-#### 4. RAG Indexing Service with LangChain
+#### 4. RAG Indexing Service with LangChain and GROQ
 ```python
 from langchain.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.base import Embeddings
+from langchain_groq import GroqEmbeddings
 from langchain.vectorstores import Chroma
 
 class RAGIndexer:
-    def __init__(self):
+    def __init__(self, groq_service: GROQService, drive_service: BackendDriveService):
+        self.groq_service = groq_service
+        self.drive_service = drive_service
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200
         )
+        self.embeddings = GroqEmbeddings(api_key=groq_service.api_key)
     
     async def index_file(
         self, 
         file_id: str, 
         user_id: str
     ) -> str:
-        """Start indexing job, return job_id"""
+        """Start indexing job, fetch file from Google Drive, return job_id"""
         
     async def extract_and_chunk_text(
         self, 
@@ -450,35 +487,49 @@ class RAGIndexer:
         
     async def generate_embeddings(
         self, 
-        documents: List[Document],
-        provider: AIModelProvider
+        documents: List[Document]
     ) -> List[Embedding]:
-        """Generate embeddings using LangChain embedding models"""
+        """Generate embeddings using GROQ via LangChain"""
         
     async def store_embeddings(
         self, 
         documents: List[Document],
         embeddings: List[Embedding],
         user_id: str,
+        file_id: str,
         metadata: Dict
     ):
-        """Store in user-specific ChromaDB collection"""
+        """Store in user-specific ChromaDB collection with metadata"""
         # Collection name: f"user_{user_id}_documents"
+        # Metadata: file_id, page_number, chunk_index
         
     async def get_user_collection(self, user_id: str) -> Chroma:
         """Get or create user-specific ChromaDB collection"""
         
     async def get_job_status(self, job_id: str) -> JobStatus:
-        """Get indexing job status"""
+        """Get indexing job status with progress"""
+        
+    async def update_job_progress(
+        self, 
+        job_id: str, 
+        chunks_processed: int, 
+        total_chunks: int
+    ):
+        """Update indexing job progress"""
 ```
 
-#### 5. RAG Query Service with LangChain
+#### 5. RAG Query Service with LangChain and GROQ
 ```python
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain.vectorstores import Chroma
+from langchain_groq import ChatGroq
 
 class RAGQueryService:
+    def __init__(self, groq_service: GROQService):
+        self.groq_service = groq_service
+        self.chat_model = ChatGroq(api_key=groq_service.api_key)
+    
     async def query(
         self, 
         question: str,
@@ -486,7 +537,7 @@ class RAGQueryService:
         selected_file_ids: List[str] = None,
         top_k: int = 5
     ) -> QueryResult:
-        """Query user's vector store with source filtering"""
+        """Query user's vector store with source filtering using GROQ"""
         
     async def retrieve_context(
         self, 
@@ -496,19 +547,25 @@ class RAGQueryService:
         top_k: int
     ) -> List[RetrievedChunk]:
         """Retrieve relevant chunks from user's ChromaDB collection with filtering"""
-        # Use LangChain retriever with metadata filtering
+        # Use LangChain retriever with metadata filtering (file_id)
         
     async def generate_response(
         self, 
         question: str,
-        context: List[RetrievedChunk],
-        provider: AIModelProvider
+        context: List[RetrievedChunk]
     ) -> ChatResponse:
-        """Generate AI response with citations using LangChain chains"""
+        """Generate AI response with citations using GROQ via LangChain chains"""
         # Use LangChain RetrievalQA chain with custom prompt template
+        # Return citations with file_id, file_name, page_number
         
     async def get_user_vectorstore(self, user_id: str) -> Chroma:
         """Get user-specific vector store"""
+        
+    def format_citations(
+        self, 
+        retrieved_chunks: List[RetrievedChunk]
+    ) -> List[Citation]:
+        """Format citations with file_id, file_name, and page_number"""
 ```
 
 #### 6. Encryption Service
@@ -954,16 +1011,17 @@ Each incremental phase includes specific tests:
 **Phase 6**: Backend health checks pass, DB connected
 **Phase 7**: Annotations sync across devices
 **Phase 8**: Scanned documents become searchable PDFs
-**Phase 9**: Different AI providers work with user keys
-**Phase 10**: Documents get indexed, status tracked
-**Phase 11**: Chat returns relevant, cited answers
-**Phase 12**: Sharing works, permissions enforced
-**Phase 13**: Public links accessible without auth
-**Phase 14**: Annotations appear in realtime
-**Phase 15**: File operations sync in realtime
-**Phase 16**: Presence shows active users
-**Phase 17**: TTS reads PDFs correctly
-**Phase 18**: Performance acceptable with large library
+**Phase 9**: GROQ integration works for chat and embeddings
+**Phase 10**: Documents get indexed with progress tracking, reindex works
+**Phase 11**: Chat returns relevant, cited answers with clickable citations
+**Phase 12**: Tags work for organization and filtering
+**Phase 13**: Sharing works, permissions enforced
+**Phase 14**: Public links accessible without auth
+**Phase 15**: Annotations appear in realtime
+**Phase 16**: File operations sync in realtime
+**Phase 17**: Presence shows active users
+**Phase 18**: TTS reads PDFs correctly
+**Phase 19**: Performance acceptable with large library
 
 ### Performance Testing
 
@@ -1062,8 +1120,7 @@ SUPABASE_SERVICE_KEY=your_supabase_service_key
 ENCRYPTION_KEY=your_encryption_key
 CHROMADB_HOST=localhost
 CHROMADB_PORT=8000
-DEFAULT_AI_PROVIDER=openrouter
-DEFAULT_AI_API_KEY=your_default_key
+GROQ_API_KEY=your_groq_api_key
 GOOGLE_CLIENT_ID=your_client_id
 GOOGLE_CLIENT_SECRET=your_client_secret
 ```
