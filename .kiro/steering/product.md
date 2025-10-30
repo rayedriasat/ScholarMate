@@ -2,53 +2,36 @@
 inclusion: always
 ---
 
-# Product Overview
+# Product: ScholarMate
 
-ScholarMate is an offline-first, Google-Drive-backed AI research workspace for managing PDFs and Markdown files.
+Offline-first AI research workspace for PDFs and Markdown, backed by user's Google Drive.
 
-## Core Principles
+## Core Constraints (Non-Negotiable)
 
-1. **User-owned storage**: All documents in user's Google Drive (app folder scope only)
+1. **User-owned storage**: All files in user's Google Drive (app folder scope only)
 2. **Offline-first**: Full functionality without internet, sync when online
 3. **Free-tier only**: No paid services or premium features
-4. **Privacy-focused**: End-to-end encryption for tokens and API keys
-5. **Cross-platform**: Flutter app runs on Android, iOS, Web, Windows, macOS, Linux
+4. **Privacy**: End-to-end encryption for tokens and API keys
+5. **Cross-platform**: Android, iOS, Web, Windows, macOS, Linux
 
-## Key Features
+## Feature Set
 
-### Document Management
-- PDF viewing with annotations (highlight, underline, strikethrough, squiggly, comments)
-- Hybrid OCR: DeepSeek (online, high accuracy) / Tesseract (offline, Android only)
-- PDF to Markdown conversion with structure preservation
-- Markdown editor with live preview
-- Text-to-speech for PDFs
+**Documents**: PDF viewer with annotations (highlight, underline, strikethrough, squiggly, comments), hybrid OCR (DeepSeek online/Tesseract offline Android), PDF→Markdown conversion, Markdown editor with preview, TTS
 
-### AI & Search
-- RAG-based semantic search with citations
-- Multi-provider AI support (OpenRouter, OpenAI, Claude, Gemini, Grok)
-- User-provided API keys (stored encrypted)
-- ChromaDB vector database (self-hosted)
+**AI**: RAG semantic search with citations, multi-provider support (OpenRouter, OpenAI, Claude, Gemini, Grok), user API keys (encrypted), ChromaDB vector DB
 
-### Collaboration
-- Role-based sharing (Viewer/Editor)
-- Public link sharing
-- Realtime presence tracking
-- Supabase Realtime for sync (no Edge Functions)
+**Collaboration**: Role-based sharing (Viewer/Editor), public links, realtime presence (Supabase Realtime)
 
-### Offline Support
-- Drift sqlite3 local cache
-- Offline operation queue
-- Auto-sync when connection restored
-- Last-write-wins conflict resolution
+**Offline**: Drift sqlite3 cache, operation queue, auto-sync, last-write-wins conflict resolution
 
-## User Experience Guidelines
+## UX Principles (Critical for Implementation)
 
-- **Assume offline**: Every feature must work offline or gracefully degrade
-- **Minimize backend calls**: Frontend handles Drive operations directly
-- **Clear sync status**: Always show user if data is synced or pending
-- **Fast feedback**: Use optimistic updates with rollback on failure
-- **Error recovery**: Provide clear actions when operations fail
+1. **Assume offline**: Every feature MUST work offline or degrade gracefully
+2. **Minimize backend**: Frontend handles Drive operations directly
+3. **Sync visibility**: Always show sync status (synced/pending/error)
+4. **Optimistic updates**: Update UI immediately, rollback on failure
+5. **Actionable errors**: Provide clear recovery actions, never silent failures
 
 ## Target Users
 
-Researchers, students, and knowledge workers who need to manage PDF libraries, collaborate on documents, and search using AI while maintaining data ownership and offline access.
+Researchers, students, knowledge workers managing PDF libraries with AI assistance while maintaining data ownership and offline access.

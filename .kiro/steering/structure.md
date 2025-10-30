@@ -2,80 +2,60 @@
 inclusion: always
 ---
 
-# Project Structure & Conventions
+# Project Structure & Architecture
 
-## Directory Layout
+## Directory Structure
 
-**Monorepo**: `frontend/` (Flutter) + `backend/` (FastAPI)
+```
+frontend/lib/
+├── models/      # Data classes with fromJson/toJson
+├── services/    # Business logic (AuthService, DriveService, CacheService)
+├── screens/     # Full-page views (StatefulWidget)
+├── widgets/     # Reusable components (prefer StatelessWidget)
+└── main.dart    # Entry point
 
-### Frontend (`frontend/lib/`)
-- `models/` - Data classes with `fromJson`/`toJson`
-- `services/` - Business logic (AuthService, DriveService, CacheService, etc.)
-- `screens/` - Full-page views (typically StatefulWidget)
-- `widgets/` - Reusable UI components (prefer StatelessWidget)
-- `main.dart` - Entry point
+backend/app/
+├── routers/     # API endpoints by domain (auth.py, files.py, ai.py)
+├── services/    # Business logic (ocr_service.py, rag_service.py)
+├── models/      # Pydantic request/response models
+├── utils/       # Pure utility functions
+└── main.py      # FastAPI app setup
+```
 
-### Backend (`backend/app/`)
-- `routers/` - API endpoints grouped by domain (auth.py, files.py, ai.py)
-- `services/` - Business logic (ocr_service.py, rag_service.py)
-- `models/` - Pydantic request/response models
-- `utils/` - Pure utility functions
-- `main.py` - FastAPI app setup
+## Naming Conventions
 
-## Code Conventions
+**Dart**: Files `snake_case.dart`, Classes `PascalCase`, functions/vars `camelCase`, constants `SCREAMING_SNAKE_CASE`
+**Python**: Files `snake_case.py`, Classes `PascalCase`, functions/vars `snake_case`, constants `SCREAMING_SNAKE_CASE`
 
-### Dart (Frontend)
-- Files: `snake_case.dart`
-- Classes: `PascalCase`
-- Functions/variables: `camelCase`
-- Constants: `SCREAMING_SNAKE_CASE`
-- State: Provider pattern for dependency injection
-- Separation: Business logic in services, not widgets
+## Architecture Rules
 
-### Python (Backend)
-- Files: `snake_case.py`
-- Classes: `PascalCase`
-- Functions/variables: `snake_case`
-- Constants: `SCREAMING_SNAKE_CASE`
-- Async: Use async/await for I/O operations
-- Validation: Pydantic models for all API boundaries
-
-## Architecture Patterns
-
-### Offline-First (Frontend)
-1. Drift sqlite3 cache mirrors Google Drive structure
+### Offline-First Pattern (Critical)
+1. Drift cache mirrors Google Drive structure
 2. Offline queue stores pending operations
 3. Auto-sync on reconnection
 4. Conflict resolution: last-write-wins
+5. Every feature MUST work offline or degrade gracefully
 
-### Backend Responsibilities (Minimal)
-- RAG indexing and semantic search
-- OCR processing (DeepSeek online, Tesseract offline)
-- AI query orchestration
-- Supabase metadata management
+### Responsibility Split
+**Frontend (Primary)**: Direct Google Drive ops, local caching, all UI, offline support
+**Backend (Minimal)**: RAG/semantic search, OCR processing, AI orchestration, Supabase metadata
 
-### Frontend Responsibilities (Primary)
-- Direct Google Drive operations
-- Local caching and offline support
-- All UI and user interactions
+### Code Organization
+- Business logic in `services/`, NOT in widgets
+- Provider pattern for dependency injection
+- Async/await for all I/O (never block UI thread)
+- Pydantic models at all API boundaries
 
-### Security
+### Error Handling Pattern
+1. Optimistic UI updates (immediate feedback)
+2. Rollback on failure
+3. Clear user actions on error
+4. Never silent failures
+
+## Security Requirements
+
 - Google OAuth for authentication
 - Encrypted token storage in Supabase
-- Row Level Security policies
+- Row Level Security (RLS) policies
 - HTTPS only
-
-## Configuration
-
-- `.env` files: Never commit, use `*.template` for examples
-- `pyproject.toml`: Python deps (managed by `uv add`)
-- `pubspec.yaml`: Flutter deps (managed by `flutter pub add`)
-
-## Development Rules
-
-1. **Offline-first**: Every feature must work offline or degrade gracefully
-2. **Minimize backend**: Frontend handles Drive directly
-3. **Separation of concerns**: Services contain logic, UI components render
-4. **Async patterns**: Use async/await, never block UI thread
-5. **Error handling**: Provide clear user actions on failure
-6. **Optimistic updates**: Update UI immediately, rollback on error
+- Never commit `.env` files (use `*.template`)
