@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'config_service.dart';
+import '../models/tag.dart';
 
 /// Exception thrown when API calls fail
 class ApiException implements Exception {
@@ -96,6 +97,221 @@ class ApiService {
     } catch (e) {
       debugPrint('Health check failed: $e');
       return false;
+    }
+  }
+
+  // ==================== Tag Management ====================
+
+  /// Get all tags for a user
+  Future<List<Tag>> getTags({String? userId}) async {
+    try {
+      final uri = userId != null
+          ? Uri.parse('$_baseUrl/api/tags?user_id=$userId')
+          : Uri.parse('$_baseUrl/api/tags');
+
+      final response = await http.get(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final tagsList = data['tags'] as List;
+        return tagsList.map((json) => Tag.fromJson(json)).toList();
+      } else {
+        throw ApiException(
+          'Failed to get tags: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to get tags: $e');
+    }
+  }
+
+  /// Create a new tag
+  Future<Tag> createTag({
+    required String userId,
+    required String name,
+    String color = '#2196F3',
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/tags?user_id=$userId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name, 'color': color}),
+      );
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return Tag.fromJson(data);
+      } else {
+        throw ApiException(
+          'Failed to create tag: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to create tag: $e');
+    }
+  }
+
+  /// Update a tag
+  Future<Tag> updateTag({
+    required String tagId,
+    required String userId,
+    String? name,
+    String? color,
+  }) async {
+    try {
+      final updates = <String, dynamic>{};
+      if (name != null) updates['name'] = name;
+      if (color != null) updates['color'] = color;
+
+      final response = await http.put(
+        Uri.parse('$_baseUrl/api/tags/$tagId?user_id=$userId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(updates),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return Tag.fromJson(data);
+      } else {
+        throw ApiException(
+          'Failed to update tag: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to update tag: $e');
+    }
+  }
+
+  /// Delete a tag
+  Future<void> deleteTag({
+    required String tagId,
+    required String userId,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/api/tags/$tagId?user_id=$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode != 204) {
+        throw ApiException(
+          'Failed to delete tag: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to delete tag: $e');
+    }
+  }
+
+  /// Get tags for a file
+  Future<List<Tag>> getTagsForFile({
+    required String fileId,
+    required String userId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/tags/file/$fileId?user_id=$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final tagsList = data['tags'] as List;
+        return tagsList.map((json) => Tag.fromJson(json)).toList();
+      } else {
+        throw ApiException(
+          'Failed to get file tags: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to get file tags: $e');
+    }
+  }
+
+  /// Add a tag to a file
+  Future<void> addTagToFile({
+    required String userId,
+    required String fileId,
+    required String tagId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/tags/file?user_id=$userId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'file_id': fileId, 'tag_id': tagId}),
+      );
+
+      if (response.statusCode != 201) {
+        throw ApiException(
+          'Failed to add tag to file: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to add tag to file: $e');
+    }
+  }
+
+  /// Remove a tag from a file
+  Future<void> removeTagFromFile({
+    required String userId,
+    required String fileId,
+    required String tagId,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/api/tags/file/$fileId/$tagId?user_id=$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode != 204) {
+        throw ApiException(
+          'Failed to remove tag from file: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to remove tag from file: $e');
+    }
+  }
+
+  /// Bulk tag files
+  Future<void> bulkTagFiles({
+    required String userId,
+    required List<String> fileIds,
+    required List<String> tagIds,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/tags/bulk?user_id=$userId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'file_ids': fileIds, 'tag_ids': tagIds}),
+      );
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          'Failed to bulk tag files: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to bulk tag files: $e');
     }
   }
 }

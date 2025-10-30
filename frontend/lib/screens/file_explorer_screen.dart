@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/drive_file.dart';
 import '../services/drive_service.dart';
+import '../services/tag_service.dart';
 import '../widgets/file_card.dart';
 import '../widgets/breadcrumb_navigation.dart';
 import '../widgets/file_upload_widget.dart';
 import '../widgets/file_context_menu.dart';
+import '../widgets/tag_filter_panel.dart';
+import '../widgets/tag_selection_dialog.dart';
 import 'pdf_viewer_screen.dart';
 import 'document_scanner_screen.dart';
+import 'tag_management_screen.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -42,11 +46,24 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String? _currentFolderId;
   final Set<String> _selectedFiles = {};
   bool _showFABMenu = false;
+  bool _showTagFilter = false;
+  Set<String> _selectedTagIds = {};
+  TagFilterMode _filterMode = TagFilterMode.any;
+  String _searchQuery = '';
+  FileSortOption _sortOption = FileSortOption.name;
+  bool _sortAscending = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     FileExplorerNavigationHandler._setInstance(this);
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+      _loadFiles();
+    });
     _loadInitialFolder();
   }
 
@@ -59,6 +76,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     FileExplorerNavigationHandler._setInstance(null);
     super.dispose();
   }
@@ -101,9 +119,25 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _error = null;
       });
 
-      final files = await _driveService!.listFiles(
-        folderId ?? _currentFolderId,
-      );
+      var files = await _driveService!.listFiles(folderId ?? _currentFolderId);
+
+      // Apply search query filtering
+      if (_searchQuery.isNotEmpty) {
+        files = files
+            .where(
+              (file) =>
+                  file.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+            )
+            .toList();
+      }
+
+      // Apply tag filtering if tags are selected
+      if (_selectedTagIds.isNotEmpty) {
+        files = await _filterFilesByTags(files);
+      }
+
+      // Apply sorting
+      files = _sortFiles(files);
 
       setState(() {
         _files = files;
@@ -116,6 +150,68 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<List<DriveFile>> _filterFilesByTags(List<DriveFile> files) async {
+    try {
+      final tagService = context.read<TagService>();
+      final filteredFiles = <DriveFile>[];
+
+      for (final file in files) {
+        if (file.isFolder) {
+          filteredFiles.add(file); // Always show folders
+          continue;
+        }
+
+        final fileTags = await tagService.getTagsForFile(file.id);
+        final fileTagIds = fileTags.map((t) => t.id).toSet();
+
+        final matches = _filterMode == TagFilterMode.all
+            ? _selectedTagIds.every((id) => fileTagIds.contains(id))
+            : _selectedTagIds.any((id) => fileTagIds.contains(id));
+
+        if (matches) {
+          filteredFiles.add(file);
+        }
+      }
+
+      return filteredFiles;
+    } catch (e) {
+      return files; // Return unfiltered on error
+    }
+  }
+
+  List<DriveFile> _sortFiles(List<DriveFile> files) {
+    final sorted = List<DriveFile>.from(files);
+
+    switch (_sortOption) {
+      case FileSortOption.name:
+        sorted.sort((a, b) => a.name.compareTo(b.name));
+        break;
+      case FileSortOption.date:
+        sorted.sort((a, b) {
+          final aTime = a.modifiedTime ?? DateTime(1970);
+          final bTime = b.modifiedTime ?? DateTime(1970);
+          return aTime.compareTo(bTime);
+        });
+        break;
+      case FileSortOption.size:
+        sorted.sort((a, b) {
+          final aSize = a.size ?? 0;
+          final bSize = b.size ?? 0;
+          return aSize.compareTo(bSize);
+        });
+        break;
+      case FileSortOption.tag:
+        // Sort by number of tags (requires async, simplified here)
+        break;
+    }
+
+    if (!_sortAscending) {
+      return sorted.reversed.toList();
+    }
+
+    return sorted;
   }
 
   Future<void> _navigateToFolder(DriveFile folder) async {
@@ -384,6 +480,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Files'),
@@ -396,33 +494,226 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               )
             : null,
         actions: [
-          if (_selectedFiles.isNotEmpty)
+          if (_selectedFiles.isNotEmpty) ...[
+            IconButton(
+              icon: const Icon(Icons.label),
+              onPressed: _bulkTagFiles,
+              tooltip: 'Tag selected files',
+            ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: _showDeleteSelectedConfirmation,
               tooltip: 'Delete selected',
             ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refresh,
-            tooltip: 'Refresh',
-          ),
+          ] else ...[
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refresh,
+              tooltip: 'Refresh',
+            ),
+            // Settings menu
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'manage_tags') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TagManagementScreen(),
+                    ),
+                  ).then((_) => _loadFiles());
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'manage_tags',
+                  child: Row(
+                    children: [
+                      Icon(Icons.label, size: 20),
+                      SizedBox(width: 8),
+                      Text('Manage Tags'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
-      body: Column(
+      body: Row(
         children: [
-          // Breadcrumb navigation
-          if (_navigationPath.isNotEmpty)
-            BreadcrumbNavigation(
-              path: _navigationPath,
-              onNavigate: _navigateToFolder,
-            ),
+          Expanded(
+            child: Column(
+              children: [
+                // Breadcrumb navigation
+                if (_navigationPath.isNotEmpty)
+                  BreadcrumbNavigation(
+                    path: _navigationPath,
+                    onNavigate: _navigateToFolder,
+                  ),
 
-          // File list
-          Expanded(child: _buildFileList()),
+                // Modern toolbar with search, sort, and filter
+                _buildModernToolbar(theme),
+
+                // File list
+                Expanded(child: _buildFileList()),
+              ],
+            ),
+          ),
+
+          // Tag filter panel
+          if (_showTagFilter)
+            TagFilterPanel(
+              selectedTagIds: _selectedTagIds,
+              filterMode: _filterMode,
+              searchQuery: _searchQuery,
+              onFilterChanged: (tagIds, mode, searchQuery) {
+                setState(() {
+                  _selectedTagIds = tagIds;
+                  _filterMode = mode;
+                  _searchQuery = searchQuery;
+                });
+                _loadFiles();
+              },
+            ),
         ],
       ),
       floatingActionButton: _buildFAB(),
+    );
+  }
+
+  Widget _buildModernToolbar(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(bottom: BorderSide(color: theme.dividerColor)),
+      ),
+      child: Row(
+        children: [
+          // Search bar
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: _searchQuery.isNotEmpty
+                      ? theme.colorScheme.primary
+                      : theme.dividerColor,
+                  width: _searchQuery.isNotEmpty ? 2 : 1,
+                ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search files...',
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => _searchController.clear(),
+                          tooltip: 'Clear search',
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Sort button
+          Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+              ),
+            ),
+            child: PopupMenuButton<FileSortOption>(
+              icon: Icon(Icons.sort, color: theme.colorScheme.primary),
+              tooltip: 'Sort files',
+              onSelected: _toggleSort,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              itemBuilder: (context) => [
+                _buildSortMenuItem(FileSortOption.name, 'Name'),
+                _buildSortMenuItem(FileSortOption.date, 'Date'),
+                _buildSortMenuItem(FileSortOption.size, 'Size'),
+                _buildSortMenuItem(FileSortOption.tag, 'Tag'),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Filter button
+          Container(
+            decoration: BoxDecoration(
+              color: _showTagFilter || _selectedTagIds.isNotEmpty
+                  ? theme.colorScheme.primaryContainer
+                  : theme.colorScheme.surfaceVariant.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _showTagFilter || _selectedTagIds.isNotEmpty
+                    ? theme.colorScheme.primary
+                    : theme.dividerColor,
+                width: _showTagFilter || _selectedTagIds.isNotEmpty ? 2 : 1,
+              ),
+            ),
+            child: Stack(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    _showTagFilter ? Icons.filter_list_off : Icons.filter_list,
+                    color: _showTagFilter || _selectedTagIds.isNotEmpty
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  onPressed: () {
+                    setState(() => _showTagFilter = !_showTagFilter);
+                  },
+                  tooltip: 'Filter by tags',
+                ),
+                if (_selectedTagIds.isNotEmpty)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.error,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '${_selectedTagIds.length}',
+                        style: TextStyle(
+                          color: theme.colorScheme.onError,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -672,7 +963,66 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       }
     }
   }
+
+  Future<void> _bulkTagFiles() async {
+    if (_selectedFiles.isEmpty) return;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) =>
+          TagSelectionDialog(fileIds: _selectedFiles.toList()),
+    );
+
+    if (result == true) {
+      setState(() => _selectedFiles.clear());
+      _loadFiles();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tagged ${_selectedFiles.length} files')),
+        );
+      }
+    }
+  }
+
+  void _toggleSort(FileSortOption option) {
+    setState(() {
+      if (_sortOption == option) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortOption = option;
+        _sortAscending = true;
+      }
+    });
+    _loadFiles();
+  }
+
+  PopupMenuItem<FileSortOption> _buildSortMenuItem(
+    FileSortOption option,
+    String label,
+  ) {
+    final isSelected = _sortOption == option;
+    return PopupMenuItem(
+      value: option,
+      child: Row(
+        children: [
+          Icon(
+            isSelected
+                ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward)
+                : Icons.sort,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(label),
+          if (isSelected) const Spacer(),
+          if (isSelected) const Icon(Icons.check, size: 20),
+        ],
+      ),
+    );
+  }
 }
+
+/// Sort options for files
+enum FileSortOption { name, date, size, tag }
 
 class _CreateFolderDialog extends StatefulWidget {
   final Function(String) onCreateFolder;

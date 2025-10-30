@@ -62,7 +62,7 @@ class AnnotationService extends ChangeNotifier {
 
       if (isOnline && _syncService != null) {
         // Create annotation online (immediate sync)
-        final annotation = await _syncService!.createAnnotationOnline(
+        final annotation = await _syncService.createAnnotationOnline(
           fileId: fileId,
           pageNumber: pageNumber,
           type: type,
@@ -132,15 +132,15 @@ class AnnotationService extends ChangeNotifier {
   Future<void> syncAnnotationsOnReconnect(String fileId) async {
     if (_syncService == null || _connectivityService == null) return;
 
-    final isOnline = _connectivityService!.isOnline;
+    final isOnline = _connectivityService.isOnline;
     if (!isOnline) return;
 
     try {
       // Sync offline annotations
-      await _syncService!.syncOfflineAnnotations(fileId);
+      await _syncService.syncOfflineAnnotations(fileId);
 
       // Fetch latest annotations from server
-      await _syncService!.fetchAnnotations(fileId);
+      await _syncService.fetchAnnotations(fileId);
 
       notifyListeners();
     } catch (e) {
@@ -152,11 +152,11 @@ class AnnotationService extends ChangeNotifier {
   Future<void> fetchLatestAnnotations(String fileId) async {
     if (_syncService == null || _connectivityService == null) return;
 
-    final isOnline = _connectivityService!.isOnline;
+    final isOnline = _connectivityService.isOnline;
     if (!isOnline) return;
 
     try {
-      await _syncService!.fetchAnnotations(fileId);
+      await _syncService.fetchAnnotations(fileId);
       notifyListeners();
     } catch (e) {
       debugPrint('Error fetching latest annotations: $e');

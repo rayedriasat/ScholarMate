@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/drive_file.dart';
+import '../models/tag.dart';
 import '../services/cache_service.dart';
+import '../services/tag_service.dart';
 import 'file_context_menu.dart';
+import 'tag_chip.dart';
+import 'tag_selection_dialog.dart';
 
 /// A card widget displaying file or folder information
-class FileCard extends StatelessWidget {
+class FileCard extends StatefulWidget {
   final DriveFile file;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -28,18 +32,73 @@ class FileCard extends StatelessWidget {
   });
 
   @override
+  State<FileCard> createState() => _FileCardState();
+}
+
+class _FileCardState extends State<FileCard> {
+  List<Tag> _tags = [];
+  bool _isLoadingTags = false;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized && !widget.file.isFolder) {
+      _initialized = true;
+      _loadTags();
+    }
+  }
+
+  Future<void> _loadTags() async {
+    setState(() => _isLoadingTags = true);
+
+    try {
+      final tagService = context.read<TagService>();
+      final tags = await tagService.getTagsForFile(widget.file.id);
+
+      if (mounted) {
+        setState(() {
+          _tags = tags;
+          _isLoadingTags = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingTags = false);
+      }
+    }
+  }
+
+  Future<void> _manageTags() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) =>
+          TagSelectionDialog(fileIds: [widget.file.id], currentTags: _tags),
+    );
+
+    if (result == true) {
+      _loadTags();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: isSelected ? 8 : 2,
+      elevation: widget.isSelected ? 8 : 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isSelected
+        side: widget.isSelected
             ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -52,10 +111,10 @@ class FileCard extends StatelessWidget {
                   Stack(
                     children: [
                       _buildFileIcon(),
-                      if (file.isPdf)
+                      if (widget.file.isPdf)
                         FutureBuilder<bool>(
                           future: context.read<CacheService>().isPdfCached(
-                            file.id,
+                            widget.file.id,
                           ),
                           builder: (context, snapshot) {
                             if (snapshot.data == true) {
@@ -91,7 +150,7 @@ class FileCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          file.name,
+                          widget.file.name,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -99,7 +158,7 @@ class FileCard extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (!file.isFolder) ...[
+                        if (!widget.file.isFolder) ...[
                           const SizedBox(height: 4),
                           Text(
                             _getFileTypeLabel(),
@@ -112,29 +171,51 @@ class FileCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (file.isShared)
+                  if (widget.file.isShared)
                     Icon(Icons.people, size: 16, color: Colors.blue[600]),
                   const SizedBox(width: 8),
                   FileContextMenu(
-                    file: file,
-                    onRename: onRename,
-                    onMove: onMove,
-                    onDelete: onDelete,
-                    onShare: onShare,
+                    file: widget.file,
+                    onRename: widget.onRename,
+                    onMove: widget.onMove,
+                    onDelete: widget.onDelete,
+                    onShare: widget.onShare,
+                    onManageTags: widget.file.isFolder ? null : _manageTags,
                   ),
                 ],
               ),
 
               const SizedBox(height: 12),
 
+              // Tags section (only for files, not folders)
+              if (!widget.file.isFolder) ...[
+                if (_isLoadingTags)
+                  const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else if (_tags.isNotEmpty) ...[
+                  TagChipList(
+                    tags: _tags,
+                    small: true,
+                    maxTags: 3,
+                    onTagTap: (tag) {
+                      // Optional: Navigate to filtered view with this tag
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ],
+
               // Metadata row
               Row(
                 children: [
-                  if (!file.isFolder && file.size != null) ...[
+                  if (!widget.file.isFolder && widget.file.size != null) ...[
                     Icon(Icons.storage, size: 14, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
-                      file.formattedSize,
+                      widget.file.formattedSize,
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                     const SizedBox(width: 16),
@@ -143,7 +224,7 @@ class FileCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      _formatDate(file.modifiedTime),
+                      _formatDate(widget.file.modifiedTime),
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ),
@@ -151,7 +232,7 @@ class FileCard extends StatelessWidget {
               ),
 
               // Sync status indicator
-              if (file.syncStatus != 'synced') ...[
+              if (widget.file.syncStatus != 'synced') ...[
                 const SizedBox(height: 8),
                 _buildSyncStatusBadge(),
               ],
@@ -163,7 +244,7 @@ class FileCard extends StatelessWidget {
   }
 
   Widget _buildFileIcon() {
-    if (file.isFolder) {
+    if (widget.file.isFolder) {
       return Container(
         width: 48,
         height: 48,
@@ -178,10 +259,10 @@ class FileCard extends StatelessWidget {
     Color iconColor;
     IconData iconData;
 
-    if (file.isPdf) {
+    if (widget.file.isPdf) {
       iconColor = Colors.red[700]!;
       iconData = Icons.picture_as_pdf;
-    } else if (file.isMarkdown) {
+    } else if (widget.file.isMarkdown) {
       iconColor = Colors.green[700]!;
       iconData = Icons.description;
     } else {
@@ -201,9 +282,10 @@ class FileCard extends StatelessWidget {
   }
 
   String _getFileTypeLabel() {
-    if (file.isPdf) return 'PDF Document';
-    if (file.isMarkdown) return 'Markdown File';
-    if (file.extension != null) return '${file.extension!.toUpperCase()} File';
+    if (widget.file.isPdf) return 'PDF Document';
+    if (widget.file.isMarkdown) return 'Markdown File';
+    if (widget.file.extension != null)
+      return '${widget.file.extension!.toUpperCase()} File';
     return 'File';
   }
 
@@ -230,7 +312,7 @@ class FileCard extends StatelessWidget {
     IconData badgeIcon;
     String badgeText;
 
-    switch (file.syncStatus) {
+    switch (widget.file.syncStatus) {
       case 'pending':
         badgeColor = Colors.orange;
         badgeIcon = Icons.cloud_upload;

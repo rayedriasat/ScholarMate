@@ -8,6 +8,7 @@ class FileContextMenu extends StatelessWidget {
   final VoidCallback? onMove;
   final VoidCallback? onDelete;
   final VoidCallback? onShare;
+  final VoidCallback? onManageTags;
 
   const FileContextMenu({
     super.key,
@@ -16,6 +17,7 @@ class FileContextMenu extends StatelessWidget {
     this.onMove,
     this.onDelete,
     this.onShare,
+    this.onManageTags,
   });
 
   @override
@@ -35,6 +37,9 @@ class FileContextMenu extends StatelessWidget {
           case 'share':
             onShare?.call();
             break;
+          case 'manage_tags':
+            onManageTags?.call();
+            break;
         }
       },
       itemBuilder: (context) => [
@@ -49,6 +54,17 @@ class FileContextMenu extends StatelessWidget {
           ),
         ),
         if (!file.isFolder) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'manage_tags',
+            child: Row(
+              children: [
+                const Icon(Icons.label, size: 18),
+                const SizedBox(width: 12),
+                const Text('Manage Tags'),
+              ],
+            ),
+          ),
           const PopupMenuDivider(),
           PopupMenuItem(
             value: 'share',

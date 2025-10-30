@@ -62,3 +62,30 @@ class SyncQueue extends Table {
   TextColumn get lastError => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('pending'))();
 }
+
+/// Tags table - stores user-defined tags
+class Tags extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get name => text()();
+  TextColumn get color => text().withDefault(const Constant('#2196F3'))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// File tags table - junction table linking files to tags
+class FileTags extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get fileId => text()();
+  TextColumn get tagId => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

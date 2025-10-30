@@ -6,7 +6,9 @@ part 'database.g.dart';
 
 /// Main database class for ScholarMate
 /// Supports all platforms including web using Drift
-@DriftDatabase(tables: [Files, CachedPdfs, Annotations, SyncQueue])
+@DriftDatabase(
+  tables: [Files, CachedPdfs, Annotations, SyncQueue, Tags, FileTags],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -14,7 +16,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -31,6 +33,11 @@ class AppDatabase extends _$AppDatabase {
           // Migration from version 2 to 3: Add author fields to annotations
           await m.addColumn(annotations, annotations.authorId);
           await m.addColumn(annotations, annotations.authorName);
+        }
+        if (from < 4) {
+          // Migration from version 3 to 4: Add tags and file_tags tables
+          await m.createTable(tags);
+          await m.createTable(fileTags);
         }
       },
     );
@@ -198,6 +205,118 @@ class AppDatabase extends _$AppDatabase {
     await delete(annotations).go();
     await delete(files).go();
     await delete(syncQueue).go();
+    await delete(tags).go();
+    await delete(fileTags).go();
+  }
+
+  // Tag operations
+  Future<List<Tag>> getTags() {
+    return (select(
+      tags,
+    )..orderBy([(t) => OrderingTerm(expression: t.name)])).get();
+  }
+
+  Future<Tag?> getTag(String tagId) {
+    return (select(tags)..where((t) => t.id.equals(tagId))).getSingleOrNull();
+  }
+
+  Future<int> insertTag(TagsCompanion tag) {
+    return into(tags).insert(tag, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> updateTag(TagsCompanion tag) {
+    return (update(tags)..where((t) => t.id.equals(tag.id.value))).write(tag);
+  }
+
+  Future<int> deleteTag(String tagId) {
+    return (delete(tags)..where((t) => t.id.equals(tagId))).go();
+  }
+
+  // File tag operations
+  Future<List<FileTag>> getFileTagsByFile(String fileId) {
+    return (select(fileTags)..where((ft) => ft.fileId.equals(fileId))).get();
+  }
+
+  Future<List<FileTag>> getFileTagsByTag(String tagId) {
+    return (select(fileTags)..where((ft) => ft.tagId.equals(tagId))).get();
+  }
+
+  Future<int> insertFileTag(FileTagsCompanion fileTag) {
+    return into(fileTags).insert(fileTag, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> deleteFileTag(String fileId, String tagId) {
+    return (delete(
+      fileTags,
+    )..where((ft) => ft.fileId.equals(fileId) & ft.tagId.equals(tagId))).go();
+  }
+
+  Future<int> deleteFileTagsByFile(String fileId) {
+    return (delete(fileTags)..where((ft) => ft.fileId.equals(fileId))).go();
+  }
+
+  Future<int> deleteFileTagsByTag(String tagId) {
+    return (delete(fileTags)..where((ft) => ft.tagId.equals(tagId))).go();
+  }
+
+  // Get files by tags with filter mode
+  Future<List<File>> getFilesByTags(
+    List<String> tagIds, {
+    bool matchAll = false,
+  }) async {
+    if (tagIds.isEmpty) {
+      return getFiles();
+    }
+
+    if (!matchAll) {
+      // OR logic: files with ANY of the selected tags
+      final fileTagRecords = await (select(
+        fileTags,
+      )..where((ft) => ft.tagId.isIn(tagIds))).get();
+
+      final fileIds = fileTagRecords.map((ft) => ft.fileId).toSet().toList();
+
+      if (fileIds.isEmpty) return [];
+
+      return (select(files)
+            ..where((f) => f.id.isIn(fileIds))
+            ..orderBy([
+              (f) =>
+                  OrderingTerm(expression: f.isFolder, mode: OrderingMode.desc),
+              (f) => OrderingTerm(expression: f.name),
+            ]))
+          .get();
+    } else {
+      // AND logic: files with ALL of the selected tags
+      Set<String> fileIds = {};
+
+      for (final tagId in tagIds) {
+        final fileTagRecords = await (select(
+          fileTags,
+        )..where((ft) => ft.tagId.equals(tagId))).get();
+
+        final tagFileIds = fileTagRecords.map((ft) => ft.fileId).toSet();
+
+        if (fileIds.isEmpty) {
+          fileIds = tagFileIds;
+        } else {
+          fileIds = fileIds.intersection(tagFileIds);
+        }
+
+        if (fileIds.isEmpty) break;
+      }
+
+      if (fileIds.isEmpty) return [];
+
+      return (select(files)
+            ..where((f) => f.id.isIn(fileIds.toList()))
+            ..orderBy([
+              (f) =>
+                  OrderingTerm(expression: f.isFolder, mode: OrderingMode.desc),
+              (f) => OrderingTerm(expression: f.name),
+            ]))
+          .get();
+    }
   }
 }
 
