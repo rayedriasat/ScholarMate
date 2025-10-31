@@ -25,7 +25,7 @@ class TagUpdate(BaseModel):
 class TagResponse(TagBase):
     """Model for tag response"""
     id: UUID
-    user_id: UUID
+    user_id: str
     created_at: datetime
     updated_at: datetime
     document_count: Optional[int] = 0
@@ -45,7 +45,7 @@ class FileTagResponse(BaseModel):
     id: UUID
     file_id: str
     tag_id: UUID
-    user_id: UUID
+    user_id: str
     created_at: datetime
 
     class Config:

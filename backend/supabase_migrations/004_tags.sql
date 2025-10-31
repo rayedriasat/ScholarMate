@@ -5,7 +5,7 @@
 -- Create tags table
 CREATE TABLE IF NOT EXISTS tags (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
     name VARCHAR(50) NOT NULL,
     color VARCHAR(7) NOT NULL DEFAULT '#2196F3',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS tags (
 -- Create file_tags junction table
 CREATE TABLE IF NOT EXISTS file_tags (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
     file_id VARCHAR(255) NOT NULL,
     tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -35,34 +35,39 @@ ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE file_tags ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for tags table
-CREATE POLICY "Users can view their own tags"
-    ON tags FOR SELECT
-    USING (auth.uid()::text = user_id::text);
+-- Note: Since we're using Google sub claims as user_id (not Supabase auth.uid()),
+-- RLS policies are disabled for now. Access control is handled at the application level.
+-- In production, you should implement proper RLS based on your auth strategy.
 
-CREATE POLICY "Users can create their own tags"
-    ON tags FOR INSERT
-    WITH CHECK (auth.uid()::text = user_id::text);
+-- Temporarily disable RLS for development
+-- CREATE POLICY "Users can view their own tags"
+--     ON tags FOR SELECT
+--     USING (user_id = current_setting('app.current_user_id', true));
 
-CREATE POLICY "Users can update their own tags"
-    ON tags FOR UPDATE
-    USING (auth.uid()::text = user_id::text);
+-- CREATE POLICY "Users can create their own tags"
+--     ON tags FOR INSERT
+--     WITH CHECK (user_id = current_setting('app.current_user_id', true));
 
-CREATE POLICY "Users can delete their own tags"
-    ON tags FOR DELETE
-    USING (auth.uid()::text = user_id::text);
+-- CREATE POLICY "Users can update their own tags"
+--     ON tags FOR UPDATE
+--     USING (user_id = current_setting('app.current_user_id', true));
+
+-- CREATE POLICY "Users can delete their own tags"
+--     ON tags FOR DELETE
+--     USING (user_id = current_setting('app.current_user_id', true));
 
 -- RLS Policies for file_tags table
-CREATE POLICY "Users can view their own file tags"
-    ON file_tags FOR SELECT
-    USING (auth.uid()::text = user_id::text);
+-- CREATE POLICY "Users can view their own file tags"
+--     ON file_tags FOR SELECT
+--     USING (user_id = current_setting('app.current_user_id', true));
 
-CREATE POLICY "Users can create their own file tags"
-    ON file_tags FOR INSERT
-    WITH CHECK (auth.uid()::text = user_id::text);
+-- CREATE POLICY "Users can create their own file tags"
+--     ON file_tags FOR INSERT
+--     WITH CHECK (user_id = current_setting('app.current_user_id', true));
 
-CREATE POLICY "Users can delete their own file tags"
-    ON file_tags FOR DELETE
-    USING (auth.uid()::text = user_id::text);
+-- CREATE POLICY "Users can delete their own file tags"
+--     ON file_tags FOR DELETE
+--     USING (user_id = current_setting('app.current_user_id', true));
 
 -- Create updated_at trigger for tags
 CREATE OR REPLACE FUNCTION update_tags_updated_at()

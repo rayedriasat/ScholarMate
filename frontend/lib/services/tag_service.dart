@@ -5,12 +5,14 @@ import 'package:drift/drift.dart';
 import '../models/tag.dart' as models;
 import '../database/database.dart';
 import 'api_service.dart';
+import 'auth_service.dart';
 import 'connectivity_service.dart';
 
 /// Service for managing tags
 class TagService extends ChangeNotifier {
   final AppDatabase _database;
   final ApiService _apiService;
+  final AuthService _authService;
   final ConnectivityService _connectivityService;
 
   // Singleton instance
@@ -18,11 +20,13 @@ class TagService extends ChangeNotifier {
   factory TagService({
     required AppDatabase database,
     required ApiService apiService,
+    required AuthService authService,
     required ConnectivityService connectivityService,
   }) {
     _instance ??= TagService._internal(
       database: database,
       apiService: apiService,
+      authService: authService,
       connectivityService: connectivityService,
     );
     return _instance!;
@@ -31,9 +35,11 @@ class TagService extends ChangeNotifier {
   TagService._internal({
     required AppDatabase database,
     required ApiService apiService,
+    required AuthService authService,
     required ConnectivityService connectivityService,
   }) : _database = database,
        _apiService = apiService,
+       _authService = authService,
        _connectivityService = connectivityService;
 
   final _uuid = const Uuid();
@@ -371,7 +377,14 @@ class TagService extends ChangeNotifier {
   /// Sync tags from backend
   Future<void> _syncTagsFromBackend() async {
     try {
-      final tags = await _apiService.getTags();
+      // Get current user from auth service
+      final user = _authService.currentUser;
+      if (user == null) {
+        debugPrint('No user authenticated, skipping backend sync');
+        return;
+      }
+
+      final tags = await _apiService.getTags(userId: user.id);
 
       for (final tag in tags) {
         // Upsert to local cache

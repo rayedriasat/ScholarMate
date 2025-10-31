@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api/tags", tags=["tags"])
 
 @router.get("/", response_model=TagListResponse)
 async def get_tags(
-    user_id: UUID = Query(..., description="User UUID")
+    user_id: str = Query(..., description="User ID (Google sub claim)")
 ):
     """
     Get all tags for a user with document counts
@@ -53,7 +53,7 @@ async def get_tags(
 @router.post("/", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
 async def create_tag(
     tag: TagCreate,
-    user_id: UUID = Query(..., description="User UUID")
+    user_id: str = Query(..., description="User ID (Google sub claim)")
 ):
     """
     Create a new tag
@@ -93,7 +93,7 @@ async def create_tag(
 async def update_tag(
     tag_id: UUID,
     tag: TagUpdate,
-    user_id: UUID = Query(..., description="User UUID")
+    user_id: str = Query(..., description="User ID (Google sub claim)")
 ):
     """
     Update an existing tag
@@ -145,7 +145,7 @@ async def update_tag(
 @router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tag(
     tag_id: UUID,
-    user_id: UUID = Query(..., description="User UUID")
+    user_id: str = Query(..., description="User ID (Google sub claim)")
 ):
     """
     Delete a tag and all its file associations
@@ -174,7 +174,7 @@ async def delete_tag(
 @router.get("/file/{file_id}", response_model=FileTagsResponse)
 async def get_file_tags(
     file_id: str,
-    user_id: UUID = Query(..., description="User UUID")
+    user_id: str = Query(..., description="User ID (Google sub claim)")
 ):
     """
     Get all tags for a file
@@ -206,7 +206,7 @@ async def get_file_tags(
 @router.post("/file", response_model=FileTagResponse, status_code=status.HTTP_201_CREATED)
 async def add_tag_to_file(
     file_tag: FileTagCreate,
-    user_id: UUID = Query(..., description="User UUID")
+    user_id: str = Query(..., description="User ID (Google sub claim)")
 ):
     """
     Add a tag to a file
@@ -246,7 +246,7 @@ async def add_tag_to_file(
 async def remove_tag_from_file(
     file_id: str,
     tag_id: UUID,
-    user_id: UUID = Query(..., description="User UUID")
+    user_id: str = Query(..., description="User ID (Google sub claim)")
 ):
     """
     Remove a tag from a file
@@ -271,7 +271,7 @@ async def remove_tag_from_file(
 @router.post("/bulk", response_model=BulkTagResponse)
 async def bulk_tag_files(
     request: BulkTagRequest,
-    user_id: UUID = Query(..., description="User UUID")
+    user_id: str = Query(..., description="User ID (Google sub claim)")
 ):
     """
     Apply multiple tags to multiple files

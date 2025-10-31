@@ -124,6 +124,7 @@ class ScholarMateApp extends StatelessWidget {
           create: (context) => TagService(
             database: cacheService.database,
             apiService: ApiService(),
+            authService: context.read<AuthService>(),
             connectivityService: context.read<ConnectivityService>(),
           ),
           update: (context, cache, connectivity, previous) =>
@@ -131,6 +132,7 @@ class ScholarMateApp extends StatelessWidget {
               TagService(
                 database: cache.database,
                 apiService: ApiService(),
+                authService: context.read<AuthService>(),
                 connectivityService: connectivity,
               ),
         ),

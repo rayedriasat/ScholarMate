@@ -105,9 +105,12 @@ class ApiService {
   /// Get all tags for a user
   Future<List<Tag>> getTags({String? userId}) async {
     try {
-      final uri = userId != null
-          ? Uri.parse('$_baseUrl/api/tags?user_id=$userId')
-          : Uri.parse('$_baseUrl/api/tags');
+      // user_id is required by the backend
+      if (userId == null) {
+        throw ApiException('user_id is required to get tags');
+      }
+
+      final uri = Uri.parse('$_baseUrl/api/tags?user_id=$userId');
 
       final response = await http.get(
         uri,

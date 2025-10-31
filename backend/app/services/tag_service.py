@@ -13,7 +13,7 @@ class TagService:
     def __init__(self):
         self.supabase = get_supabase_service()
     
-    async def get_tags_by_user(self, user_id: UUID) -> List[Dict[str, Any]]:
+    async def get_tags_by_user(self, user_id: str) -> List[Dict[str, Any]]:
         """
         Get all tags for a user with document counts
         
@@ -43,7 +43,7 @@ class TagService:
     
     async def create_tag(
         self,
-        user_id: UUID,
+        user_id: str,
         name: str,
         color: str = "#2196F3"
     ) -> Dict[str, Any]:
@@ -88,7 +88,7 @@ class TagService:
     async def update_tag(
         self,
         tag_id: UUID,
-        user_id: UUID,
+        user_id: str,
         updates: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
@@ -137,7 +137,7 @@ class TagService:
     async def delete_tag(
         self,
         tag_id: UUID,
-        user_id: UUID
+        user_id: str
     ) -> bool:
         """
         Delete a tag and all its file associations
@@ -171,7 +171,7 @@ class TagService:
     
     async def add_tag_to_file(
         self,
-        user_id: UUID,
+        user_id: str,
         file_id: str,
         tag_id: UUID
     ) -> Dict[str, Any]:
@@ -221,7 +221,7 @@ class TagService:
     
     async def remove_tag_from_file(
         self,
-        user_id: UUID,
+        user_id: str,
         file_id: str,
         tag_id: UUID
     ) -> bool:
@@ -249,7 +249,7 @@ class TagService:
     
     async def get_tags_for_file(
         self,
-        user_id: UUID,
+        user_id: str,
         file_id: str
     ) -> List[Dict[str, Any]]:
         """
@@ -283,7 +283,7 @@ class TagService:
     
     async def bulk_tag_files(
         self,
-        user_id: UUID,
+        user_id: str,
         file_ids: List[str],
         tag_ids: List[UUID]
     ) -> Dict[str, Any]:
