@@ -23,7 +23,8 @@ class PdfViewerScreen extends StatefulWidget {
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
 }
 
-class _PdfViewerScreenState extends State<PdfViewerScreen> {
+class _PdfViewerScreenState extends State<PdfViewerScreen>
+    with WidgetsBindingObserver {
   final PdfViewerController _pdfViewerController = PdfViewerController();
   final GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
 
@@ -41,12 +42,32 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   // TTS state
   bool _showTtsControls = false;
   String _currentPageText = '';
+  TtsService? _ttsService;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadPdf();
     _initializeAnnotationSettings();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Get TTS service reference
+    _ttsService = context.read<TtsService>();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Stop TTS when app goes to background or is paused
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _ttsService?.stop();
+    }
   }
 
   void _initializeAnnotationSettings() {
@@ -114,6 +135,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
   @override
   void dispose() {
+    // Remove lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
+
+    // Stop TTS when closing PDF viewer (always stop, regardless of controls visibility)
+    _ttsService?.stop();
+
     // Save to Drive when closing PDF if there are annotations
     if (_annotations.isNotEmpty) {
       _savePdfWithAnnotations(uploadToDrive: true);
@@ -524,7 +551,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       _showTtsControls = !_showTtsControls;
       if (!_showTtsControls) {
         // Stop TTS when hiding controls
-        context.read<TtsService>().stop();
+        _ttsService?.stop();
       }
     });
   }
@@ -579,8 +606,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       return;
     }
 
-    final ttsService = context.read<TtsService>();
-    await ttsService.speak(
+    await _ttsService?.speak(
       _currentPageText,
       onComplete: () {
         // Auto-advance to next page when current page completes
@@ -600,7 +626,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       });
     } else {
       // Reached end of document
-      context.read<TtsService>().stop();
+      _ttsService?.stop();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

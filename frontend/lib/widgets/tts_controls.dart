@@ -36,8 +36,8 @@ class TtsControls extends StatelessWidget {
                 Slider(
                   value: ttsService.speechRate,
                   min: 0.0,
-                  max: 1.0,
-                  divisions: 10,
+                  max: 2.0, // Extended to 200%
+                  divisions: 20,
                   label: '${(ttsService.speechRate * 100).round()}%',
                   onChanged: (value) {
                     ttsService.setSpeechRate(value);
@@ -49,15 +49,155 @@ class TtsControls extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Slow',
+                      'Slow (0%)',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                     Text(
-                      'Fast',
+                      'Fast (200%)',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                // Quick speed presets
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    _SpeedPresetChip(
+                      label: '50%',
+                      value: 0.5,
+                      isSelected: (ttsService.speechRate - 0.5).abs() < 0.05,
+                      onTap: () {
+                        ttsService.setSpeechRate(0.5);
+                        setState(() {});
+                      },
+                    ),
+                    _SpeedPresetChip(
+                      label: '75%',
+                      value: 0.75,
+                      isSelected: (ttsService.speechRate - 0.75).abs() < 0.05,
+                      onTap: () {
+                        ttsService.setSpeechRate(0.75);
+                        setState(() {});
+                      },
+                    ),
+                    _SpeedPresetChip(
+                      label: '100%',
+                      value: 1.0,
+                      isSelected: (ttsService.speechRate - 1.0).abs() < 0.05,
+                      onTap: () {
+                        ttsService.setSpeechRate(1.0);
+                        setState(() {});
+                      },
+                    ),
+                    _SpeedPresetChip(
+                      label: '125%',
+                      value: 1.25,
+                      isSelected: (ttsService.speechRate - 1.25).abs() < 0.05,
+                      onTap: () {
+                        ttsService.setSpeechRate(1.25);
+                        setState(() {});
+                      },
+                    ),
+                    _SpeedPresetChip(
+                      label: '150%',
+                      value: 1.5,
+                      isSelected: (ttsService.speechRate - 1.5).abs() < 0.05,
+                      onTap: () {
+                        ttsService.setSpeechRate(1.5);
+                        setState(() {});
+                      },
+                    ),
+                    _SpeedPresetChip(
+                      label: '200%',
+                      value: 2.0,
+                      isSelected: (ttsService.speechRate - 2.0).abs() < 0.05,
+                      onTap: () {
+                        ttsService.setSpeechRate(2.0);
+                        setState(() {});
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showVoiceDialog(BuildContext context, TtsService ttsService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Voice Selection'),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            final voiceOptions = ttsService.getVoiceOptions();
+            final totalVoices = ttsService.availableVoices.length;
+
+            if (voiceOptions.isEmpty) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.voice_over_off,
+                    size: 48,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 16),
+                  Text('No voices available'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Total system voices: $totalVoices',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () async {
+                      // Reload voices
+                      await ttsService.debugPrintAllVoices();
+                      setState(() {});
+                    },
+                    child: const Text('Reload Voices'),
+                  ),
+                ],
+              );
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Available voices (${voiceOptions.length} of $totalVoices)',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
+                ...voiceOptions.map((voice) {
+                  final isSelected = ttsService.selectedVoice == voice['name'];
+
+                  return ListTile(
+                    leading: Icon(
+                      isSelected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: isSelected ? Colors.blue : Colors.grey,
+                    ),
+                    title: Text(voice['displayName']!),
+                    subtitle: Text('${voice['locale']} • ${voice['name']}'),
+                    onTap: () {
+                      ttsService.setVoice(voice['name']!);
+                      setState(() {});
+                    },
+                  );
+                }),
               ],
             );
           },
@@ -150,6 +290,16 @@ class TtsControls extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: Colors.grey[700]),
               ),
 
+              const SizedBox(width: 8),
+
+              // Voice selection
+              IconButton(
+                icon: const Icon(Icons.record_voice_over),
+                onPressed: () => _showVoiceDialog(context, ttsService),
+                tooltip: 'Voice: ${ttsService.selectedVoice ?? 'Default'}',
+                iconSize: 20,
+              ),
+
               const Spacer(),
 
               // Status indicator
@@ -181,6 +331,46 @@ class TtsControls extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Speed preset chip widget
+class _SpeedPresetChip extends StatelessWidget {
+  final String label;
+  final double value;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SpeedPresetChip({
+    required this.label,
+    required this.value,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue : Colors.grey[200],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey[400]!,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey[700],
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 }
