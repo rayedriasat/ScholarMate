@@ -482,10 +482,19 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Files'),
         elevation: 0,
+        toolbarHeight: isSmallScreen ? 48 : null, // Reduce height on mobile
+        bottom: isSmallScreen
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(0),
+                child: Container(), // Remove bottom spacing on mobile
+              )
+            : null,
         leading: _canNavigateBack
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -539,16 +548,106 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           ],
         ],
       ),
-      body: Row(
+      body: _buildResponsiveBody(theme),
+      floatingActionButton: _buildFAB(),
+    );
+  }
+
+  Widget _buildResponsiveBody(ThemeData theme) {
+    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+
+    if (isSmallScreen) {
+      // Mobile layout: Stack for overlay
+      return Stack(
+        children: [
+          // Main content
+          Column(
+            children: [
+              // Breadcrumb navigation
+              if (_navigationPath.isNotEmpty)
+                Transform.translate(
+                  offset: isSmallScreen ? const Offset(0, -4) : Offset.zero,
+                  child: BreadcrumbNavigation(
+                    path: _navigationPath,
+                    onNavigate: _navigateToFolder,
+                  ),
+                ),
+
+              // Modern toolbar with search, sort, and filter
+              _buildModernToolbar(theme),
+
+              // File list
+              Expanded(child: _buildFileList()),
+            ],
+          ),
+
+          // Tag filter panel overlay
+          if (_showTagFilter)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showTagFilter = false;
+                  });
+                },
+                child: Container(color: Colors.black.withValues(alpha: 0.3)),
+              ),
+            ),
+          if (_showTagFilter)
+            Positioned(
+              top: 0,
+              right: 0,
+              bottom: 0,
+              child: SlideTransition(
+                position:
+                    Tween<Offset>(
+                      begin: const Offset(1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent:
+                            ModalRoute.of(context)?.animation ??
+                            const AlwaysStoppedAnimation(1.0),
+                        curve: Curves.easeInOut,
+                      ),
+                    ),
+                child: TagFilterPanel(
+                  selectedTagIds: _selectedTagIds,
+                  filterMode: _filterMode,
+                  searchQuery: _searchQuery,
+                  onFilterChanged: (tagIds, mode, searchQuery) {
+                    setState(() {
+                      _selectedTagIds = tagIds;
+                      _filterMode = mode;
+                      _searchQuery = searchQuery;
+                    });
+                    _loadFiles();
+                  },
+                  onClose: () {
+                    setState(() {
+                      _showTagFilter = false;
+                    });
+                  },
+                ),
+              ),
+            ),
+        ],
+      );
+    } else {
+      // Desktop layout: Row for side panel
+      return Row(
         children: [
           Expanded(
             child: Column(
               children: [
                 // Breadcrumb navigation
                 if (_navigationPath.isNotEmpty)
-                  BreadcrumbNavigation(
-                    path: _navigationPath,
-                    onNavigate: _navigateToFolder,
+                  Transform.translate(
+                    offset: isSmallScreen ? const Offset(0, -4) : Offset.zero,
+                    child: BreadcrumbNavigation(
+                      path: _navigationPath,
+                      onNavigate: _navigateToFolder,
+                    ),
                   ),
 
                 // Modern toolbar with search, sort, and filter
@@ -574,16 +673,25 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 });
                 _loadFiles();
               },
+              onClose: () {
+                setState(() {
+                  _showTagFilter = false;
+                });
+              },
             ),
         ],
-      ),
-      floatingActionButton: _buildFAB(),
-    );
+      );
+    }
   }
 
   Widget _buildModernToolbar(ThemeData theme) {
+    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: isSmallScreen ? 10 : 12,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(bottom: BorderSide(color: theme.dividerColor)),
@@ -593,10 +701,12 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           // Search bar
           Expanded(
             child: Container(
-              height: 48,
+              height: isSmallScreen ? 38 : 43,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(24),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.5,
+                ),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _searchQuery.isNotEmpty
                       ? theme.colorScheme.primary
@@ -620,18 +730,19 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                         )
                       : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
+                  contentPadding: EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 12,
+                    vertical: isSmallScreen ? 10 : 12,
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isSmallScreen ? 8 : 12),
 
           // Sort button
           Container(
+            height: isSmallScreen ? 38 : 43,
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
@@ -643,6 +754,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               icon: Icon(Icons.sort, color: theme.colorScheme.primary),
               tooltip: 'Sort files',
               onSelected: _toggleSort,
+              constraints: BoxConstraints(
+                minHeight: isSmallScreen ? 38 : 43,
+                minWidth: isSmallScreen ? 38 : 43,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -654,14 +769,17 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: isSmallScreen ? 6 : 8),
 
           // Filter button
           Container(
+            height: isSmallScreen ? 38 : 43,
             decoration: BoxDecoration(
               color: _showTagFilter || _selectedTagIds.isNotEmpty
                   ? theme.colorScheme.primaryContainer
-                  : theme.colorScheme.surfaceVariant.withValues(alpha: 0.5),
+                  : theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.5,
+                    ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _showTagFilter || _selectedTagIds.isNotEmpty
@@ -683,6 +801,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                     setState(() => _showTagFilter = !_showTagFilter);
                   },
                   tooltip: 'Filter by tags',
+                  constraints: BoxConstraints(
+                    minHeight: isSmallScreen ? 38 : 43,
+                    minWidth: isSmallScreen ? 38 : 43,
+                  ),
                 ),
                 if (_selectedTagIds.isNotEmpty)
                   Positioned(
@@ -832,6 +954,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   Widget _buildFAB() {
+    final theme = Theme.of(context);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -841,7 +965,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             heroTag: "scan",
             onPressed: _showScanDocument,
             tooltip: 'Scan document',
-            backgroundColor: Theme.of(context).colorScheme.secondary,
+            backgroundColor: theme.colorScheme.primaryContainer,
+            foregroundColor: theme.colorScheme.onPrimaryContainer,
             child: const Icon(Icons.document_scanner),
           ),
           const SizedBox(height: 16),
@@ -849,7 +974,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             heroTag: "upload",
             onPressed: _showUploadDialog,
             tooltip: 'Upload files',
-            backgroundColor: Theme.of(context).colorScheme.secondary,
+            backgroundColor: theme.colorScheme.secondaryContainer,
+            foregroundColor: theme.colorScheme.onSecondaryContainer,
             child: const Icon(Icons.upload_file),
           ),
           const SizedBox(height: 16),
@@ -857,7 +983,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             heroTag: "folder",
             onPressed: _showCreateFolderDialog,
             tooltip: 'Create folder',
-            backgroundColor: Theme.of(context).colorScheme.secondary,
+            backgroundColor: theme.colorScheme.tertiaryContainer,
+            foregroundColor: theme.colorScheme.onTertiaryContainer,
             child: const Icon(Icons.create_new_folder),
           ),
           const SizedBox(height: 16),
@@ -872,6 +999,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             });
           },
           tooltip: _showFABMenu ? 'Close menu' : 'Add',
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
           child: AnimatedRotation(
             turns: _showFABMenu ? 0.125 : 0.0,
             duration: const Duration(milliseconds: 200),

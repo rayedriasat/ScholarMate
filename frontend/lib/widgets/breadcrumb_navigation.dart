@@ -14,13 +14,17 @@ class BreadcrumbNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: isSmallScreen ? 4 : 8,
+      ),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 1)),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        border: Border(bottom: BorderSide(color: theme.dividerColor, width: 1)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -33,9 +37,9 @@ class BreadcrumbNavigation extends StatelessWidget {
                 onTap: () => onNavigate(path.first),
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 6,
+                    vertical: isSmallScreen ? 2 : 6,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -67,23 +71,27 @@ class BreadcrumbNavigation extends StatelessWidget {
               final isLast = folder == path.last;
               return Row(
                 children: [
-                  Icon(Icons.chevron_right, size: 16, color: Colors.grey[600]),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: isLast ? null : () => onNavigate(folder),
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 6,
+                          vertical: isSmallScreen ? 2 : 6,
                         ),
                         child: Text(
                           _truncateName(folder.name, isSmallScreen),
                           style: TextStyle(
                             color: isLast
-                                ? Colors.grey[800]
-                                : Theme.of(context).colorScheme.primary,
+                                ? theme.colorScheme.onSurface
+                                : theme.colorScheme.primary,
                             fontWeight: isLast
                                 ? FontWeight.w600
                                 : FontWeight.w500,

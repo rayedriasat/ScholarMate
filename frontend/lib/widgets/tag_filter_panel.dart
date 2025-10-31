@@ -16,6 +16,7 @@ class TagFilterPanel extends StatefulWidget {
   final String searchQuery;
   final Function(Set<String> tagIds, TagFilterMode mode, String searchQuery)
   onFilterChanged;
+  final VoidCallback? onClose;
 
   const TagFilterPanel({
     super.key,
@@ -23,6 +24,7 @@ class TagFilterPanel extends StatefulWidget {
     required this.filterMode,
     required this.searchQuery,
     required this.onFilterChanged,
+    this.onClose,
   });
 
   @override
@@ -131,9 +133,10 @@ class _TagFilterPanelState extends State<TagFilterPanel>
 
   @override
   Widget build(BuildContext context) {
-    // Make panel responsive - narrower on mobile
+    // Make panel responsive - 90% width on mobile, fixed width on desktop
     final screenWidth = MediaQuery.of(context).size.width;
-    final panelWidth = screenWidth < 600 ? screenWidth * 0.85 : 320.0;
+    final isMobile = screenWidth < 600;
+    final panelWidth = isMobile ? screenWidth * 0.9 : 320.0;
     final theme = Theme.of(context);
 
     return Container(
@@ -143,7 +146,7 @@ class _TagFilterPanelState extends State<TagFilterPanel>
         border: Border(left: BorderSide(color: theme.dividerColor)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(-2, 0),
           ),
@@ -153,12 +156,17 @@ class _TagFilterPanelState extends State<TagFilterPanel>
         children: [
           _buildModernHeader(theme),
           Expanded(child: _buildTagFilterContent(theme)),
+          if (screenWidth < 600 && widget.onClose != null)
+            _buildMobileDoneButton(theme),
         ],
       ),
     );
   }
 
   Widget _buildModernHeader(ThemeData theme) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -210,6 +218,18 @@ class _TagFilterPanelState extends State<TagFilterPanel>
               onPressed: _clearFilters,
               icon: const Icon(Icons.clear_all),
               tooltip: 'Clear all filters',
+              iconSize: 20,
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.surface.withValues(
+                  alpha: 0.5,
+                ),
+              ),
+            ),
+          if (isMobile && widget.onClose != null)
+            IconButton(
+              onPressed: widget.onClose,
+              icon: const Icon(Icons.close),
+              tooltip: 'Close filters',
               iconSize: 20,
               style: IconButton.styleFrom(
                 backgroundColor: theme.colorScheme.surface.withValues(
@@ -290,9 +310,8 @@ class _TagFilterPanelState extends State<TagFilterPanel>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: theme.colorScheme.surfaceVariant.withValues(
-                    alpha: 0.3,
-                  ),
+                  fillColor: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.3),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
@@ -418,6 +437,68 @@ class _TagFilterPanelState extends State<TagFilterPanel>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildMobileDoneButton(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(top: BorderSide(color: theme.dividerColor)),
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: widget.onClose,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.check, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Done',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onPrimary,
+                  ),
+                ),
+                if (_selectedTagIds.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onPrimary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_selectedTagIds.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

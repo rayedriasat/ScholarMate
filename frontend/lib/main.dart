@@ -13,6 +13,7 @@ import 'services/annotation_service.dart';
 import 'services/ocr_service.dart';
 import 'services/tag_service.dart';
 import 'services/tts_service.dart';
+import 'services/simple_theme_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -28,13 +29,24 @@ void main() async {
   final cacheService = CacheService();
   // Database is initialized automatically when accessed
 
-  runApp(ScholarMateApp(cacheService: cacheService));
+  // Initialize theme service
+  final themeService = SimpleThemeService();
+  await themeService.initialize();
+
+  runApp(
+    ScholarMateApp(cacheService: cacheService, themeService: themeService),
+  );
 }
 
 class ScholarMateApp extends StatelessWidget {
   final CacheService cacheService;
+  final SimpleThemeService themeService;
 
-  const ScholarMateApp({super.key, required this.cacheService});
+  const ScholarMateApp({
+    super.key,
+    required this.cacheService,
+    required this.themeService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +54,7 @@ class ScholarMateApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider.value(value: cacheService),
+        ChangeNotifierProvider.value(value: themeService),
         ChangeNotifierProvider(create: (_) => ConnectivityService()),
         ChangeNotifierProxyProvider2<
           AuthService,
@@ -139,18 +152,17 @@ class ScholarMateApp extends StatelessWidget {
               ),
         ),
       ],
-      child: MaterialApp(
-        title: 'ScholarMate',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6366F1),
-            secondary: const Color(0xFF8B5CF6),
-          ),
-          useMaterial3: true,
-          appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
-        ),
-        home: const AppInitializer(),
+      child: Consumer<SimpleThemeService>(
+        builder: (context, themeService, child) {
+          return MaterialApp(
+            title: 'ScholarMate',
+            debugShowCheckedModeBanner: false,
+            theme: SimpleThemeService.lightTheme,
+            darkTheme: SimpleThemeService.darkTheme,
+            themeMode: themeService.themeMode,
+            home: const AppInitializer(),
+          );
+        },
       ),
     );
   }
