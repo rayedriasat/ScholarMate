@@ -2,13 +2,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/drive_file.dart';
 import '../services/pdf_viewer_manager.dart';
 import '../services/auth_service.dart';
 import '../services/drive_service.dart';
 import '../services/connectivity_service.dart';
+import '../services/tts_service.dart';
 import '../widgets/annotation_toolbar.dart';
 import '../widgets/annotation_list_panel.dart';
+import '../widgets/tts_controls.dart';
 
 /// Full-screen PDF viewer with navigation controls and annotations
 class PdfViewerScreen extends StatefulWidget {
@@ -34,6 +37,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   bool _showAnnotationToolbar = false;
   Color _selectedAnnotationColor = const Color(0xFFFFEB3B); // Yellow
   List<Annotation> _annotations = [];
+
+  // TTS state
+  bool _showTtsControls = false;
+  String _currentPageText = '';
 
   @override
   void initState() {
@@ -511,6 +518,110 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     );
   }
 
+  // TTS Methods
+  void _toggleTtsControls() {
+    setState(() {
+      _showTtsControls = !_showTtsControls;
+      if (!_showTtsControls) {
+        // Stop TTS when hiding controls
+        context.read<TtsService>().stop();
+      }
+    });
+  }
+
+  Future<void> _extractCurrentPageText() async {
+    try {
+      final pdfManager = context.read<PdfViewerManager>();
+      if (pdfManager.currentPdfBytes == null) {
+        setState(() {
+          _currentPageText = '';
+        });
+        return;
+      }
+
+      // Load PDF document from bytes
+      final PdfDocument document = PdfDocument(
+        inputBytes: pdfManager.currentPdfBytes!,
+      );
+
+      // Extract text from current page (page index is 0-based)
+      final String text = PdfTextExtractor(document).extractText(
+        startPageIndex: _currentPage - 1,
+        endPageIndex: _currentPage - 1,
+      );
+
+      // Clean up
+      document.dispose();
+
+      setState(() {
+        _currentPageText = text.trim();
+      });
+    } catch (e) {
+      debugPrint('Error extracting text: $e');
+      setState(() {
+        _currentPageText = '';
+      });
+    }
+  }
+
+  Future<void> _speakCurrentPage() async {
+    await _extractCurrentPageText();
+
+    if (_currentPageText.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No text found on this page'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    final ttsService = context.read<TtsService>();
+    await ttsService.speak(
+      _currentPageText,
+      onComplete: () {
+        // Auto-advance to next page when current page completes
+        if (_showTtsControls && _currentPage < _totalPages) {
+          _onTtsNextPage();
+        }
+      },
+    );
+  }
+
+  void _onTtsNextPage() {
+    if (_currentPage < _totalPages) {
+      _nextPage();
+      // Wait for page to load, then speak
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _speakCurrentPage();
+      });
+    } else {
+      // Reached end of document
+      context.read<TtsService>().stop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reached end of document'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _onTtsPreviousPage() {
+    if (_currentPage > 1) {
+      _previousPage();
+      // Wait for page to load, then speak
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _speakCurrentPage();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -543,6 +654,15 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                 color: connectivity.isOnline ? null : Colors.grey,
               );
             },
+          ),
+          // TTS toggle
+          IconButton(
+            icon: Icon(
+              _showTtsControls ? Icons.volume_off : Icons.volume_up,
+              color: _showTtsControls ? Colors.blue : null,
+            ),
+            onPressed: _toggleTtsControls,
+            tooltip: 'Read Aloud',
           ),
           // Annotation toolbar toggle
           IconButton(
@@ -667,6 +787,15 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
           return Column(
             children: [
+              // TTS Controls
+              if (_showTtsControls)
+                TtsControls(
+                  onPlay: _speakCurrentPage,
+                  onNextPage: _onTtsNextPage,
+                  onPreviousPage: _onTtsPreviousPage,
+                  canGoNext: _currentPage < _totalPages,
+                  canGoPrevious: _currentPage > 1,
+                ),
               // Search bar
               if (_isSearching)
                 Container(

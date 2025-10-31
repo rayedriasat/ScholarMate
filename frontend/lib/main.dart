@@ -12,6 +12,7 @@ import 'services/pdf_viewer_manager.dart';
 import 'services/annotation_service.dart';
 import 'services/ocr_service.dart';
 import 'services/tag_service.dart';
+import 'services/tts_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -116,6 +117,7 @@ class ScholarMateApp extends StatelessWidget {
               AnnotationService(database: cache.database, cacheService: cache),
         ),
         Provider<OCRService>(create: (context) => OCRService(ConfigService())),
+        ChangeNotifierProvider<TtsService>(create: (_) => TtsService()),
         ChangeNotifierProxyProvider2<
           CacheService,
           ConnectivityService,
