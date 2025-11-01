@@ -837,7 +837,6 @@ class DriveService extends ChangeNotifier {
   void clearAppFolderCache() {
     _appFolderId = null;
   }
-}
 
   /// List all files recursively from the app folder
   Future<List<DriveFile>> listAllFiles() async {
@@ -867,3 +866,4 @@ class DriveService extends ChangeNotifier {
       debugPrint('Error listing files in folder $folderId: $e');
     }
   }
+}

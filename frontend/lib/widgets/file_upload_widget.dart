@@ -2,7 +2,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import '../services/drive_service.dart';
+import '../services/indexing_service.dart';
+import '../services/auth_service.dart';
+import '../models/drive_file.dart';
 
 /// Widget for handling file uploads with progress tracking
 class FileUploadWidget extends StatefulWidget {
@@ -202,6 +206,8 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
   }
 
   Future<void> _uploadSingleFile(UploadTask task) async {
+    DriveFile? uploadedFile;
+    
     try {
       setState(() {
         task.status = UploadStatus.uploading;
@@ -226,7 +232,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
         }
 
         // Perform actual upload
-        await widget.driveService.uploadFileFromBytes(
+        uploadedFile = await widget.driveService.uploadFileFromBytes(
           task.file.bytes!,
           task.fileName,
           widget.parentFolderId,
@@ -257,7 +263,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
         }
 
         // Perform actual upload
-        await widget.driveService.uploadFile(
+        uploadedFile = await widget.driveService.uploadFile(
           file,
           widget.parentFolderId,
           customName: task.fileName,
@@ -275,11 +281,85 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
         task.status = UploadStatus.completed;
         task.progress = 1.0;
       });
+
+      // Trigger automatic indexing for PDF files
+      if (uploadedFile != null && _isPdfFile(task.fileName)) {
+        await _triggerAutoIndexing(uploadedFile);
+      }
     } catch (e) {
       setState(() {
         task.status = UploadStatus.failed;
         task.error = e.toString();
       });
+    }
+  }
+
+  /// Check if the file is a PDF
+  bool _isPdfFile(String fileName) {
+    return fileName.toLowerCase().endsWith('.pdf');
+  }
+
+  /// Trigger automatic indexing for uploaded PDF files
+  Future<void> _triggerAutoIndexing(DriveFile file) async {
+    try {
+      if (!mounted) return;
+
+      final indexingService = context.read<IndexingService>();
+      final authService = context.read<AuthService>();
+
+      final userId = authService.currentUser?.id;
+      if (userId == null) {
+        debugPrint('Cannot trigger indexing: User not authenticated');
+        return;
+      }
+
+      // Start indexing
+      final jobId = await indexingService.startIndexing(
+        fileId: file.id,
+        fileName: file.name,
+      );
+
+      debugPrint('Started automatic indexing for ${file.name} (job: $jobId)');
+
+      // Show notification
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Indexing started for ${file.name}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'View',
+              textColor: Colors.white,
+              onPressed: () {
+                // The indexing progress panel should already be visible
+                // This is just a placeholder for future navigation
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Failed to trigger automatic indexing: $e');
+      
+      // Show error notification
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start indexing: ${e.toString()}'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 

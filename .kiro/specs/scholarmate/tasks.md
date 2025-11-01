@@ -426,7 +426,12 @@
     - Update UI in realtime as indexing progresses
     - _Requirements: 13.9, 13.10, 13.11_
   
-  - [ ] 12.6 Trigger automatic indexing on upload
+  - [x] 12.6 Trigger automatic indexing on upload
+
+
+
+
+
     - Call indexing API when user uploads PDF with user_id
     - Show indexing started notification
     - Update UI when indexing completes or fails
