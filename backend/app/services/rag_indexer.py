@@ -320,9 +320,47 @@ class RAGIndexer:
         status: str
     ) -> None:
         """Create indexing job record in database."""
-        # TODO: Implement when ingestion_jobs table is ready
-        logger.info(f"Created job {job_id} with status {status}")
-        pass
+        try:
+            # First, get or create the file record in Supabase
+            # We need the UUID file_id, not the Drive file_id
+            file_response = self.supabase_service.client.table("files").select("id").eq("user_id", user_id).eq("drive_file_id", file_id).execute()
+            
+            if not file_response.data or len(file_response.data) == 0:
+                # File doesn't exist in Supabase yet, create it
+                file_data = {
+                    "user_id": user_id,
+                    "drive_file_id": file_id,
+                    "name": f"file_{file_id}",  # Will be updated later
+                    "mime_type": "application/pdf",
+                    "is_folder": False
+                }
+                file_response = self.supabase_service.client.table("files").insert(file_data).execute()
+                supabase_file_id = file_response.data[0]["id"]
+            else:
+                supabase_file_id = file_response.data[0]["id"]
+            
+            job_data = {
+                "user_id": user_id,
+                "file_id": supabase_file_id,
+                "job_type": "rag_indexing",
+                "status": status,
+                "progress_percent": 0,
+                "metadata": {
+                    "job_id": job_id,
+                    "drive_file_id": file_id,
+                    "chunks_processed": 0,
+                    "total_chunks": None
+                },
+                "started_at": None,
+                "completed_at": None
+            }
+            
+            self.supabase_service.client.table("ingestion_jobs").insert(job_data).execute()
+            logger.info(f"Created job {job_id} with status {status}")
+            
+        except Exception as e:
+            logger.error(f"Failed to create job record: {str(e)}")
+            # Don't fail the indexing if job tracking fails
     
     async def _update_job_status(
         self,
@@ -331,11 +369,40 @@ class RAGIndexer:
         error_message: Optional[str] = None
     ) -> None:
         """Update job status in database."""
-        # TODO: Implement when ingestion_jobs table is ready
-        logger.info(f"Updated job {job_id} status to {status}")
-        if error_message:
-            logger.error(f"Job {job_id} error: {error_message}")
-        pass
+        try:
+            # Find the job by metadata->job_id
+            job_response = self.supabase_service.client.table("ingestion_jobs").select("*").filter("metadata->>job_id", "eq", job_id).execute()
+            
+            if not job_response.data or len(job_response.data) == 0:
+                logger.warning(f"Job {job_id} not found in database")
+                return
+            
+            db_job_id = job_response.data[0]["id"]
+            
+            update_data = {
+                "status": status,
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            if status == "processing":
+                update_data["started_at"] = datetime.utcnow().isoformat()
+            elif status in ["completed", "failed"]:
+                update_data["completed_at"] = datetime.utcnow().isoformat()
+                if status == "completed":
+                    update_data["progress_percent"] = 100
+            
+            if error_message:
+                update_data["error_message"] = error_message
+            
+            self.supabase_service.client.table("ingestion_jobs").update(update_data).eq("id", db_job_id).execute()
+            logger.info(f"Updated job {job_id} status to {status}")
+            
+            if error_message:
+                logger.error(f"Job {job_id} error: {error_message}")
+                
+        except Exception as e:
+            logger.error(f"Failed to update job status: {str(e)}")
+            # Don't fail the indexing if job tracking fails
     
     async def _update_job_progress(
         self,
@@ -344,10 +411,126 @@ class RAGIndexer:
         total_chunks: int
     ) -> None:
         """Update job progress in database."""
-        # TODO: Implement when ingestion_jobs table is ready
-        progress = (chunks_processed / total_chunks * 100) if total_chunks > 0 else 0
-        logger.info(f"Job {job_id} progress: {chunks_processed}/{total_chunks} ({progress:.1f}%)")
-        pass
+        try:
+            progress = int((chunks_processed / total_chunks * 100)) if total_chunks > 0 else 0
+            
+            # Find the job by metadata->job_id
+            job_response = self.supabase_service.client.table("ingestion_jobs").select("*").filter("metadata->>job_id", "eq", job_id).execute()
+            
+            if not job_response.data or len(job_response.data) == 0:
+                logger.warning(f"Job {job_id} not found in database")
+                return
+            
+            db_job_id = job_response.data[0]["id"]
+            current_metadata = job_response.data[0].get("metadata", {})
+            
+            # Update metadata with chunks info
+            updated_metadata = {
+                **current_metadata,
+                "chunks_processed": chunks_processed,
+                "total_chunks": total_chunks
+            }
+            
+            update_data = {
+                "progress_percent": progress,
+                "metadata": updated_metadata,
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            self.supabase_service.client.table("ingestion_jobs").update(update_data).eq("id", db_job_id).execute()
+            logger.info(f"Job {job_id} progress: {chunks_processed}/{total_chunks} ({progress}%)")
+            
+        except Exception as e:
+            logger.error(f"Failed to update job progress: {str(e)}")
+            # Don't fail the indexing if job tracking fails
+    
+    async def get_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get indexing job status from database.
+        
+        Args:
+            job_id: Job ID to query
+            
+        Returns:
+            Job status dict or None if not found
+        """
+        try:
+            # Find the job by metadata->job_id
+            response = self.supabase_service.client.table("ingestion_jobs").select("*").filter("metadata->>job_id", "eq", job_id).execute()
+            
+            if response.data and len(response.data) > 0:
+                job = response.data[0]
+                metadata = job.get("metadata", {})
+                
+                # Extract chunks info from metadata
+                chunks_processed = metadata.get("chunks_processed", 0)
+                total_chunks = metadata.get("total_chunks")
+                drive_file_id = metadata.get("drive_file_id", "")
+                
+                # Return formatted response matching the JobStatus model
+                return {
+                    "job_id": job_id,
+                    "user_id": job["user_id"],
+                    "file_id": drive_file_id,  # Return Drive file ID, not Supabase UUID
+                    "status": job["status"],
+                    "chunks_processed": chunks_processed,
+                    "total_chunks": total_chunks,
+                    "progress_percentage": float(job.get("progress_percent", 0)),
+                    "error_message": job.get("error_message"),
+                    "started_at": job.get("started_at"),
+                    "completed_at": job.get("completed_at"),
+                    "created_at": job["created_at"]
+                }
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to get job status: {str(e)}")
+            return None
+    
+    async def list_user_jobs(self, user_id: str) -> list[Dict[str, Any]]:
+        """
+        List all indexing jobs for a user.
+        
+        Args:
+            user_id: User UUID
+            
+        Returns:
+            List of job status dicts
+        """
+        try:
+            response = self.supabase_service.client.table("ingestion_jobs").select("*").eq("user_id", user_id).eq("job_type", "rag_indexing").order("created_at", desc=True).execute()
+            
+            jobs = []
+            for job in response.data:
+                metadata = job.get("metadata", {})
+                
+                # Extract chunks info from metadata
+                chunks_processed = metadata.get("chunks_processed", 0)
+                total_chunks = metadata.get("total_chunks")
+                job_id = metadata.get("job_id", str(job["id"]))
+                drive_file_id = metadata.get("drive_file_id", "")
+                
+                # Return formatted response matching the JobStatus model
+                jobs.append({
+                    "job_id": job_id,
+                    "user_id": job["user_id"],
+                    "file_id": drive_file_id,  # Return Drive file ID, not Supabase UUID
+                    "status": job["status"],
+                    "chunks_processed": chunks_processed,
+                    "total_chunks": total_chunks,
+                    "progress_percentage": float(job.get("progress_percent", 0)),
+                    "error_message": job.get("error_message"),
+                    "started_at": job.get("started_at"),
+                    "completed_at": job.get("completed_at"),
+                    "created_at": job["created_at"]
+                })
+            
+            return jobs
+            
+        except Exception as e:
+            logger.error(f"Failed to list user jobs: {str(e)}")
+            return []
 
 
 # Singleton instance

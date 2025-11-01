@@ -387,7 +387,12 @@
     - Ensure Google Drive is the source of truth by fetching files directly from Drive
     - _Requirements: 13.2, 13.3, 13.4, 13.5, 13.6, 13.7_
   
-  - [ ] 12.3 Create indexing API endpoints
+  - [x] 12.3 Create indexing API endpoints
+
+
+
+
+
     - Implement POST /api/ingest/start to trigger indexing with user_id and file_id
     - Implement GET /api/ingest/status/{job_id} for status tracking with progress
     - Implement GET /api/ingest/list/{user_id} to list all indexing jobs for user
