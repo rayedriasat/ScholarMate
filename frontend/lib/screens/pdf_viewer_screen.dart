@@ -15,9 +15,19 @@ import '../widgets/tts_controls.dart';
 
 /// Full-screen PDF viewer with navigation controls and annotations
 class PdfViewerScreen extends StatefulWidget {
-  final DriveFile file;
+  final DriveFile? file;
+  final String? fileId;
+  final String? fileName;
+  final int? initialPage;
 
-  const PdfViewerScreen({super.key, required this.file});
+  const PdfViewerScreen({
+    super.key,
+    this.file,
+    this.fileId,
+    this.fileName,
+    this.initialPage,
+  }) : assert(file != null || (fileId != null && fileName != null),
+            'Either file or both fileId and fileName must be provided');
 
   @override
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
@@ -50,6 +60,35 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     WidgetsBinding.instance.addObserver(this);
     _loadPdf();
     _initializeAnnotationSettings();
+    
+    // Navigate to initial page if specified (from citation)
+    if (widget.initialPage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _pdfViewerController.jumpToPage(widget.initialPage!);
+        
+        // Show a snackbar indicating navigation from citation
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.bookmark, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Navigated to page ${widget.initialPage} from citation',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.blue,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -94,7 +133,19 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
 
   Future<void> _loadPdf({bool forceRefresh = false}) async {
     final pdfManager = context.read<PdfViewerManager>();
-    await pdfManager.loadPdf(widget.file, forceRefresh: forceRefresh);
+    
+    // If file is provided directly, use it
+    if (widget.file != null) {
+      await pdfManager.loadPdf(widget.file!, forceRefresh: forceRefresh);
+    } else if (widget.fileId != null) {
+      // Otherwise, create a DriveFile from fileId and fileName
+      final driveFile = DriveFile(
+        id: widget.fileId!,
+        name: widget.fileName!,
+        mimeType: 'application/pdf',
+      );
+      await pdfManager.loadPdf(driveFile, forceRefresh: forceRefresh);
+    }
   }
 
   Future<void> _refreshPdf() async {
@@ -141,8 +192,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     // Stop TTS when closing PDF viewer (always stop, regardless of controls visibility)
     _ttsService?.stop();
 
-    // Save to Drive when closing PDF if there are annotations
-    if (_annotations.isNotEmpty) {
+    // Save to Drive when closing PDF if there are annotations and we have a file ID
+    final fileId = widget.file?.id ?? widget.fileId;
+    if (_annotations.isNotEmpty && fileId != null) {
       _savePdfWithAnnotations(uploadToDrive: true);
     }
     _pdfViewerController.dispose();
@@ -295,9 +347,18 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
       // Convert to Uint8List
       final Uint8List pdfBytes = Uint8List.fromList(bytes);
 
+      // Get file ID (from either file object or fileId parameter)
+      final fileId = widget.file?.id ?? widget.fileId;
+      final fileName = widget.file?.name ?? widget.fileName;
+      
+      if (fileId == null) {
+        debugPrint('Cannot save PDF: file ID is null');
+        return;
+      }
+
       // Update the cached PDF with annotations
       final cacheService = context.read<PdfViewerManager>().cacheService;
-      await cacheService.cachePdfBytes(widget.file.id, pdfBytes);
+      await cacheService.cachePdfBytes(fileId, pdfBytes);
 
       debugPrint('PDF with annotations saved to cache');
 
@@ -309,9 +370,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
         if (connectivityService.isOnline) {
           try {
             await driveService.updateFile(
-              widget.file.id,
+              fileId,
               pdfBytes,
-              widget.file.name,
+              fileName ?? 'document.pdf',
             );
             debugPrint('PDF with annotations uploaded to Google Drive');
           } catch (e) {
@@ -656,14 +717,50 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.file.name,
+              widget.fileName ?? widget.file?.name ?? 'PDF Document',
               style: const TextStyle(fontSize: 16),
               overflow: TextOverflow.ellipsis,
             ),
             if (_totalPages > 0)
-              Text(
-                'Page $_currentPage of $_totalPages',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              Row(
+                children: [
+                  Text(
+                    'Page $_currentPage of $_totalPages',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  if (widget.initialPage != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.bookmark,
+                            size: 10,
+                            color: Colors.blue[700],
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'From citation',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.blue[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
           ],
         ),

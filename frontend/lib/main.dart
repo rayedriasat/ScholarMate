@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'database/database.dart';
 import 'services/auth_service.dart';
 import 'services/config_service.dart';
 import 'services/api_service.dart';
@@ -58,6 +59,7 @@ class ScholarMateApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider.value(value: cacheService),
         ChangeNotifierProvider.value(value: themeService),
+        Provider<AppDatabase>(create: (_) => cacheService.database),
         ChangeNotifierProvider(create: (_) => ConnectivityService()),
         ChangeNotifierProxyProvider2<
           AuthService,

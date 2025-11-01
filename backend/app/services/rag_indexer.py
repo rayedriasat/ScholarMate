@@ -344,14 +344,17 @@ class RAGIndexer:
     ) -> None:
         """Create indexing job record in database."""
         try:
+            # Convert Google user ID to Supabase UUID if needed
+            supabase_user_id = await self._get_or_create_user_uuid(user_id)
+            
             # First, get or create the file record in Supabase
             # We need the UUID file_id, not the Drive file_id
-            file_response = self.supabase_service.client.table("files").select("id").eq("user_id", user_id).eq("drive_file_id", file_id).execute()
+            file_response = self.supabase_service.client.table("files").select("id").eq("user_id", supabase_user_id).eq("drive_file_id", file_id).execute()
             
             if not file_response.data or len(file_response.data) == 0:
                 # File doesn't exist in Supabase yet, create it
                 file_data = {
-                    "user_id": user_id,
+                    "user_id": supabase_user_id,
                     "drive_file_id": file_id,
                     "name": file_name or f"file_{file_id}",
                     "mime_type": "application/pdf",
@@ -363,7 +366,7 @@ class RAGIndexer:
                 supabase_file_id = file_response.data[0]["id"]
             
             job_data = {
-                "user_id": user_id,
+                "user_id": supabase_user_id,
                 "file_id": supabase_file_id,
                 "job_type": "rag_indexing",
                 "status": status,
@@ -371,6 +374,7 @@ class RAGIndexer:
                 "metadata": {
                     "job_id": job_id,
                     "drive_file_id": file_id,
+                    "google_user_id": user_id,  # Store original Google ID for reference
                     "chunks_processed": 0,
                     "total_chunks": None,
                     "retry_count": 0,
@@ -386,6 +390,38 @@ class RAGIndexer:
         except Exception as e:
             logger.error(f"Failed to create job record: {str(e)}")
             raise  # Raise error since job creation is critical
+    
+    async def _get_or_create_user_uuid(self, google_user_id: str) -> str:
+        """
+        Get Supabase UUID for a Google user ID, or create user if doesn't exist.
+        
+        Args:
+            google_user_id: Google user ID (numeric string)
+            
+        Returns:
+            Supabase user UUID
+        """
+        try:
+            # Try to find existing user by google_sub
+            user_response = self.supabase_service.client.table("users").select("id").eq("google_sub", google_user_id).execute()
+            
+            if user_response.data and len(user_response.data) > 0:
+                return user_response.data[0]["id"]
+            
+            # User doesn't exist, create a minimal user record
+            # Note: In production, this should be created during authentication
+            logger.warning(f"User with google_sub {google_user_id} not found, creating minimal record")
+            user_data = {
+                "google_sub": google_user_id,
+                "email": f"user_{google_user_id}@temp.local",  # Placeholder email
+                "name": f"User {google_user_id}"
+            }
+            create_response = self.supabase_service.client.table("users").insert(user_data).execute()
+            return create_response.data[0]["id"]
+            
+        except Exception as e:
+            logger.error(f"Failed to get/create user UUID: {str(e)}")
+            raise ValueError(f"Failed to resolve user ID: {str(e)}")
     
     async def _update_job_status(
         self,
@@ -555,13 +591,16 @@ class RAGIndexer:
         List all indexing jobs for a user.
         
         Args:
-            user_id: User UUID
+            user_id: User ID (Google ID or Supabase UUID)
             
         Returns:
             List of job status dicts
         """
         try:
-            response = self.supabase_service.client.table("ingestion_jobs").select("*").eq("user_id", user_id).eq("job_type", "rag_indexing").order("created_at", desc=True).execute()
+            # Convert Google user ID to Supabase UUID if needed
+            supabase_user_id = await self._get_or_create_user_uuid(user_id)
+            
+            response = self.supabase_service.client.table("ingestion_jobs").select("*").eq("user_id", supabase_user_id).eq("job_type", "rag_indexing").order("created_at", desc=True).execute()
             
             jobs = []
             for job in response.data:

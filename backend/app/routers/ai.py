@@ -11,9 +11,13 @@ from app.models.ai import (
     ChatResponse,
     EmbeddingRequest,
     EmbeddingResponse,
-    TestGROQResponse
+    TestGROQResponse,
+    RAGChatRequest,
+    RAGChatResponse,
+    Citation
 )
 from app.services.groq_service import get_groq_service
+from app.services.rag_query_service import get_rag_query_service
 from groq import APIError, RateLimitError, APIConnectionError
 
 logger = logging.getLogger(__name__)
@@ -154,4 +158,100 @@ async def generate_embeddings(request: EmbeddingRequest) -> EmbeddingResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate embeddings"
+        )
+
+
+@router.post("/chat-rag", response_model=RAGChatResponse)
+async def rag_chat(request: RAGChatRequest) -> RAGChatResponse:
+    """
+    RAG-based chat with source filtering and citations.
+    
+    This endpoint performs semantic search on the user's indexed documents,
+    filters by selected sources if specified, and generates an AI response
+    with citations to the source documents.
+    
+    Args:
+        request: RAGChatRequest with question, user_id, and optional file filters
+        
+    Returns:
+        RAGChatResponse with AI answer and citations
+        
+    Raises:
+        HTTPException: For validation errors, GROQ errors, or service failures
+    """
+    try:
+        logger.info(
+            f"RAG chat request from user {request.user_id}: {request.question[:100]}... "
+            f"(filters: {len(request.selected_file_ids) if request.selected_file_ids else 0} files, top_k: {request.top_k})"
+        )
+        
+        # Validate request
+        if not request.question.strip():
+            raise ValueError("Question cannot be empty")
+        
+        if not request.user_id.strip():
+            raise ValueError("User ID is required")
+        
+        # Get RAG query service
+        rag_service = get_rag_query_service()
+        
+        # Perform RAG query with source filtering
+        response = await rag_service.query(
+            question=request.question,
+            user_id=request.user_id,
+            selected_file_ids=request.selected_file_ids,
+            top_k=request.top_k
+        )
+        
+        # Convert to Pydantic models
+        citations = [
+            Citation(
+                file_id=c.file_id,
+                file_name=c.file_name,
+                page_number=c.page_number,
+                snippet=c.snippet
+            )
+            for c in response.citations
+        ]
+        
+        logger.info(
+            f"RAG chat completed for user {request.user_id}: "
+            f"{len(citations)} citations, {len(response.message)} chars"
+        )
+        
+        return RAGChatResponse(
+            message=response.message,
+            citations=citations,
+            timestamp=response.timestamp
+        )
+        
+    except ValueError as e:
+        logger.error(f"Invalid RAG chat request: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except RateLimitError as e:
+        logger.error(f"GROQ rate limit exceeded in RAG chat: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="GROQ API rate limit exceeded. Please try again later."
+        )
+    except APIConnectionError as e:
+        logger.error(f"GROQ API connection error in RAG chat: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to connect to GROQ API. Please try again later."
+        )
+    except APIError as e:
+        logger.error(f"GROQ API error in RAG chat: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"GROQ API error: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in RAG chat: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while processing your question"
         )

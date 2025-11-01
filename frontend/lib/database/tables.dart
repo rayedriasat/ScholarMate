@@ -89,3 +89,39 @@ class FileTags extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Chat source preferences table - stores selected sources for AI chat
+class ChatSourcePreferences extends Table {
+  TextColumn get userId => text()();
+  TextColumn get fileId => text()();
+  DateTimeColumn get selectedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {userId, fileId};
+}
+
+/// Chat conversations table - stores chat conversation metadata
+class ChatConversations extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get title => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get selectedSourceIds => text()(); // JSON array of file IDs
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Chat messages table - stores individual chat messages
+class ChatMessages extends Table {
+  TextColumn get id => text()();
+  TextColumn get conversationId => text()();
+  TextColumn get content => text()();
+  BoolColumn get isUser => boolean()();
+  DateTimeColumn get timestamp => dateTime()();
+  TextColumn get citations => text().nullable()(); // JSON array of citations
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

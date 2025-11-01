@@ -47,3 +47,26 @@ class TestGROQResponse(BaseModel):
     model: Optional[str] = Field(None, description="Model name if successful")
     response: Optional[str] = Field(None, description="Test response if successful")
     error: Optional[str] = Field(None, description="Error message if failed")
+
+
+class RAGChatRequest(BaseModel):
+    """Request for RAG-based chat with source filtering."""
+    question: str = Field(..., description="User's question")
+    user_id: str = Field(..., description="User UUID")
+    selected_file_ids: Optional[List[str]] = Field(None, description="Optional list of file IDs to filter sources")
+    top_k: int = Field(5, ge=1, le=20, description="Number of chunks to retrieve (1-20)")
+
+
+class Citation(BaseModel):
+    """Citation reference to source document."""
+    file_id: str = Field(..., description="File UUID")
+    file_name: str = Field(..., description="File name")
+    page_number: int = Field(..., description="Page number in document")
+    snippet: str = Field("", description="Text snippet from the source")
+
+
+class RAGChatResponse(BaseModel):
+    """Response from RAG-based chat."""
+    message: str = Field(..., description="AI-generated answer")
+    citations: List[Citation] = Field(..., description="List of source citations")
+    timestamp: str = Field(..., description="Response timestamp (ISO format)")

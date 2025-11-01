@@ -200,7 +200,11 @@ class ChromaService:
         Returns:
             Query results with documents, metadatas, distances, and ids
         """
-        collection = self.get_or_create_user_collection(user_id)
+        # Get collection with default embedding function
+        from chromadb.utils import embedding_functions
+        default_ef = embedding_functions.DefaultEmbeddingFunction()
+        
+        collection = self.get_or_create_user_collection(user_id, embedding_function=default_ef)
         
         results = collection.query(
             query_texts=query_texts,

@@ -6,6 +6,7 @@ from .encryption_service import EncryptionService, get_encryption_service
 from .supabase_service import SupabaseService, get_supabase_service
 from .groq_service import GROQService, get_groq_service
 from .rag_indexer import RAGIndexer, get_rag_indexer
+from .rag_query_service import RAGQueryService, get_rag_query_service
 
 __all__ = [
     "ChromaService",
@@ -20,4 +21,6 @@ __all__ = [
     "get_groq_service",
     "RAGIndexer",
     "get_rag_indexer",
+    "RAGQueryService",
+    "get_rag_query_service",
 ]

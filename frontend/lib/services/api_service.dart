@@ -430,4 +430,44 @@ class ApiService {
       throw ApiException('Failed to reindex file: $e');
     }
   }
+
+  // ==================== AI Chat ====================
+
+  /// Send a chat message with RAG and source filtering
+  Future<Map<String, dynamic>> sendChatMessage({
+    required String question,
+    required String userId,
+    List<String>? selectedFileIds,
+    int topK = 5,
+  }) async {
+    try {
+      final requestBody = {
+        'question': question,
+        'user_id': userId,
+        'top_k': topK,
+      };
+
+      if (selectedFileIds != null && selectedFileIds.isNotEmpty) {
+        requestBody['selected_file_ids'] = selectedFileIds;
+      }
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/ai/chat-rag'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw ApiException(
+          'Failed to send chat message: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to send chat message: $e');
+    }
+  }
 }

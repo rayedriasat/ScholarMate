@@ -442,8 +442,17 @@
 
 ## Phase 11: AI Chat with RAG, Source Selection, and Clickable Citations (Testable Checkpoint)
 
-- [ ] 13. Implement AI chat with semantic search and source filtering using GROQ
-  - [ ] 13.1 Create RAGQueryService with LangChain and GROQ
+- [x] 13. Implement AI chat with semantic search and source filtering using GROQ
+
+
+  - [x] 13.1 Create RAGQueryService with LangChain and GROQ
+
+
+
+
+
+
+
     - Implement query() method for end-to-end RAG pipeline with source filtering
     - Integrate LangChain RetrievalQA chain for question answering using GROQ
     - Implement retrieveContext() to query user's ChromaDB collection with metadata filtering
@@ -454,7 +463,11 @@
     - Ensure user isolation (only query user's own collection)
     - _Requirements: 14.3, 14.4, 14.5, 14.6, 14.13_
   
-  - [ ] 13.2 Create AI chat API endpoint with source filtering
+  - [x] 13.2 Create AI chat API endpoint with source filtering
+
+
+
+
     - Implement POST /api/ai/chat endpoint accepting question, user_id, and selected_file_ids
     - Filter retrieval results to only include chunks from selected sources using metadata
     - Return AI response with citations array containing {file_id, file_name, page_number}
@@ -462,19 +475,23 @@
     - Ensure user isolation (only query user's own collection)
     - _Requirements: 14.3, 14.5, 14.7, 14.13_
   
-  - [ ] 13.3 Build modern chat interface with source selection in Flutter
-    - Create chat screen with message list and input field
-    - Add source selection panel showing user's files and folders
-    - Implement checkboxes for selecting/deselecting sources
-    - Show selected source count in chat input area
-    - Design message bubbles (user vs AI) with modern styling
-    - Show typing indicator while AI is responding
-    - Display citations as clickable chips below AI messages with file name and page number
-    - Implement smooth scrolling and animations
-    - Make responsive for all screen sizes
+  - [x] 13.3 Build modern chat interface with source selection in Flutter
+    - Create chat screen with message list and input field ✅
+    - Add source selection panel showing user's files and folders ✅
+    - Implement checkboxes for selecting/deselecting sources ✅
+    - Show selected source count in chat input area ✅
+    - Design message bubbles (user vs AI) with modern styling ✅
+    - Show typing indicator while AI is responding ✅
+    - Display citations as clickable chips below AI messages with file name and page number ✅
+    - Implement smooth scrolling and animations ✅
+    - Make responsive for all screen sizes ✅
     - _Requirements: 14.1, 14.2, 14.8_
   
-  - [ ] 13.4 Implement clickable citations with PDF navigation
+  - [x] 13.4 Implement clickable citations with PDF navigation
+
+
+
+
     - Make citation chips clickable with tap gesture
     - WHEN user clicks citation, open PDF viewer using syncfusion_flutter_pdfviewer
     - Navigate to the referenced page_number using jumpToPage() method
@@ -483,21 +500,34 @@
     - Handle errors if file is not cached (download from Google Drive first)
     - _Requirements: 14.8, 14.9, 14.10_
   
-  - [ ] 13.5 Implement source selection persistence
+  - [x] 13.5 Implement source selection persistence
+
+
+
+
     - Store selected sources in local Drift database
     - Load previous source selection when opening chat
     - Allow "Select All" and "Clear All" options
     - Show visual indicator for selected sources
     - _Requirements: 14.12_
   
-  - [ ] 13.6 Add save chat response feature
+  - [x] 13.6 Add save chat response feature
+
+
+
+
+
     - Implement "Save as Note" button on AI messages
     - Create Markdown file with chat response and citations
     - Save to Google Drive in Notes folder
     - Show success notification
     - _Requirements: 14.11_
   
-  - [ ] 13.7 Add chat history and context
+  - [x] 13.7 Add chat history and context
+
+
+
+
     - Store chat history with source selection in local database
     - Display previous conversations in sidebar
     - Allow continuing previous chats with same source selection

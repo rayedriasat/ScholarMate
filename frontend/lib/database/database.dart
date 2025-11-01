@@ -7,7 +7,7 @@ part 'database.g.dart';
 /// Main database class for ScholarMate
 /// Supports all platforms including web using Drift
 @DriftDatabase(
-  tables: [Files, CachedPdfs, Annotations, SyncQueue, Tags, FileTags],
+  tables: [Files, CachedPdfs, Annotations, SyncQueue, Tags, FileTags, ChatSourcePreferences, ChatConversations, ChatMessages],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -16,7 +16,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -38,6 +38,15 @@ class AppDatabase extends _$AppDatabase {
           // Migration from version 3 to 4: Add tags and file_tags tables
           await m.createTable(tags);
           await m.createTable(fileTags);
+        }
+        if (from < 5) {
+          // Migration from version 4 to 5: Add chat_source_preferences table
+          await m.createTable(chatSourcePreferences);
+        }
+        if (from < 6) {
+          // Migration from version 5 to 6: Add chat history tables
+          await m.createTable(chatConversations);
+          await m.createTable(chatMessages);
         }
       },
     );
@@ -317,6 +326,125 @@ class AppDatabase extends _$AppDatabase {
             ]))
           .get();
     }
+  }
+
+  // Chat source preference operations
+  Future<List<ChatSourcePreference>> getChatSourcePreferences(String userId) {
+    return (select(chatSourcePreferences)
+          ..where((csp) => csp.userId.equals(userId))
+          ..orderBy([(csp) => OrderingTerm(expression: csp.selectedAt, mode: OrderingMode.desc)]))
+        .get();
+  }
+
+  Future<Set<String>> getSelectedSourceFileIds(String userId) async {
+    final prefs = await getChatSourcePreferences(userId);
+    return prefs.map((p) => p.fileId).toSet();
+  }
+
+  Future<int> saveChatSourcePreference(String userId, String fileId) {
+    return into(chatSourcePreferences).insert(
+      ChatSourcePreferencesCompanion(
+        userId: Value(userId),
+        fileId: Value(fileId),
+        selectedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  Future<void> saveChatSourcePreferences(String userId, Set<String> fileIds) async {
+    await batch((batch) {
+      // Clear existing preferences for this user
+      batch.deleteWhere(
+        chatSourcePreferences,
+        (csp) => csp.userId.equals(userId),
+      );
+      
+      // Insert new preferences
+      for (final fileId in fileIds) {
+        batch.insert(
+          chatSourcePreferences,
+          ChatSourcePreferencesCompanion(
+            userId: Value(userId),
+            fileId: Value(fileId),
+            selectedAt: Value(DateTime.now()),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
+  }
+
+  Future<int> removeChatSourcePreference(String userId, String fileId) {
+    return (delete(chatSourcePreferences)
+          ..where((csp) => csp.userId.equals(userId) & csp.fileId.equals(fileId)))
+        .go();
+  }
+
+  Future<int> clearChatSourcePreferences(String userId) {
+    return (delete(chatSourcePreferences)
+          ..where((csp) => csp.userId.equals(userId)))
+        .go();
+  }
+
+  // Chat conversation operations
+  Future<List<ChatConversation>> getChatConversations(String userId) {
+    return (select(chatConversations)
+          ..where((cc) => cc.userId.equals(userId))
+          ..orderBy([(cc) => OrderingTerm(expression: cc.updatedAt, mode: OrderingMode.desc)]))
+        .get();
+  }
+
+  Future<ChatConversation?> getChatConversation(String conversationId) {
+    return (select(chatConversations)
+          ..where((cc) => cc.id.equals(conversationId)))
+        .getSingleOrNull();
+  }
+
+  Future<int> insertChatConversation(ChatConversationsCompanion conversation) {
+    return into(chatConversations).insert(conversation, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> updateChatConversation(ChatConversationsCompanion conversation) {
+    return (update(chatConversations)
+          ..where((cc) => cc.id.equals(conversation.id.value)))
+        .write(conversation);
+  }
+
+  Future<int> deleteChatConversation(String conversationId) async {
+    // Delete all messages in the conversation first
+    await (delete(chatMessages)
+          ..where((cm) => cm.conversationId.equals(conversationId)))
+        .go();
+    
+    // Then delete the conversation
+    return (delete(chatConversations)
+          ..where((cc) => cc.id.equals(conversationId)))
+        .go();
+  }
+
+  // Chat message operations
+  Future<List<ChatMessage>> getChatMessages(String conversationId) {
+    return (select(chatMessages)
+          ..where((cm) => cm.conversationId.equals(conversationId))
+          ..orderBy([(cm) => OrderingTerm(expression: cm.timestamp)]))
+        .get();
+  }
+
+  Future<int> insertChatMessage(ChatMessagesCompanion message) {
+    return into(chatMessages).insert(message, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> deleteChatMessage(String messageId) {
+    return (delete(chatMessages)
+          ..where((cm) => cm.id.equals(messageId)))
+        .go();
+  }
+
+  Future<int> deleteChatMessagesByConversation(String conversationId) {
+    return (delete(chatMessages)
+          ..where((cm) => cm.conversationId.equals(conversationId)))
+        .go();
   }
 }
 
