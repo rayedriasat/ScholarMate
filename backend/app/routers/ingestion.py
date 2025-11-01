@@ -3,7 +3,7 @@ Ingestion router for RAG indexing endpoints.
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, status, Path
+from fastapi import APIRouter, HTTPException, status, Path, BackgroundTasks
 
 from app.models.ingestion import (
     StartIndexingRequest,
@@ -21,35 +21,51 @@ router = APIRouter(prefix="/api/ingest", tags=["Ingestion"])
 
 
 @router.post("/start", response_model=StartIndexingResponse)
-async def start_indexing(request: StartIndexingRequest) -> StartIndexingResponse:
+async def start_indexing(
+    request: StartIndexingRequest,
+    background_tasks: BackgroundTasks
+) -> StartIndexingResponse:
     """
-    Start indexing a file for RAG.
+    Start indexing a file for RAG in the background.
+    
+    This endpoint creates a job record and immediately returns, while the actual
+    indexing happens asynchronously in the background with retry logic.
     
     Args:
         request: StartIndexingRequest with user_id, file_id, and optional file_name
+        background_tasks: FastAPI BackgroundTasks for async processing
         
     Returns:
         StartIndexingResponse with job_id and status
         
     Raises:
-        HTTPException: For validation or indexing errors
+        HTTPException: For validation or job creation errors
     """
     try:
         logger.info(f"Starting indexing for file {request.file_id}, user {request.user_id}")
         
         rag_indexer = get_rag_indexer()
         
-        # Start indexing job
+        # Create indexing job (returns immediately)
         job_id = await rag_indexer.index_file(
             file_id=request.file_id,
             user_id=request.user_id,
             file_name=request.file_name
         )
         
+        # Schedule background processing with retry logic
+        background_tasks.add_task(
+            rag_indexer.process_indexing_job,
+            job_id=job_id,
+            retry_count=0
+        )
+        
+        logger.info(f"Indexing job {job_id} scheduled for background processing")
+        
         return StartIndexingResponse(
             job_id=job_id,
-            status="processing",
-            message=f"Indexing started for file {request.file_id}"
+            status="pending",
+            message=f"Indexing job created for file {request.file_id}. Processing will begin shortly."
         )
         
     except ValueError as e:
@@ -62,7 +78,7 @@ async def start_indexing(request: StartIndexingRequest) -> StartIndexingResponse
         logger.error(f"Failed to start indexing: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to start indexing job"
+            detail="Failed to create indexing job"
         )
 
 
@@ -146,14 +162,19 @@ async def list_user_jobs(
 @router.post("/reindex/{file_id}", response_model=ReindexResponse)
 async def reindex_file(
     file_id: str = Path(..., description="File ID to reindex"),
-    request: ReindexRequest = None
+    request: ReindexRequest = None,
+    background_tasks: BackgroundTasks = None
 ) -> ReindexResponse:
     """
-    Manually reindex a file (delete old embeddings and create new ones).
+    Manually reindex a file (delete old embeddings and create new ones) in the background.
+    
+    This endpoint creates a reindexing job and immediately returns, while the actual
+    reindexing happens asynchronously in the background with retry logic.
     
     Args:
         file_id: File ID to reindex
         request: ReindexRequest with user_id and optional file_name
+        background_tasks: FastAPI BackgroundTasks for async processing
         
     Returns:
         ReindexResponse with job_id and status
@@ -169,17 +190,30 @@ async def reindex_file(
         
         rag_indexer = get_rag_indexer()
         
-        # Start reindexing job
-        job_id = await rag_indexer.reindex_file(
+        # Delete existing embeddings first (synchronous)
+        rag_indexer.chroma_service.delete_documents_by_file(request.user_id, file_id)
+        
+        # Create new indexing job (returns immediately)
+        job_id = await rag_indexer.index_file(
             file_id=file_id,
             user_id=request.user_id,
             file_name=request.file_name
         )
         
+        # Schedule background processing with retry logic
+        if background_tasks:
+            background_tasks.add_task(
+                rag_indexer.process_indexing_job,
+                job_id=job_id,
+                retry_count=0
+            )
+        
+        logger.info(f"Reindexing job {job_id} scheduled for background processing")
+        
         return ReindexResponse(
             job_id=job_id,
-            status="processing",
-            message=f"Reindexing started for file {file_id}"
+            status="pending",
+            message=f"Reindexing job created for file {file_id}. Processing will begin shortly."
         )
         
     except ValueError as e:

@@ -400,7 +400,11 @@
     - Ensure all endpoints enforce user isolation (only access own data)
     - _Requirements: 13.1, 13.10, 13.12_
   
-  - [ ] 12.4 Implement async job processing with progress tracking
+  - [x] 12.4 Implement async job processing with progress tracking
+
+
+
+
     - Create background task queue for indexing jobs
     - Track job status in ingestion_jobs table (pending, processing, completed, failed)
     - Update progress (chunks_processed, total_chunks, progress_percentage)

@@ -7,6 +7,7 @@ import os
 import io
 import logging
 import uuid
+import asyncio
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
@@ -20,6 +21,11 @@ from .drive_service import get_drive_service
 from .supabase_service import get_supabase_service
 
 logger = logging.getLogger(__name__)
+
+# Configuration for retry logic
+MAX_RETRIES = 3
+INITIAL_RETRY_DELAY = 1  # seconds
+MAX_RETRY_DELAY = 60  # seconds
 
 
 class RAGIndexer:
@@ -59,7 +65,8 @@ class RAGIndexer:
         file_name: Optional[str] = None
     ) -> str:
         """
-        Start indexing job for a file.
+        Start indexing job for a file (creates job record only).
+        Actual processing happens in background via process_indexing_job.
         
         Args:
             file_id: Google Drive file ID
@@ -70,32 +77,64 @@ class RAGIndexer:
             Job ID for tracking indexing progress
             
         Raises:
-            ValueError: If file cannot be indexed
+            ValueError: If job cannot be created
         """
         job_id = str(uuid.uuid4())
         
         try:
-            logger.info(f"Starting indexing job {job_id} for file {file_id}, user {user_id}")
+            logger.info(f"Creating indexing job {job_id} for file {file_id}, user {user_id}")
             
-            # Create job record in database
+            # Create job record in database with pending status
             await self._create_indexing_job(
                 job_id=job_id,
                 user_id=user_id,
                 file_id=file_id,
-                status="pending"
+                status="pending",
+                file_name=file_name
             )
+            
+            logger.info(f"Indexing job {job_id} created successfully")
+            return job_id
+            
+        except Exception as e:
+            logger.error(f"Failed to create indexing job: {str(e)}")
+            raise ValueError(f"Failed to create indexing job: {str(e)}")
+    
+    async def process_indexing_job(
+        self,
+        job_id: str,
+        retry_count: int = 0
+    ) -> None:
+        """
+        Process an indexing job in the background with retry logic.
+        This method runs asynchronously and handles all the heavy lifting.
+        
+        Args:
+            job_id: Job ID to process
+            retry_count: Current retry attempt (for exponential backoff)
+        """
+        try:
+            logger.info(f"Processing indexing job {job_id} (attempt {retry_count + 1}/{MAX_RETRIES + 1})")
+            
+            # Get job details from database
+            job_data = await self.get_job_status(job_id)
+            if not job_data:
+                logger.error(f"Job {job_id} not found in database")
+                return
+            
+            user_id = job_data["user_id"]
+            file_id = job_data["file_id"]
+            
+            # Update job status to processing
+            await self._update_job_status(job_id, "processing")
             
             # Fetch file from Google Drive (source of truth)
             logger.info(f"Fetching file {file_id} from Google Drive")
             file_bytes = await self.drive_service.get_file_bytes(file_id, user_id)
             
-            # Get file metadata if not provided
-            if not file_name:
-                metadata = await self.drive_service.get_file_metadata(file_id, user_id)
-                file_name = metadata.get("name", f"file_{file_id}")
-            
-            # Update job status to processing
-            await self._update_job_status(job_id, "processing")
+            # Get file metadata
+            metadata = await self.drive_service.get_file_metadata(file_id, user_id)
+            file_name = metadata.get("name", f"file_{file_id}")
             
             # Extract and chunk text
             logger.info(f"Extracting and chunking text from {file_name}")
@@ -121,16 +160,30 @@ class RAGIndexer:
             await self._update_job_status(job_id, "completed")
             
             logger.info(f"Indexing job {job_id} completed successfully")
-            return job_id
             
         except Exception as e:
-            logger.error(f"Indexing job {job_id} failed: {str(e)}")
-            await self._update_job_status(
-                job_id=job_id,
-                status="failed",
-                error_message=str(e)
-            )
-            raise ValueError(f"Failed to index file: {str(e)}")
+            logger.error(f"Indexing job {job_id} failed (attempt {retry_count + 1}): {str(e)}")
+            
+            # Implement exponential backoff retry logic
+            if retry_count < MAX_RETRIES:
+                # Calculate delay with exponential backoff
+                delay = min(INITIAL_RETRY_DELAY * (2 ** retry_count), MAX_RETRY_DELAY)
+                logger.info(f"Retrying job {job_id} in {delay} seconds (attempt {retry_count + 2}/{MAX_RETRIES + 1})")
+                
+                # Update job metadata with retry info
+                await self._update_job_retry_info(job_id, retry_count + 1, str(e))
+                
+                # Schedule retry after delay
+                await asyncio.sleep(delay)
+                await self.process_indexing_job(job_id, retry_count + 1)
+            else:
+                # Max retries exceeded, mark as failed
+                logger.error(f"Job {job_id} failed after {MAX_RETRIES + 1} attempts")
+                await self._update_job_status(
+                    job_id=job_id,
+                    status="failed",
+                    error_message=f"Failed after {MAX_RETRIES + 1} attempts: {str(e)}"
+                )
     
     async def extract_and_chunk_text(
         self,
@@ -277,38 +330,7 @@ class RAGIndexer:
         """
         return self.chroma_service.get_or_create_user_collection(user_id)
     
-    async def reindex_file(
-        self,
-        file_id: str,
-        user_id: str,
-        file_name: Optional[str] = None
-    ) -> str:
-        """
-        Reindex a file (delete old embeddings and create new ones).
-        
-        Args:
-            file_id: Google Drive file ID
-            user_id: User UUID
-            file_name: Optional file name
-            
-        Returns:
-            Job ID for tracking
-        """
-        try:
-            logger.info(f"Reindexing file {file_id} for user {user_id}")
-            
-            # Delete existing embeddings for this file
-            self.chroma_service.delete_documents_by_file(user_id, file_id)
-            
-            # Index the file again
-            job_id = await self.index_file(file_id, user_id, file_name)
-            
-            logger.info(f"Reindexing job {job_id} started for file {file_id}")
-            return job_id
-            
-        except Exception as e:
-            logger.error(f"Failed to reindex file {file_id}: {str(e)}")
-            raise ValueError(f"Reindexing failed: {str(e)}")
+
     
     # Helper methods for job tracking
     
@@ -317,7 +339,8 @@ class RAGIndexer:
         job_id: str,
         user_id: str,
         file_id: str,
-        status: str
+        status: str,
+        file_name: Optional[str] = None
     ) -> None:
         """Create indexing job record in database."""
         try:
@@ -330,7 +353,7 @@ class RAGIndexer:
                 file_data = {
                     "user_id": user_id,
                     "drive_file_id": file_id,
-                    "name": f"file_{file_id}",  # Will be updated later
+                    "name": file_name or f"file_{file_id}",
                     "mime_type": "application/pdf",
                     "is_folder": False
                 }
@@ -349,7 +372,9 @@ class RAGIndexer:
                     "job_id": job_id,
                     "drive_file_id": file_id,
                     "chunks_processed": 0,
-                    "total_chunks": None
+                    "total_chunks": None,
+                    "retry_count": 0,
+                    "last_error": None
                 },
                 "started_at": None,
                 "completed_at": None
@@ -360,7 +385,7 @@ class RAGIndexer:
             
         except Exception as e:
             logger.error(f"Failed to create job record: {str(e)}")
-            # Don't fail the indexing if job tracking fails
+            raise  # Raise error since job creation is critical
     
     async def _update_job_status(
         self,
@@ -442,6 +467,43 @@ class RAGIndexer:
             
         except Exception as e:
             logger.error(f"Failed to update job progress: {str(e)}")
+            # Don't fail the indexing if job tracking fails
+    
+    async def _update_job_retry_info(
+        self,
+        job_id: str,
+        retry_count: int,
+        error_message: str
+    ) -> None:
+        """Update job retry information in database."""
+        try:
+            # Find the job by metadata->job_id
+            job_response = self.supabase_service.client.table("ingestion_jobs").select("*").filter("metadata->>job_id", "eq", job_id).execute()
+            
+            if not job_response.data or len(job_response.data) == 0:
+                logger.warning(f"Job {job_id} not found in database")
+                return
+            
+            db_job_id = job_response.data[0]["id"]
+            current_metadata = job_response.data[0].get("metadata", {})
+            
+            # Update metadata with retry info
+            updated_metadata = {
+                **current_metadata,
+                "retry_count": retry_count,
+                "last_error": error_message
+            }
+            
+            update_data = {
+                "metadata": updated_metadata,
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            self.supabase_service.client.table("ingestion_jobs").update(update_data).eq("id", db_job_id).execute()
+            logger.info(f"Job {job_id} retry info updated: attempt {retry_count}")
+            
+        except Exception as e:
+            logger.error(f"Failed to update job retry info: {str(e)}")
             # Don't fail the indexing if job tracking fails
     
     async def get_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:

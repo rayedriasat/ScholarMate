@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-async def test_ingestion_endpoints():
+def test_ingestion_endpoints():
     """Test the ingestion API endpoints."""
     
     print("=" * 60)

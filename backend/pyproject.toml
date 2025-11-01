@@ -26,3 +26,9 @@ dependencies = [
     "supabase>=2.22.0",
     "uvicorn>=0.38.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+]
