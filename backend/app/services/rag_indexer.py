@@ -149,6 +149,18 @@ class RAGIndexer:
             
             # Generate embeddings and store
             logger.info(f"Generating embeddings for {len(documents)} chunks")
+            
+            # Handle empty documents (PDF with no extractable text)
+            if len(documents) == 0:
+                logger.warning(f"No chunks created from {file_name} - PDF may be empty or contain only images")
+                await self._update_job_status(
+                    job_id,
+                    "completed",
+                    error_message="No text content extracted from PDF. The file may be empty or contain only images."
+                )
+                logger.info(f"Indexing job {job_id} completed with no content")
+                return
+            
             await self.store_embeddings(
                 documents=documents,
                 user_id=user_id,
@@ -287,6 +299,11 @@ class RAGIndexer:
             job_id: Job ID for progress tracking
         """
         try:
+            # Safety check: don't try to store empty documents
+            if not documents or len(documents) == 0:
+                logger.warning(f"Attempted to store 0 documents for file {file_id} - skipping")
+                return
+            
             # Generate embeddings (returns None for ChromaDB default)
             embeddings = await self.generate_embeddings(documents)
             

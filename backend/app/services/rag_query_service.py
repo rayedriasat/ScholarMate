@@ -14,6 +14,7 @@ from langchain_core.documents import Document
 
 from .chroma_service import get_chroma_service
 from .groq_service import get_groq_service
+from .supabase_service import get_supabase_service
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,7 @@ class RAGQueryService:
         """Initialize RAG query service with required services."""
         self.chroma_service = get_chroma_service()
         self.groq_service = get_groq_service()
+        self.supabase_service = get_supabase_service()
         
         # Initialize GROQ chat model for LangChain
         groq_api_key = os.getenv("GROQ_API_KEY")
@@ -143,7 +145,7 @@ Answer:""",
         
         Args:
             question: User's question
-            user_id: User UUID
+            user_id: User UUID or Google sub ID (will be converted to UUID)
             selected_file_ids: Optional list of file IDs to filter sources
             top_k: Number of chunks to retrieve
             
@@ -156,10 +158,15 @@ Answer:""",
         try:
             logger.info(f"RAG query for user {user_id}: {question[:100]}...")
             
+            # Convert Google user ID to Supabase UUID if needed
+            # This handles both UUID format and Google sub format
+            resolved_user_id = await self._get_or_create_user_uuid(user_id)
+            logger.debug(f"Resolved user_id {user_id} to UUID {resolved_user_id}")
+            
             # Step 1: Retrieve relevant context with source filtering
             retrieved_chunks = await self.retrieve_context(
                 question=question,
-                user_id=user_id,
+                user_id=resolved_user_id,
                 selected_file_ids=selected_file_ids,
                 top_k=top_k
             )
@@ -377,6 +384,51 @@ Answer:""",
             ChromaDB Collection object
         """
         return self.chroma_service.get_or_create_user_collection(user_id)
+    
+    async def _get_or_create_user_uuid(self, google_user_id: str) -> str:
+        """
+        Get Supabase UUID for a Google user ID, or create user if doesn't exist.
+        
+        This handles the case where frontend passes Google sub IDs (numeric strings)
+        but backend needs Supabase UUIDs for database operations.
+        
+        Args:
+            google_user_id: Google sub claim (e.g., "100368505623607269813")
+            
+        Returns:
+            Supabase UUID string
+            
+        Raises:
+            ValueError: If user lookup/creation fails
+        """
+        try:
+            # Try to find existing user by google_sub
+            user_response = self.supabase_service.client.table("users").select("id").eq("google_sub", google_user_id).execute()
+            
+            if user_response.data and len(user_response.data) > 0:
+                uuid = user_response.data[0]["id"]
+                logger.debug(f"Found Supabase UUID {uuid} for Google user {google_user_id}")
+                return uuid
+            
+            # User not found - create minimal user record
+            logger.warning(f"User with Google ID {google_user_id} not found, creating minimal record")
+            user_data = {
+                "google_sub": google_user_id,
+                "email": f"user_{google_user_id}@temp.local",
+                "name": f"User {google_user_id}"
+            }
+            create_response = self.supabase_service.client.table("users").insert(user_data).execute()
+            
+            if not create_response.data or len(create_response.data) == 0:
+                raise ValueError("Failed to create user record")
+            
+            uuid = create_response.data[0]["id"]
+            logger.info(f"Created user record with UUID {uuid} for Google user {google_user_id}")
+            return uuid
+            
+        except Exception as e:
+            logger.error(f"Failed to resolve user ID for {google_user_id}: {str(e)}")
+            raise ValueError(f"Failed to resolve user ID: {str(e)}")
 
 
 # Singleton instance
