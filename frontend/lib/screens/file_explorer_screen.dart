@@ -3,15 +3,18 @@ import 'package:provider/provider.dart';
 import '../models/drive_file.dart';
 import '../services/drive_service.dart';
 import '../services/tag_service.dart';
+import '../services/sharing_service.dart';
 import '../widgets/file_card.dart';
 import '../widgets/breadcrumb_navigation.dart';
 import '../widgets/file_upload_widget.dart';
 import '../widgets/file_context_menu.dart';
 import '../widgets/tag_filter_panel.dart';
 import '../widgets/tag_selection_dialog.dart';
+import '../widgets/sharing_dialog.dart';
 import 'pdf_viewer_screen.dart';
 import 'document_scanner_screen.dart';
 import 'tag_management_screen.dart';
+import 'shared_files_screen.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -469,13 +472,74 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
   }
 
-  void _shareFile(DriveFile file) {
-    // TODO: Implement sharing (will be added in Phase 12)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('File sharing will be implemented in Phase 12'),
-      ),
-    );
+  Future<void> _shareFile(DriveFile file) async {
+    try {
+      // Load current collaborators
+      final sharingService = context.read<SharingService>();
+      final collaborators = await sharingService.listCollaborators(file.id);
+
+      if (!mounted) return;
+
+      // Show sharing dialog
+      await showDialog(
+        context: context,
+        builder: (context) => SharingDialog(
+          fileName: file.name,
+          fileId: file.id,
+          currentCollaborators: collaborators,
+          onShare: (email, role) async {
+            // Share on Google Drive
+            final permissionId = await _driveService!.shareFile(
+              file.id,
+              email,
+              role,
+            );
+
+            // Store metadata in Supabase
+            await sharingService.shareFile(
+              driveFileId: file.id,
+              fileName: file.name,
+              mimeType: file.mimeType ?? 'application/octet-stream',
+              sharedWithEmail: email,
+              permission: role,
+              isFolder: file.isFolder,
+              sizeBytes: file.size,
+            );
+          },
+          onRemoveCollaborator: (email) async {
+            // Get permissions from Drive to find the permission ID
+            final permissions = await _driveService!.listFilePermissions(
+              file.id,
+            );
+            final permission = permissions.firstWhere(
+              (p) => p['emailAddress'] == email,
+              orElse: () => throw Exception('Permission not found'),
+            );
+
+            // Remove from Google Drive
+            await _driveService!.removeFilePermission(
+              file.id,
+              permission['id'],
+            );
+
+            // Remove from Supabase
+            await sharingService.removeShare(
+              driveFileId: file.id,
+              sharedWithEmail: email,
+            );
+          },
+        ),
+      );
+
+      // Refresh file list to update shared status
+      await _loadFiles();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -530,9 +594,27 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       builder: (context) => const TagManagementScreen(),
                     ),
                   ).then((_) => _loadFiles());
+                } else if (value == 'shared_with_me') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SharedFilesScreen(),
+                    ),
+                  );
                 }
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'shared_with_me',
+                  child: Row(
+                    children: [
+                      Icon(Icons.folder_shared, size: 20),
+                      SizedBox(width: 8),
+                      Text('Shared with Me'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 const PopupMenuItem(
                   value: 'manage_tags',
                   child: Row(

@@ -13,6 +13,8 @@ import 'services/annotation_service.dart';
 import 'services/ocr_service.dart';
 import 'services/tag_service.dart';
 import 'services/tts_service.dart';
+import 'services/sharing_service.dart';
+import 'services/permission_service.dart';
 import 'services/simple_theme_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -150,6 +152,25 @@ class ScholarMateApp extends StatelessWidget {
                 authService: context.read<AuthService>(),
                 connectivityService: connectivity,
               ),
+        ),
+        ChangeNotifierProxyProvider<AuthService, SharingService>(
+          create: (context) =>
+              SharingService(authService: context.read<AuthService>()),
+          update: (context, auth, previous) =>
+              previous ?? SharingService(authService: auth),
+        ),
+        ChangeNotifierProxyProvider2<
+          AuthService,
+          SharingService,
+          PermissionService
+        >(
+          create: (context) => PermissionService(
+            authService: context.read<AuthService>(),
+            sharingService: context.read<SharingService>(),
+          ),
+          update: (context, auth, sharing, previous) =>
+              previous ??
+              PermissionService(authService: auth, sharingService: sharing),
         ),
       ],
       child: Consumer<SimpleThemeService>(

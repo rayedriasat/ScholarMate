@@ -545,8 +545,8 @@
 
 ## Phase 13: Sharing & Permissions (Testable Checkpoint)
 
-- [ ] 15. Implement file sharing with role-based permissions
-  - [ ] 15.1 Create sharing dialog UI
+- [x] 15. Implement file sharing with role-based permissions
+  - [x] 15.1 Create sharing dialog UI
     - Build modern sharing dialog with email input
     - Add role selector (Viewer/Editor) with descriptions
     - Show list of current collaborators with roles
@@ -554,19 +554,19 @@
     - Design with modern card-based layout
     - _Requirements: 15.1, 15.2_
   
-  - [ ] 15.2 Implement Google Drive sharing integration
+  - [x] 15.2 Implement Google Drive sharing integration
     - Create shareFile() method in DriveService
     - Set Google Drive permissions based on role
     - Handle sharing errors gracefully
     - _Requirements: 15.3_
   
-  - [ ] 15.3 Store sharing metadata in Supabase
+  - [x] 15.3 Store sharing metadata in Supabase
     - Save share records in shares table
     - Track shared_with_email, role, shared_by_user_id
     - Implement recursive folder sharing logic
     - _Requirements: 15.4, 15.5_
   
-  - [ ] 15.4 Implement permission enforcement in UI
+  - [x] 15.4 Implement permission enforcement in UI
     - Check user role before showing edit options
     - Disable annotation tools for Viewer role
     - Hide file operation options for Viewer role
@@ -574,7 +574,7 @@
     - Allow resharing only for Editor role
     - _Requirements: 15.6, 15.7_
   
-  - [ ] 15.5 Add shared files view
+  - [x] 15.5 Add shared files view
     - Create "Shared with me" section in file explorer
     - Display shared files with owner information
     - Show role badge on shared files
