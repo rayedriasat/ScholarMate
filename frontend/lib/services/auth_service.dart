@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user.dart';
 import 'storage_service.dart';
+import 'api_service.dart';
 
 /// Authentication service handling Google OAuth (google_sign_in ^7.x)
 class AuthService extends ChangeNotifier {
@@ -31,8 +32,9 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   // Scopes required by the app (request Drive file access when needed)
+  // Using drive scope to access all files in ScholarMate folder (including manually uploaded ones)
   static const List<String> _scopes = <String>[
-    'https://www.googleapis.com/auth/drive.file',
+    'https://www.googleapis.com/auth/drive',
   ];
 
   StreamSubscription<GoogleSignInAuthenticationEvent>? _authEventsSub;
@@ -100,6 +102,9 @@ class AuthService extends ChangeNotifier {
           // Store user data locally
           await StorageService.storeUser(user);
 
+          // Store user and tokens in backend database
+          await _storeUserInBackend(user);
+
           _authStateController.add(user);
           notifyListeners();
         } catch (e) {
@@ -163,6 +168,9 @@ class AuthService extends ChangeNotifier {
 
       // Store user data locally
       await StorageService.storeUser(user);
+
+      // Store user and tokens in backend database
+      await _storeUserInBackend(user);
 
       _authStateController.add(user);
       notifyListeners();
@@ -319,6 +327,25 @@ class AuthService extends ChangeNotifier {
       debugPrint('Failed to restore user from storage: $e');
       // Clear corrupted data
       await StorageService.clearUser();
+    }
+  }
+
+  /// Store user and tokens in backend database
+  Future<void> _storeUserInBackend(User user) async {
+    try {
+      await ApiService().storeTokens(
+        userId: user.id,
+        email: user.email,
+        name: user.displayName,
+        pictureUrl: user.photoUrl,
+        accessToken: user.accessToken ?? '',
+        idToken: user.idToken,
+      );
+      debugPrint('Successfully stored user in backend: ${user.email}');
+    } catch (e) {
+      debugPrint('Failed to store user in backend: $e');
+      // Don't throw - this shouldn't prevent local authentication
+      // The user can still use the app offline, and we'll retry on next API call
     }
   }
 

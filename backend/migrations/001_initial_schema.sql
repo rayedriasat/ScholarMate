@@ -1,5 +1,6 @@
--- ScholarMate Database Schema
+-- ScholarMate Complete Database Schema
 -- This migration creates all tables, RLS policies, and indexes for the metadata database
+-- Applied as migration: 001_complete_schema
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -89,6 +90,7 @@ CREATE TABLE IF NOT EXISTS shares (
     file_id UUID NOT NULL REFERENCES files(id) ON DELETE CASCADE,
     owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     shared_with_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    shared_with_email TEXT NOT NULL, -- Email of the person being shared with
     share_link TEXT UNIQUE, -- For public link sharing
     permission TEXT NOT NULL, -- 'viewer', 'editor'
     is_public BOOLEAN DEFAULT FALSE,

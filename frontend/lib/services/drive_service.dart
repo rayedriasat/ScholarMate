@@ -662,17 +662,23 @@ class DriveService extends ChangeNotifier {
   }
 
   /// Share a file with another user
-  Future<void> shareFile(String fileId, String email, String role) async {
+  /// Returns the permission ID for the created permission
+  Future<String> shareFile(String fileId, String email, String role) async {
     final accessToken = await _getAccessToken();
+
+    // Map our role names to Google Drive roles
+    final driveRole = role == 'editor' ? 'writer' : 'reader';
 
     final permissionData = {
       'type': 'user',
-      'role': role, // 'reader' or 'writer'
+      'role': driveRole,
       'emailAddress': email,
     };
 
     final response = await http.post(
-      Uri.parse('$_baseUrl/files/$fileId/permissions'),
+      Uri.parse(
+        '$_baseUrl/files/$fileId/permissions?sendNotificationEmail=true',
+      ),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
@@ -680,9 +686,52 @@ class DriveService extends ChangeNotifier {
       body: json.encode(permissionData),
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['id'] as String;
+    } else {
       throw Exception(
         'Failed to share file: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  /// List all permissions for a file
+  Future<List<Map<String, dynamic>>> listFilePermissions(String fileId) async {
+    final accessToken = await _getAccessToken();
+
+    final response = await http.get(
+      Uri.parse(
+        '$_baseUrl/files/$fileId/permissions?fields=permissions(id,emailAddress,role,type,displayName,photoLink)',
+      ),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return List<Map<String, dynamic>>.from(data['permissions'] ?? []);
+    } else {
+      throw Exception(
+        'Failed to list permissions: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  /// Remove a permission from a file
+  Future<void> removeFilePermission(String fileId, String permissionId) async {
+    final accessToken = await _getAccessToken();
+
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/files/$fileId/permissions/$permissionId'),
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception(
+        'Failed to remove permission: ${response.statusCode} ${response.body}',
       );
     }
   }
