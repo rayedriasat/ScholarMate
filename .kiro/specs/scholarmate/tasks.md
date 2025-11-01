@@ -359,7 +359,7 @@
 ## Phase 10: RAG Indexing with LangChain and GROQ (Testable Checkpoint)
 
 - [ ] 12. Implement RAG indexing system with LangChain
-  - [ ] 12.1 Set up ChromaDB with per-user collections
+  - [x] 12.1 Set up ChromaDB with per-user collections
     - Add ChromaDB dependencies to pyproject.toml (chromadb, langchain, langchain-chroma, langchain-groq)
     - Install and configure ChromaDB (self-hosted)
     - Install LangChain and LangChain-Chroma integration
@@ -368,8 +368,15 @@
     - Create BackendDriveService for fetching files from Google Drive using user's encrypted tokens
     - Test user isolation by verifying separate collections per user
     - _Requirements: 13.2, 13.6, 13.12_
+    - **✅ COMPLETED** - ChromaDB service with per-user collections, Drive service for file fetching, comprehensive tests passing. See backend/docs/CHROMADB_IMPLEMENTATION.md
   
-  - [ ] 12.2 Create RAGIndexer service with LangChain and GROQ
+  - [x] 12.2 Create RAGIndexer service with LangChain and GROQ
+
+
+
+
+
+
     - Implement indexFile() to start indexing jobs with user_id and file_id
     - Integrate LangChain PyPDFLoader for PDF text extraction
     - Implement extractAndChunkText() using LangChain RecursiveCharacterTextSplitter
