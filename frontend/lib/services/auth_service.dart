@@ -97,6 +97,13 @@ class AuthService extends ChangeNotifier {
         _account = event.user;
         try {
           final user = await _createUserFromAccount(event.user);
+
+          // Check if this is a different user than the current one
+          if (_currentUser != null && _currentUser!.id != user.id) {
+            debugPrint('Different user signing in, clearing old data');
+            await _clearUserData();
+          }
+
           _currentUser = user;
 
           // Store user data locally
@@ -112,14 +119,7 @@ class AuthService extends ChangeNotifier {
           // Don't update state if we can't get proper user data
         }
       case GoogleSignInAuthenticationEventSignOut():
-        _account = null;
-        _currentUser = null;
-
-        // Clear stored user data
-        await StorageService.clearUser();
-
-        _authStateController.add(null);
-        notifyListeners();
+        await _handleSignOut();
     }
   }
 
@@ -136,6 +136,12 @@ class AuthService extends ChangeNotifier {
     _setLoading(true);
 
     try {
+      // Clear any existing user data first
+      if (_currentUser != null) {
+        debugPrint('Clearing existing user data before new sign-in');
+        await _clearUserData();
+      }
+
       if (!GoogleSignIn.instance.supportsAuthenticate()) {
         throw UnsupportedError(
           'Explicit authenticate() is not supported on this platform',
@@ -174,6 +180,8 @@ class AuthService extends ChangeNotifier {
 
       _authStateController.add(user);
       notifyListeners();
+
+      debugPrint('Sign-in completed successfully for user: ${user.email}');
       return user;
     } on GoogleSignInException catch (e) {
       debugPrint('Sign-in failed: ${e.code} ${e.description}');
@@ -196,14 +204,48 @@ class AuthService extends ChangeNotifier {
     _setLoading(true);
     try {
       await GoogleSignIn.instance.signOut();
-
-      // Clear stored user data
-      await StorageService.clearUser();
     } catch (e) {
       debugPrint('Sign-out failed: $e');
       rethrow;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  /// Handle sign out event
+  Future<void> _handleSignOut() async {
+    debugPrint('Handling sign out for user: ${_currentUser?.email}');
+
+    // Clear user data
+    await _clearUserData();
+
+    _account = null;
+    _currentUser = null;
+
+    _authStateController.add(null);
+    notifyListeners();
+  }
+
+  /// Clear all user data (local and backend)
+  Future<void> _clearUserData() async {
+    try {
+      // Delete tokens from backend if user exists
+      if (_currentUser != null) {
+        debugPrint('Deleting backend tokens for user: ${_currentUser!.email}');
+        try {
+          await ApiService().deleteTokens(userId: _currentUser!.id);
+        } catch (e) {
+          debugPrint('Failed to delete backend tokens: $e');
+          // Continue with local cleanup even if backend fails
+        }
+      }
+
+      // Clear local storage
+      await StorageService.clearUser();
+
+      debugPrint('User data cleared successfully');
+    } catch (e) {
+      debugPrint('Error clearing user data: $e');
     }
   }
 
@@ -319,9 +361,17 @@ class AuthService extends ChangeNotifier {
     try {
       final storedUser = await StorageService.getStoredUser();
       if (storedUser != null) {
-        _currentUser = storedUser;
-        _authStateController.add(storedUser);
-        debugPrint('Restored user from storage: ${storedUser.email}');
+        // Verify tokens are still valid
+        if (await StorageService.areTokensValid()) {
+          _currentUser = storedUser;
+          _authStateController.add(storedUser);
+          debugPrint('Restored user from storage: ${storedUser.email}');
+        } else {
+          debugPrint('Stored tokens expired for user: ${storedUser.email}');
+          await StorageService.clearUser();
+        }
+      } else {
+        debugPrint('No stored user found');
       }
     } catch (e) {
       debugPrint('Failed to restore user from storage: $e');
@@ -333,15 +383,45 @@ class AuthService extends ChangeNotifier {
   /// Store user and tokens in backend database
   Future<void> _storeUserInBackend(User user) async {
     try {
+      // Get fresh access token if not available
+      String? accessToken = user.accessToken;
+      if (accessToken == null || accessToken.isEmpty) {
+        debugPrint(
+          'No access token in user object, attempting to get fresh token',
+        );
+        accessToken = await getAccessToken();
+      }
+
+      if (accessToken == null || accessToken.isEmpty) {
+        debugPrint('No access token available for user: ${user.email}');
+        // Still create user record without tokens
+        try {
+          await ApiService().storeTokens(
+            userId: user.id,
+            email: user.email,
+            name: user.displayName,
+            pictureUrl: user.photoUrl,
+            accessToken:
+                'placeholder', // Will be rejected by backend, but user record will be created
+            idToken: user.idToken,
+          );
+        } catch (e) {
+          debugPrint('Expected error creating user without valid token: $e');
+        }
+        return;
+      }
+
       await ApiService().storeTokens(
         userId: user.id,
         email: user.email,
         name: user.displayName,
         pictureUrl: user.photoUrl,
-        accessToken: user.accessToken ?? '',
+        accessToken: accessToken,
         idToken: user.idToken,
       );
-      debugPrint('Successfully stored user in backend: ${user.email}');
+      debugPrint(
+        'Successfully stored user and tokens in backend: ${user.email}',
+      );
     } catch (e) {
       debugPrint('Failed to store user in backend: $e');
       // Don't throw - this shouldn't prevent local authentication
@@ -353,6 +433,41 @@ class AuthService extends ChangeNotifier {
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
+  }
+
+  /// Force complete logout and clear all data
+  Future<void> forceLogout() async {
+    debugPrint('Force logout initiated');
+    _setLoading(true);
+
+    try {
+      // Clear user data first
+      await _clearUserData();
+
+      // Sign out from Google
+      await GoogleSignIn.instance.signOut();
+
+      // Disconnect to ensure complete logout
+      await GoogleSignIn.instance.disconnect();
+
+      _account = null;
+      _currentUser = null;
+
+      _authStateController.add(null);
+      notifyListeners();
+
+      debugPrint('Force logout completed');
+    } catch (e) {
+      debugPrint('Error during force logout: $e');
+      // Even if there's an error, clear local state
+      _account = null;
+      _currentUser = null;
+      await StorageService.clearUser();
+      _authStateController.add(null);
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
   }
 
   @override

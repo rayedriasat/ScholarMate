@@ -87,6 +87,26 @@ class ApiService {
     }
   }
 
+  /// Delete user tokens from the backend (sign out)
+  Future<void> deleteTokens({required String userId}) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/api/auth/tokens?user_id=$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          'Failed to delete tokens: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to delete tokens: $e');
+    }
+  }
+
   /// Check backend health
   Future<bool> checkHealth() async {
     try {
@@ -410,10 +430,7 @@ class ApiService {
       final response = await http.post(
         Uri.parse('$_baseUrl/api/ingest/reindex/$fileId'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'user_id': userId,
-          'file_name': fileName,
-        }),
+        body: jsonEncode({'user_id': userId, 'file_name': fileName}),
       );
 
       if (response.statusCode == 200) {

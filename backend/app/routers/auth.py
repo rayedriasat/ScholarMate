@@ -37,7 +37,13 @@ async def store_tokens(request: StoreTokensRequest):
         
         db_user_id = user["id"]
         
-        # Encrypt and store access token
+        # Validate and encrypt access token
+        if not request.access_token or request.access_token.strip() == "":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Access token is required and cannot be empty"
+            )
+        
         encrypted_access_token = encryption_service.encrypt(request.access_token)
         await supabase_service.store_encrypted_token(
             user_id=db_user_id,
@@ -46,7 +52,7 @@ async def store_tokens(request: StoreTokensRequest):
         )
         
         # Encrypt and store refresh token if provided
-        if request.refresh_token:
+        if request.refresh_token and request.refresh_token.strip() != "":
             encrypted_refresh_token = encryption_service.encrypt(request.refresh_token)
             await supabase_service.store_encrypted_token(
                 user_id=db_user_id,
@@ -55,7 +61,7 @@ async def store_tokens(request: StoreTokensRequest):
             )
         
         # Encrypt and store ID token if provided
-        if request.id_token:
+        if request.id_token and request.id_token.strip() != "":
             encrypted_id_token = encryption_service.encrypt(request.id_token)
             await supabase_service.store_encrypted_token(
                 user_id=db_user_id,

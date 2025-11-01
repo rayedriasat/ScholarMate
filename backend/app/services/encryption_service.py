@@ -24,9 +24,12 @@ class EncryptionService:
             
         Returns:
             Encrypted string (base64 encoded)
+            
+        Raises:
+            ValueError: If plaintext is empty or None
         """
-        if not plaintext:
-            return ""
+        if not plaintext or plaintext.strip() == "":
+            raise ValueError("Cannot encrypt empty or null plaintext")
         
         encrypted_bytes = self.cipher.encrypt(plaintext.encode())
         return encrypted_bytes.decode()
@@ -40,9 +43,12 @@ class EncryptionService:
             
         Returns:
             Decrypted plaintext string
+            
+        Raises:
+            ValueError: If ciphertext is empty or None
         """
-        if not ciphertext:
-            return ""
+        if not ciphertext or ciphertext.strip() == "":
+            raise ValueError("Cannot decrypt empty or null ciphertext")
         
         decrypted_bytes = self.cipher.decrypt(ciphertext.encode())
         return decrypted_bytes.decode()

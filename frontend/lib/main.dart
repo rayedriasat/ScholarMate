@@ -182,10 +182,7 @@ class ScholarMateApp extends StatelessWidget {
           ),
           update: (context, auth, previous) =>
               previous ??
-              IndexingService(
-                apiService: ApiService(),
-                authService: auth,
-              ),
+              IndexingService(apiService: ApiService(), authService: auth),
         ),
       ],
       child: Consumer<SimpleThemeService>(
@@ -248,10 +245,7 @@ class _AppInitializerState extends State<AppInitializer> {
       // Listen to auth state changes
       authService.authStateChanges.listen((user) {
         if (mounted) {
-          // Handle token storage when user signs in
-          if (user != null && user.accessToken != null) {
-            _storeTokensInBackend(user);
-          }
+          debugPrint('Auth state changed: ${user?.email ?? 'signed out'}');
         }
       });
 
@@ -263,23 +257,6 @@ class _AppInitializerState extends State<AppInitializer> {
         _errorMessage = 'Failed to initialize app: $e';
         _isInitializing = false;
       });
-    }
-  }
-
-  Future<void> _storeTokensInBackend(user) async {
-    try {
-      final apiService = ApiService();
-      await apiService.storeTokens(
-        userId: user.id,
-        email: user.email,
-        name: user.displayName,
-        pictureUrl: user.photoUrl,
-        accessToken: user.accessToken ?? '',
-        idToken: user.idToken,
-      );
-    } catch (e) {
-      debugPrint('Failed to store tokens in backend: $e');
-      // Don't show error to user as this is a background operation
     }
   }
 

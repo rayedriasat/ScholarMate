@@ -537,7 +537,8 @@ class _AppNavigationState extends State<AppNavigation> {
 
     if (confirm == true && context.mounted) {
       try {
-        await authService.signOut();
+        // Use force logout to ensure complete cleanup
+        await authService.forceLogout();
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
