@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/indexing_service.dart';
 
 import '../widgets/app_navigation.dart';
 import 'file_explorer_screen.dart';
@@ -19,6 +20,27 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   DateTime? _lastBackPressed;
   int _selectedIndex = 0;
+  bool _indexingInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Initialize indexing service once
+    if (!_indexingInitialized) {
+      _indexingInitialized = true;
+      _initializeIndexingService();
+    }
+  }
+
+  Future<void> _initializeIndexingService() async {
+    try {
+      final indexingService = context.read<IndexingService>();
+      await indexingService.refreshJobs();
+    } catch (e) {
+      debugPrint('Failed to initialize indexing service: $e');
+    }
+  }
 
   final List<NavigationItem> _navigationItems = [
     NavigationItem(

@@ -412,7 +412,11 @@
     - Store error messages for failed jobs
     - _Requirements: 13.8_
   
-  - [ ] 12.5 Build indexing status UI in Flutter
+  - [x] 12.5 Build indexing status UI in Flutter
+
+
+
+
     - Show indexing status badge on files (indexed ✓, indexing ⟳, pending ⏳, failed ✗)
     - Create indexing progress panel showing all files with status and percentage
     - Add manual "Reindex" button in file context menu

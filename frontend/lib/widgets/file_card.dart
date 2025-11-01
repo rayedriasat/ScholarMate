@@ -7,6 +7,7 @@ import '../services/tag_service.dart';
 import 'file_context_menu.dart';
 import 'tag_chip.dart';
 import 'tag_selection_dialog.dart';
+import 'indexing_status_badge.dart';
 
 /// A card widget displaying file or folder information
 class FileCard extends StatefulWidget {
@@ -17,6 +18,7 @@ class FileCard extends StatefulWidget {
   final VoidCallback? onMove;
   final VoidCallback? onDelete;
   final VoidCallback? onShare;
+  final VoidCallback? onReindex;
   final bool isSelected;
 
   const FileCard({
@@ -28,6 +30,7 @@ class FileCard extends StatefulWidget {
     this.onMove,
     this.onDelete,
     this.onShare,
+    this.onReindex,
     this.isSelected = false,
   });
 
@@ -181,6 +184,7 @@ class _FileCardState extends State<FileCard> {
                     onDelete: widget.onDelete,
                     onShare: widget.onShare,
                     onManageTags: widget.file.isFolder ? null : _manageTags,
+                    onReindex: widget.file.isPdf ? widget.onReindex : null,
                   ),
                 ],
               ),
@@ -235,6 +239,12 @@ class _FileCardState extends State<FileCard> {
               if (widget.file.syncStatus != 'synced') ...[
                 const SizedBox(height: 8),
                 _buildSyncStatusBadge(),
+              ],
+
+              // Indexing status badge (only for PDFs)
+              if (widget.file.isPdf) ...[
+                const SizedBox(height: 8),
+                IndexingStatusBadge(fileId: widget.file.id),
               ],
             ],
           ),

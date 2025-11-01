@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'config_service.dart';
 import '../models/tag.dart';
+import '../models/indexing_job.dart';
 
 /// Exception thrown when API calls fail
 class ApiException implements Exception {
@@ -315,6 +316,118 @@ class ApiService {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('Failed to bulk tag files: $e');
+    }
+  }
+
+  // ==================== RAG Indexing ====================
+
+  /// Start indexing a file for RAG
+  Future<String> startIndexing({
+    required String userId,
+    required String fileId,
+    String? fileName,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/ingest/start'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          'file_id': fileId,
+          'file_name': fileName,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['job_id'] as String;
+      } else {
+        throw ApiException(
+          'Failed to start indexing: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to start indexing: $e');
+    }
+  }
+
+  /// Get indexing job status
+  Future<IndexingJob> getJobStatus({required String jobId}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/ingest/status/$jobId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return IndexingJob.fromJson(data);
+      } else {
+        throw ApiException(
+          'Failed to get job status: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to get job status: $e');
+    }
+  }
+
+  /// List all indexing jobs for a user
+  Future<List<IndexingJob>> listUserJobs({required String userId}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/ingest/list/$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final jobsList = data['jobs'] as List;
+        return jobsList.map((json) => IndexingJob.fromJson(json)).toList();
+      } else {
+        throw ApiException(
+          'Failed to list user jobs: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to list user jobs: $e');
+    }
+  }
+
+  /// Reindex a file (delete old embeddings and create new ones)
+  Future<String> reindexFile({
+    required String userId,
+    required String fileId,
+    String? fileName,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/ingest/reindex/$fileId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          'file_name': fileName,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['job_id'] as String;
+      } else {
+        throw ApiException(
+          'Failed to reindex file: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to reindex file: $e');
     }
   }
 }

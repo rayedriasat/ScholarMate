@@ -13,6 +13,7 @@ import 'services/annotation_service.dart';
 import 'services/ocr_service.dart';
 import 'services/tag_service.dart';
 import 'services/tts_service.dart';
+import 'services/indexing_service.dart';
 import 'services/simple_theme_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -149,6 +150,18 @@ class ScholarMateApp extends StatelessWidget {
                 apiService: ApiService(),
                 authService: context.read<AuthService>(),
                 connectivityService: connectivity,
+              ),
+        ),
+        ChangeNotifierProxyProvider<AuthService, IndexingService>(
+          create: (context) => IndexingService(
+            apiService: ApiService(),
+            authService: context.read<AuthService>(),
+          ),
+          update: (context, auth, previous) =>
+              previous ??
+              IndexingService(
+                apiService: ApiService(),
+                authService: auth,
               ),
         ),
       ],

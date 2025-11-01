@@ -9,6 +9,7 @@ class FileContextMenu extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onShare;
   final VoidCallback? onManageTags;
+  final VoidCallback? onReindex;
 
   const FileContextMenu({
     super.key,
@@ -18,6 +19,7 @@ class FileContextMenu extends StatelessWidget {
     this.onDelete,
     this.onShare,
     this.onManageTags,
+    this.onReindex,
   });
 
   @override
@@ -39,6 +41,9 @@ class FileContextMenu extends StatelessWidget {
             break;
           case 'manage_tags':
             onManageTags?.call();
+            break;
+          case 'reindex':
+            onReindex?.call();
             break;
         }
       },
@@ -65,6 +70,19 @@ class FileContextMenu extends StatelessWidget {
               ],
             ),
           ),
+          if (file.isPdf) ...[
+            const PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'reindex',
+              child: Row(
+                children: [
+                  const Icon(Icons.refresh, size: 18),
+                  const SizedBox(width: 12),
+                  const Text('Reindex for AI'),
+                ],
+              ),
+            ),
+          ],
           const PopupMenuDivider(),
           PopupMenuItem(
             value: 'share',

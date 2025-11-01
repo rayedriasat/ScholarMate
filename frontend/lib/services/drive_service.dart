@@ -838,3 +838,32 @@ class DriveService extends ChangeNotifier {
     _appFolderId = null;
   }
 }
+
+  /// List all files recursively from the app folder
+  Future<List<DriveFile>> listAllFiles() async {
+    final allFiles = <DriveFile>[];
+    final appFolderId = await getAppFolderId();
+    
+    await _listFilesRecursive(appFolderId, allFiles);
+    
+    return allFiles;
+  }
+
+  /// Helper method to recursively list files
+  Future<void> _listFilesRecursive(String folderId, List<DriveFile> accumulator) async {
+    try {
+      final files = await listFiles(folderId);
+      
+      for (final file in files) {
+        if (file.isFolder) {
+          // Recursively list files in subfolder
+          await _listFilesRecursive(file.id, accumulator);
+        } else {
+          // Add file to accumulator
+          accumulator.add(file);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error listing files in folder $folderId: $e');
+    }
+  }

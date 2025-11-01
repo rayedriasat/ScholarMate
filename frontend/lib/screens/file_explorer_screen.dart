@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import '../models/drive_file.dart';
 import '../services/drive_service.dart';
 import '../services/tag_service.dart';
+import '../services/indexing_service.dart';
 import '../widgets/file_card.dart';
 import '../widgets/breadcrumb_navigation.dart';
 import '../widgets/file_upload_widget.dart';
 import '../widgets/file_context_menu.dart';
 import '../widgets/tag_filter_panel.dart';
 import '../widgets/tag_selection_dialog.dart';
+import '../widgets/indexing_progress_panel.dart';
 import 'pdf_viewer_screen.dart';
 import 'document_scanner_screen.dart';
 import 'tag_management_screen.dart';
@@ -478,6 +480,42 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     );
   }
 
+  Future<void> _reindexFile(DriveFile file) async {
+    try {
+      final indexingService = context.read<IndexingService>();
+      await indexingService.reindexFile(
+        fileId: file.id,
+        fileName: file.name,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Reindexing "${file.name}" started')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reindex: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showIndexingProgressPanel() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (context) => const IndexingProgressPanel(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -519,6 +557,46 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               icon: const Icon(Icons.refresh),
               onPressed: _refresh,
               tooltip: 'Refresh',
+            ),
+            // Indexing progress button
+            Consumer<IndexingService>(
+              builder: (context, indexingService, child) {
+                final activeCount = indexingService.activeJobCount;
+                return Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.analytics),
+                      onPressed: _showIndexingProgressPanel,
+                      tooltip: 'Indexing Progress',
+                    ),
+                    if (activeCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            '$activeCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
             // Settings menu
             PopupMenuButton<String>(
@@ -913,6 +991,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                     onRename: () => _showRenameDialog(file),
                     onDelete: () => _showDeleteConfirmation(file),
                     onShare: file.isFolder ? null : () => _shareFile(file),
+                    onReindex: file.isPdf ? () => _reindexFile(file) : null,
                   ),
                 );
               },
@@ -945,6 +1024,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 onRename: () => _showRenameDialog(file),
                 onDelete: () => _showDeleteConfirmation(file),
                 onShare: file.isFolder ? null : () => _shareFile(file),
+                onReindex: file.isPdf ? () => _reindexFile(file) : null,
               );
             },
           );
