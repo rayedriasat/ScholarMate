@@ -125,8 +125,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     try {
       final driveService = context.read<DriveService>();
-      final appFolderId = await driveService.getAppFolderId();
-      final files = await driveService.listFiles(appFolderId);
+      // Use listAllFiles() to get PDFs from all folders recursively
+      final files = await driveService.listAllFiles();
       
       // Filter only PDF files
       setState(() {
