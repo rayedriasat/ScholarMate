@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../models/drawing_note.dart';
+import '../services/drawing_storage_service.dart';
+import 'enhanced_drawing_canvas_screen.dart';
 
-/// Notes screen for creating and managing markdown notes
+/// Notes screen for creating and managing drawing notes
 class NotesScreen extends StatefulWidget {
   const NotesScreen({super.key});
 
@@ -9,44 +12,47 @@ class NotesScreen extends StatefulWidget {
 }
 
 class _NotesScreenState extends State<NotesScreen> {
-  final List<Note> _notes = [];
+  final DrawingStorageService _storageService = DrawingStorageService();
+  List<DrawingNote> _notes = [];
   bool _isGridView = true;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadSampleNotes();
+    _loadNotes();
   }
 
-  void _loadSampleNotes() {
-    // Sample notes for demonstration
-    _notes.addAll([
-      Note(
-        id: '1',
-        title: 'Research Ideas',
-        content:
-            '# Research Ideas\n\n- Explore AI applications in education\n- Study user behavior patterns\n- Analyze data visualization techniques',
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        updatedAt: DateTime.now().subtract(const Duration(hours: 3)),
-      ),
-      Note(
-        id: '2',
-        title: 'Meeting Notes',
-        content:
-            '# Team Meeting - Project Review\n\n## Agenda\n1. Progress update\n2. Challenges discussion\n3. Next steps\n\n## Action Items\n- [ ] Complete user testing\n- [ ] Update documentation\n- [x] Review design mockups',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now().subtract(const Duration(minutes: 30)),
-      ),
-    ]);
+  Future<void> _loadNotes() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final notes = await _storageService.loadNotes();
+      setState(() {
+        _notes = notes;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading notes: $e')));
+      }
+    }
   }
 
   void _createNewNote() {
-    // TODO: Navigate to note editor
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Note editor will be implemented in a future update'),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EnhancedDrawingCanvasScreen(),
       ),
-    );
+    ).then((_) => _loadNotes());
   }
 
   void _toggleView() {
@@ -59,7 +65,7 @@ class _NotesScreenState extends State<NotesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notes'),
+        title: const Text('Drawing Notes'),
         elevation: 0,
         actions: [
           IconButton(
@@ -67,25 +73,17 @@ class _NotesScreenState extends State<NotesScreen> {
             onPressed: _toggleView,
             tooltip: _isGridView ? 'List view' : 'Grid view',
           ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Search functionality coming soon'),
-                ),
-              );
-            },
-            tooltip: 'Search notes',
-          ),
         ],
       ),
-      body: _notes.isEmpty ? _buildEmptyState(context) : _buildNotesList(),
-      floatingActionButton: FloatingActionButton(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _notes.isEmpty
+          ? _buildEmptyState(context)
+          : _buildNotesList(),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _createNewNote,
-        tooltip: 'Create new note',
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.draw),
+        label: const Text('New Note'),
       ),
     );
   }
@@ -102,28 +100,24 @@ class _NotesScreenState extends State<NotesScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  theme.colorScheme.primary.withOpacity(0.1),
-                  theme.colorScheme.secondary.withOpacity(0.1),
+                  theme.colorScheme.primary.withValues(alpha: 0.1),
+                  theme.colorScheme.secondary.withValues(alpha: 0.1),
                 ],
               ),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.note_add,
-              size: 64,
-              color: theme.colorScheme.primary,
-            ),
+            child: Icon(Icons.draw, size: 64, color: theme.colorScheme.primary),
           ),
           const SizedBox(height: 24),
           Text(
-            'No Notes Yet',
+            'No Drawing Notes Yet',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Create your first note to get started\nwith markdown editing and organization',
+            'Create your first drawing note\nDraw, add text, and export as PDF',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
@@ -133,8 +127,8 @@ class _NotesScreenState extends State<NotesScreen> {
           const SizedBox(height: 32),
           ElevatedButton.icon(
             onPressed: _createNewNote,
-            icon: const Icon(Icons.add),
-            label: const Text('Create Note'),
+            icon: const Icon(Icons.draw),
+            label: const Text('Create Drawing Note'),
           ),
         ],
       ),
@@ -192,7 +186,7 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  Widget _buildNoteCard(Note note) {
+  Widget _buildNoteCard(DrawingNote note) {
     final theme = Theme.of(context);
 
     return Card(
@@ -208,6 +202,8 @@ class _NotesScreenState extends State<NotesScreen> {
             children: [
               Row(
                 children: [
+                  Icon(Icons.draw, color: theme.colorScheme.primary, size: 20),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       note.title,
@@ -247,14 +243,27 @@ class _NotesScreenState extends State<NotesScreen> {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: Text(
-                  _getPreviewText(note.content),
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 14,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${note.pages.length} page${note.pages.length != 1 ? 's' : ''}',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${note.strokes.length} strokes • ${note.textNotes.length} text notes',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-                  maxLines: 6,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(height: 12),
@@ -272,7 +281,7 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  Widget _buildNoteListTile(Note note) {
+  Widget _buildNoteListTile(DrawingNote note) {
     final theme = Theme.of(context);
 
     return Card(
@@ -283,10 +292,10 @@ class _NotesScreenState extends State<NotesScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(Icons.note, color: theme.colorScheme.primary),
+          child: Icon(Icons.draw, color: theme.colorScheme.primary),
         ),
         title: Text(
           note.title,
@@ -299,8 +308,8 @@ class _NotesScreenState extends State<NotesScreen> {
           children: [
             const SizedBox(height: 4),
             Text(
-              _getPreviewText(note.content),
-              maxLines: 2,
+              '${note.pages.length} page${note.pages.length != 1 ? 's' : ''} • ${note.strokes.length} strokes • ${note.textNotes.length} text notes',
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
@@ -343,18 +352,6 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  String _getPreviewText(String content) {
-    // Remove markdown formatting for preview
-    return content
-        .replaceAll(RegExp(r'#+ '), '')
-        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
-        .replaceAll(RegExp(r'\*(.*?)\*'), r'$1')
-        .replaceAll(RegExp(r'- \[ \] '), '☐ ')
-        .replaceAll(RegExp(r'- \[x\] '), '☑ ')
-        .replaceAll(RegExp(r'^- ', multiLine: true), '• ')
-        .trim();
-  }
-
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
@@ -373,14 +370,16 @@ class _NotesScreenState extends State<NotesScreen> {
     }
   }
 
-  void _openNote(Note note) {
-    // TODO: Navigate to note editor
-    ScaffoldMessenger.of(
+  void _openNote(DrawingNote note) {
+    Navigator.push(
       context,
-    ).showSnackBar(SnackBar(content: Text('Opening "${note.title}"...')));
+      MaterialPageRoute(
+        builder: (context) => EnhancedDrawingCanvasScreen(existingNote: note),
+      ),
+    ).then((_) => _loadNotes());
   }
 
-  void _handleNoteAction(Note note, String action) {
+  void _handleNoteAction(DrawingNote note, String action) {
     switch (action) {
       case 'edit':
         _openNote(note);
@@ -391,7 +390,7 @@ class _NotesScreenState extends State<NotesScreen> {
     }
   }
 
-  void _showDeleteConfirmation(Note note) {
+  void _showDeleteConfirmation(DrawingNote note) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -415,40 +414,22 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  void _deleteNote(Note note) {
-    setState(() {
-      _notes.remove(note);
-    });
+  Future<void> _deleteNote(DrawingNote note) async {
+    try {
+      await _storageService.deleteNote(note.id);
+      await _loadNotes();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Note "${note.title}" deleted'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () {
-            setState(() {
-              _notes.add(note);
-            });
-          },
-        ),
-      ),
-    );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Note "${note.title}" deleted')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting note: $e')));
+      }
+    }
   }
-}
-
-/// Note model
-class Note {
-  final String id;
-  final String title;
-  final String content;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  Note({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.createdAt,
-    required this.updatedAt,
-  });
 }
