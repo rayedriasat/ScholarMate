@@ -488,14 +488,11 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         builder: (context) => SharingDialog(
           fileName: file.name,
           fileId: file.id,
+          isFolder: file.isFolder,
           currentCollaborators: collaborators,
           onShare: (email, role) async {
             // Share on Google Drive
-            final permissionId = await _driveService!.shareFile(
-              file.id,
-              email,
-              role,
-            );
+            await _driveService!.shareFile(file.id, email, role);
 
             // Store metadata in Supabase
             await sharingService.shareFile(
@@ -547,10 +544,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   Future<void> _reindexFile(DriveFile file) async {
     try {
       final indexingService = context.read<IndexingService>();
-      await indexingService.reindexFile(
-        fileId: file.id,
-        fileName: file.name,
-      );
+      await indexingService.reindexFile(fileId: file.id, fileName: file.name);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1072,8 +1066,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                     onLongPress: () => _toggleFileSelection(file.id),
                     onRename: () => _showRenameDialog(file),
                     onDelete: () => _showDeleteConfirmation(file),
-                    onShare: file.isFolder ? null : () => _shareFile(file),
-                    onReindex: file.isPdf ? () => _reindexFile(file) : null,
+                    onShare: () => _shareFile(file),
                   ),
                 );
               },
@@ -1105,8 +1098,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 onLongPress: () => _toggleFileSelection(file.id),
                 onRename: () => _showRenameDialog(file),
                 onDelete: () => _showDeleteConfirmation(file),
-                onShare: file.isFolder ? null : () => _shareFile(file),
-                onReindex: file.isPdf ? () => _reindexFile(file) : null,
+                onShare: () => _shareFile(file),
               );
             },
           );

@@ -22,6 +22,7 @@ class Collaborator {
 class SharingDialog extends StatefulWidget {
   final String fileName;
   final String fileId;
+  final bool isFolder;
   final List<Collaborator> currentCollaborators;
   final Function(String email, String role) onShare;
   final Function(String email) onRemoveCollaborator;
@@ -31,6 +32,7 @@ class SharingDialog extends StatefulWidget {
     super.key,
     required this.fileName,
     required this.fileId,
+    this.isFolder = false,
     required this.currentCollaborators,
     required this.onShare,
     required this.onRemoveCollaborator,
@@ -188,7 +190,7 @@ class _SharingDialogState extends State<SharingDialog> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.share,
+                    widget.isFolder ? Icons.folder_shared : Icons.share,
                     color: Theme.of(context).colorScheme.onPrimaryContainer,
                   ),
                   const SizedBox(width: 12),
@@ -254,6 +256,48 @@ class _SharingDialogState extends State<SharingDialog> {
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
+                            if (widget.isFolder) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer
+                                      .withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      size: 16,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Sharing this folder will give access to all files and subfolders inside it.',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 16),
 
                             // Email input
@@ -286,7 +330,9 @@ class _SharingDialogState extends State<SharingDialog> {
                                   child: _RoleOption(
                                     icon: Icons.visibility_outlined,
                                     title: 'Viewer',
-                                    description: 'Can view and download',
+                                    description: widget.isFolder
+                                        ? 'Can view contents'
+                                        : 'Can view and download',
                                     isSelected: _selectedRole == 'viewer',
                                     onTap: () {
                                       setState(() {
@@ -300,7 +346,9 @@ class _SharingDialogState extends State<SharingDialog> {
                                   child: _RoleOption(
                                     icon: Icons.edit_outlined,
                                     title: 'Editor',
-                                    description: 'Can edit and share',
+                                    description: widget.isFolder
+                                        ? 'Can edit contents and share'
+                                        : 'Can edit and share',
                                     isSelected: _selectedRole == 'editor',
                                     onTap: () {
                                       setState(() {

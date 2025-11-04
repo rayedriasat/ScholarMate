@@ -83,18 +83,18 @@ class FileContextMenu extends StatelessWidget {
               ),
             ),
           ],
-          const PopupMenuDivider(),
-          PopupMenuItem(
-            value: 'share',
-            child: Row(
-              children: [
-                const Icon(Icons.share, size: 18),
-                const SizedBox(width: 12),
-                const Text('Share'),
-              ],
-            ),
-          ),
         ],
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'share',
+          child: Row(
+            children: [
+              Icon(file.isFolder ? Icons.folder_shared : Icons.share, size: 18),
+              const SizedBox(width: 12),
+              Text('Share ${file.isFolder ? 'folder' : 'file'}'),
+            ],
+          ),
+        ),
         const PopupMenuDivider(),
         PopupMenuItem(
           value: 'delete',
