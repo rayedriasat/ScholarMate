@@ -902,17 +902,24 @@ class _AIChatScreenState extends State<AIChatScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'PDF automatically selected for context',
-                    style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
                   ),
                 ],
               ),
@@ -929,7 +936,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -957,7 +964,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                         widget.preselectedFileName!,
                         style: const TextStyle(fontSize: 12),
                       ),
-                      backgroundColor: Colors.blue.withOpacity(0.1),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
                       deleteIcon: const Icon(Icons.close, size: 16),
                       onDeleted: () =>
                           _toggleSourceSelection(widget.preselectedFileId!),
@@ -973,7 +982,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       ),
                       backgroundColor: Theme.of(
                         context,
-                      ).primaryColor.withOpacity(0.1),
+                      ).colorScheme.primaryContainer,
                       deleteIcon: const Icon(Icons.close, size: 16),
                       onDeleted: _clearAllSources,
                     ),

@@ -23,8 +23,9 @@ class ChatMessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -36,19 +37,18 @@ class ChatMessageBubble extends StatelessWidget {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isUser
-                        ? theme.primaryColor
-                        : theme.cardColor,
+                    color: isUser ? theme.primaryColor : theme.cardColor,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 5,
                         offset: const Offset(0, 2),
                       ),
@@ -57,13 +57,15 @@ class ChatMessageBubble extends StatelessWidget {
                   child: Text(
                     message.content,
                     style: TextStyle(
-                      color: isUser ? Colors.white : theme.textTheme.bodyLarge?.color,
+                      color: isUser
+                          ? Colors.white
+                          : theme.textTheme.bodyLarge?.color,
                       fontSize: 15,
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
-                
+
                 // Timestamp and actions
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -89,7 +91,7 @@ class ChatMessageBubble extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: theme.primaryColor.withOpacity(0.1),
+                              color: theme.colorScheme.primaryContainer,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -98,14 +100,14 @@ class ChatMessageBubble extends StatelessWidget {
                                 Icon(
                                   Icons.save_alt,
                                   size: 14,
-                                  color: theme.primaryColor,
+                                  color: theme.colorScheme.onPrimaryContainer,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Save',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: theme.primaryColor,
+                                    color: theme.colorScheme.onPrimaryContainer,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -117,7 +119,7 @@ class ChatMessageBubble extends StatelessWidget {
                     ],
                   ],
                 ),
-                
+
                 // Citations
                 if (message.citations != null && message.citations!.isNotEmpty)
                   Padding(
@@ -146,46 +148,45 @@ class ChatMessageBubble extends StatelessWidget {
   }
 
   Widget _buildCitationChip(BuildContext context, Citation citation) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Use theme-aware colors for better contrast in both light and dark modes
+    final backgroundColor = colorScheme.primaryContainer;
+    final textColor = colorScheme.onPrimaryContainer;
+    final borderColor = colorScheme.outline.withValues(alpha: 0.5);
+
     return Tooltip(
-      message: 'Click to open ${citation.fileName} at page ${citation.pageNumber}',
+      message:
+          'Click to open ${citation.fileName} at page ${citation.pageNumber}',
       child: InkWell(
         onTap: () => onCitationTapped?.call(citation),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).primaryColor.withOpacity(0.3),
-            ),
+            border: Border.all(color: borderColor),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.picture_as_pdf,
-                size: 14,
-                color: Theme.of(context).primaryColor,
-              ),
+              Icon(Icons.picture_as_pdf, size: 14, color: textColor),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   '${citation.fileName} (p. ${citation.pageNumber})',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).primaryColor,
+                    color: textColor,
                     fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(
-                Icons.open_in_new,
-                size: 12,
-                color: Theme.of(context).primaryColor,
-              ),
+              Icon(Icons.open_in_new, size: 12, color: textColor),
             ],
           ),
         ),
