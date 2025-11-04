@@ -51,7 +51,7 @@ class AIChatService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         // Parse citations
         final citationsList = data['citations'] as List? ?? [];
         final citations = citationsList
@@ -59,11 +59,13 @@ class AIChatService {
             .toList();
 
         // Create chat message from response
+        // Use current time to ensure proper ordering with user messages
+        final responseTime = DateTime.now();
         return ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          id: '${responseTime.millisecondsSinceEpoch}_ai',
           content: data['message'] as String,
           isUser: false,
-          timestamp: DateTime.parse(data['timestamp'] as String),
+          timestamp: responseTime,
           citations: citations.isNotEmpty ? citations : null,
         );
       } else if (response.statusCode == 429) {
@@ -136,8 +138,18 @@ class AIChatService {
 
   String _formatDate(DateTime date) {
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year} at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }

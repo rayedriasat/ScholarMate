@@ -179,11 +179,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
     }
 
     // Add user message
+    final messageTime = DateTime.now();
     final userMessage = model.ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '${messageTime.millisecondsSinceEpoch}_user',
       content: message,
       isUser: true,
-      timestamp: DateTime.now(),
+      timestamp: messageTime,
     );
 
     setState(() {
@@ -201,6 +202,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
     }
 
     _scrollToBottom();
+
+    // Small delay to ensure AI response has a later timestamp
+    await Future.delayed(const Duration(milliseconds: 10));
 
     try {
       // Send message to backend

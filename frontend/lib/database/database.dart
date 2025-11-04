@@ -7,7 +7,17 @@ part 'database.g.dart';
 /// Main database class for ScholarMate
 /// Supports all platforms including web using Drift
 @DriftDatabase(
-  tables: [Files, CachedPdfs, Annotations, SyncQueue, Tags, FileTags, ChatSourcePreferences, ChatConversations, ChatMessages],
+  tables: [
+    Files,
+    CachedPdfs,
+    Annotations,
+    SyncQueue,
+    Tags,
+    FileTags,
+    ChatSourcePreferences,
+    ChatConversations,
+    ChatMessages,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -332,7 +342,12 @@ class AppDatabase extends _$AppDatabase {
   Future<List<ChatSourcePreference>> getChatSourcePreferences(String userId) {
     return (select(chatSourcePreferences)
           ..where((csp) => csp.userId.equals(userId))
-          ..orderBy([(csp) => OrderingTerm(expression: csp.selectedAt, mode: OrderingMode.desc)]))
+          ..orderBy([
+            (csp) => OrderingTerm(
+              expression: csp.selectedAt,
+              mode: OrderingMode.desc,
+            ),
+          ]))
         .get();
   }
 
@@ -352,14 +367,17 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  Future<void> saveChatSourcePreferences(String userId, Set<String> fileIds) async {
+  Future<void> saveChatSourcePreferences(
+    String userId,
+    Set<String> fileIds,
+  ) async {
     await batch((batch) {
       // Clear existing preferences for this user
       batch.deleteWhere(
         chatSourcePreferences,
         (csp) => csp.userId.equals(userId),
       );
-      
+
       // Insert new preferences
       for (final fileId in fileIds) {
         batch.insert(
@@ -376,58 +394,68 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<int> removeChatSourcePreference(String userId, String fileId) {
-    return (delete(chatSourcePreferences)
-          ..where((csp) => csp.userId.equals(userId) & csp.fileId.equals(fileId)))
+    return (delete(chatSourcePreferences)..where(
+          (csp) => csp.userId.equals(userId) & csp.fileId.equals(fileId),
+        ))
         .go();
   }
 
   Future<int> clearChatSourcePreferences(String userId) {
-    return (delete(chatSourcePreferences)
-          ..where((csp) => csp.userId.equals(userId)))
-        .go();
+    return (delete(
+      chatSourcePreferences,
+    )..where((csp) => csp.userId.equals(userId))).go();
   }
 
   // Chat conversation operations
   Future<List<ChatConversation>> getChatConversations(String userId) {
     return (select(chatConversations)
           ..where((cc) => cc.userId.equals(userId))
-          ..orderBy([(cc) => OrderingTerm(expression: cc.updatedAt, mode: OrderingMode.desc)]))
+          ..orderBy([
+            (cc) =>
+                OrderingTerm(expression: cc.updatedAt, mode: OrderingMode.desc),
+          ]))
         .get();
   }
 
   Future<ChatConversation?> getChatConversation(String conversationId) {
-    return (select(chatConversations)
-          ..where((cc) => cc.id.equals(conversationId)))
-        .getSingleOrNull();
+    return (select(
+      chatConversations,
+    )..where((cc) => cc.id.equals(conversationId))).getSingleOrNull();
   }
 
   Future<int> insertChatConversation(ChatConversationsCompanion conversation) {
-    return into(chatConversations).insert(conversation, mode: InsertMode.insertOrReplace);
+    return into(
+      chatConversations,
+    ).insert(conversation, mode: InsertMode.insertOrReplace);
   }
 
   Future<int> updateChatConversation(ChatConversationsCompanion conversation) {
-    return (update(chatConversations)
-          ..where((cc) => cc.id.equals(conversation.id.value)))
-        .write(conversation);
+    return (update(
+      chatConversations,
+    )..where((cc) => cc.id.equals(conversation.id.value))).write(conversation);
   }
 
   Future<int> deleteChatConversation(String conversationId) async {
     // Delete all messages in the conversation first
-    await (delete(chatMessages)
-          ..where((cm) => cm.conversationId.equals(conversationId)))
-        .go();
-    
+    await (delete(
+      chatMessages,
+    )..where((cm) => cm.conversationId.equals(conversationId))).go();
+
     // Then delete the conversation
-    return (delete(chatConversations)
-          ..where((cc) => cc.id.equals(conversationId)))
-        .go();
+    return (delete(
+      chatConversations,
+    )..where((cc) => cc.id.equals(conversationId))).go();
   }
 
   // Chat message operations
   Future<List<ChatMessage>> getChatMessages(String conversationId) {
     return (select(chatMessages)
           ..where((cm) => cm.conversationId.equals(conversationId))
-          ..orderBy([(cm) => OrderingTerm(expression: cm.timestamp)]))
+          ..orderBy([
+            (cm) =>
+                OrderingTerm(expression: cm.timestamp, mode: OrderingMode.asc),
+            (cm) => OrderingTerm(expression: cm.id, mode: OrderingMode.asc),
+          ]))
         .get();
   }
 
@@ -436,15 +464,13 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<int> deleteChatMessage(String messageId) {
-    return (delete(chatMessages)
-          ..where((cm) => cm.id.equals(messageId)))
-        .go();
+    return (delete(chatMessages)..where((cm) => cm.id.equals(messageId))).go();
   }
 
   Future<int> deleteChatMessagesByConversation(String conversationId) {
-    return (delete(chatMessages)
-          ..where((cm) => cm.conversationId.equals(conversationId)))
-        .go();
+    return (delete(
+      chatMessages,
+    )..where((cm) => cm.conversationId.equals(conversationId))).go();
   }
 }
 
