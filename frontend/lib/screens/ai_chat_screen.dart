@@ -20,7 +20,14 @@ import 'pdf_viewer_screen.dart';
 
 /// AI Chat screen with RAG and source selection
 class AIChatScreen extends StatefulWidget {
-  const AIChatScreen({super.key});
+  final String? preselectedFileId;
+  final String? preselectedFileName;
+
+  const AIChatScreen({
+    super.key,
+    this.preselectedFileId,
+    this.preselectedFileName,
+  });
 
   @override
   State<AIChatScreen> createState() => _AIChatScreenState();
@@ -31,14 +38,14 @@ class _AIChatScreenState extends State<AIChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final AIChatService _chatService = AIChatService();
-  
+
   bool _isLoading = false;
   bool _showSourcePanel = false;
   bool _showConversationList = false;
   Set<String> _selectedFileIds = {};
   List<DriveFile> _availableFiles = [];
   bool _isLoadingFiles = false;
-  
+
   // Chat history
   List<ChatConversation> _conversations = [];
   String? _currentConversationId;
@@ -50,6 +57,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
     super.initState();
     _loadAvailableFiles();
     _loadConversations();
+
+    // If a file is preselected, add it to selected files
+    if (widget.preselectedFileId != null) {
+      _selectedFileIds.add(widget.preselectedFileId!);
+    }
   }
 
   Future<void> _loadConversations() async {
@@ -64,9 +76,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
     try {
       final database = context.read<AppDatabase>();
       _historyService = ChatHistoryService(database);
-      
+
       final conversations = await _historyService!.getConversations(user.id);
-      
+
       setState(() {
         _conversations = conversations;
         _isLoadingConversations = false;
@@ -88,7 +100,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       final database = context.read<AppDatabase>();
       final preferenceService = ChatPreferenceService(database);
       final selectedIds = await preferenceService.loadSelectedSources(user.id);
-      
+
       setState(() {
         _selectedFileIds = selectedIds;
       });
@@ -127,7 +139,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       final driveService = context.read<DriveService>();
       // Use listAllFiles() to get PDFs from all folders recursively
       final files = await driveService.listAllFiles();
-      
+
       // Filter only PDF files
       setState(() {
         _availableFiles = files
@@ -195,8 +207,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
       final aiResponse = await _chatService.sendMessage(
         question: message,
         userId: user.id,
-        selectedFileIds: _selectedFileIds.isNotEmpty 
-            ? _selectedFileIds.toList() 
+        selectedFileIds: _selectedFileIds.isNotEmpty
+            ? _selectedFileIds.toList()
             : null,
       );
 
@@ -233,10 +245,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
     try {
       // Load messages
       final messages = await _historyService!.loadMessages(conversationId);
-      
+
       // Load source selection for this conversation
-      final sourceIds = await _historyService!.getConversationSourceIds(conversationId);
-      
+      final sourceIds = await _historyService!.getConversationSourceIds(
+        conversationId,
+      );
+
       setState(() {
         _messages.clear();
         _messages.addAll(messages);
@@ -259,7 +273,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       _currentConversationId = null;
       _messages.clear();
     });
-    
+
     // Load default source preferences
     await _loadSourcePreferences();
   }
@@ -269,14 +283,14 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     try {
       await _historyService!.deleteConversation(conversationId);
-      
+
       // If we deleted the current conversation, start a new one
       if (_currentConversationId == conversationId) {
         await _startNewConversation();
       }
-      
+
       await _loadConversations();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -291,7 +305,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
     }
   }
 
-  Future<void> _renameConversation(String conversationId, String newTitle) async {
+  Future<void> _renameConversation(
+    String conversationId,
+    String newTitle,
+  ) async {
     if (_historyService == null) return;
 
     try {
@@ -337,7 +354,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         await _historyService!.clearAllConversations(user.id);
         await _startNewConversation();
         await _loadConversations();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -367,10 +384,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -400,13 +414,15 @@ class _AIChatScreenState extends State<AIChatScreen> {
       // Check if file is cached, if not download it first
       final pdfManager = context.read<PdfViewerManager>();
       final isCached = await pdfManager.isPdfCached(citation.fileId);
-      
+
       if (!isCached) {
         // Check if online
         final connectivityService = context.read<ConnectivityService>();
         if (!connectivityService.isOnline) {
           Navigator.pop(context); // Close loading dialog
-          _showError('PDF not cached and device is offline. Please connect to download the file.');
+          _showError(
+            'PDF not cached and device is offline. Please connect to download the file.',
+          );
           return;
         }
       }
@@ -485,27 +501,31 @@ class _AIChatScreenState extends State<AIChatScreen> {
       // Get or create Notes folder
       final driveService = context.read<DriveService>();
       final appFolderId = await driveService.getAppFolderId();
-      
+
       // Check if Notes folder exists
       final files = await driveService.listFiles(appFolderId);
       String? notesFolderId;
-      
+
       for (final file in files) {
         if (file.isFolder && file.name == 'Notes') {
           notesFolderId = file.id;
           break;
         }
       }
-      
+
       // Create Notes folder if it doesn't exist
       if (notesFolderId == null) {
-        final notesFolder = await driveService.createFolder('Notes', appFolderId);
+        final notesFolder = await driveService.createFolder(
+          'Notes',
+          appFolderId,
+        );
         notesFolderId = notesFolder.id;
       }
 
       // Generate filename with timestamp
       final timestamp = DateTime.now();
-      final fileName = 'AI_Chat_${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}_${timestamp.hour.toString().padLeft(2, '0')}${timestamp.minute.toString().padLeft(2, '0')}.md';
+      final fileName =
+          'AI_Chat_${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}_${timestamp.hour.toString().padLeft(2, '0')}${timestamp.minute.toString().padLeft(2, '0')}.md';
 
       // Save to Google Drive
       final bytes = utf8.encode(markdownContent);
@@ -528,9 +548,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text('Note saved to Notes folder: $fileName'),
-                ),
+                Expanded(child: Text('Note saved to Notes folder: $fileName')),
               ],
             ),
             backgroundColor: Colors.green,
@@ -591,23 +609,50 @@ class _AIChatScreenState extends State<AIChatScreen> {
   @override
   Widget build(BuildContext context) {
     final isWideScreen = MediaQuery.of(context).size.width > 600;
-    
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentConversationId != null 
-            ? _conversations.firstWhere(
-                (c) => c.id == _currentConversationId,
-                orElse: () => ChatConversation(
-                  id: '',
-                  userId: '',
-                  title: 'AI Chat',
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  selectedSourceIds: '[]',
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _currentConversationId != null
+                  ? _conversations
+                        .firstWhere(
+                          (c) => c.id == _currentConversationId,
+                          orElse: () => ChatConversation(
+                            id: '',
+                            userId: '',
+                            title: 'AI Chat',
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                            selectedSourceIds: '[]',
+                          ),
+                        )
+                        .title
+                  : 'AI Chat',
+            ),
+            if (widget.preselectedFileId != null &&
+                widget.preselectedFileName != null)
+              Text(
+                'Chatting with ${widget.preselectedFileName}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.grey,
                 ),
-              ).title
-            : 'AI Chat'),
-        leading: isWideScreen
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ),
+        leading: widget.preselectedFileId != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+                tooltip: 'Back to PDF',
+              )
+            : isWideScreen
             ? IconButton(
                 icon: Icon(_showConversationList ? Icons.close : Icons.menu),
                 onPressed: () {
@@ -619,6 +664,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
               )
             : null,
         actions: [
+          if (widget.preselectedFileId != null)
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf),
+              onPressed: () => Navigator.pop(context),
+              tooltip: 'Back to PDF',
+            ),
           if (_currentConversationId != null)
             IconButton(
               icon: const Icon(Icons.add),
@@ -626,9 +677,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
               tooltip: 'New Chat',
             ),
           IconButton(
-            icon: Icon(
-              _showSourcePanel ? Icons.close : Icons.filter_list,
-            ),
+            icon: Icon(_showSourcePanel ? Icons.close : Icons.filter_list),
             onPressed: () {
               if (isWideScreen) {
                 setState(() {
@@ -654,7 +703,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     children: [
                       Icon(Icons.delete_sweep, color: Colors.red),
                       SizedBox(width: 8),
-                      Text('Clear All Conversations', style: TextStyle(color: Colors.red)),
+                      Text(
+                        'Clear All Conversations',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ],
                   ),
                 ),
@@ -694,7 +746,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
               onRenameConversation: _renameConversation,
               isLoading: _isLoadingConversations,
             ),
-          
+
           // Main chat area
           Expanded(
             flex: _showSourcePanel && isWideScreen ? 2 : 1,
@@ -716,29 +768,27 @@ class _AIChatScreenState extends State<AIChatScreen> {
                             return ChatMessageBubble(
                               message: message,
                               onCitationTapped: _onCitationTapped,
-                              onSaveAsNote: message.isUser 
-                                  ? null 
+                              onSaveAsNote: message.isUser
+                                  ? null
                                   : () => _onSaveAsNote(message),
                             );
                           },
                         ),
                 ),
-                
+
                 // Input area
                 _buildInputArea(),
               ],
             ),
           ),
-          
+
           // Source selection panel (desktop/tablet only)
           if (_showSourcePanel && isWideScreen)
             Container(
               width: 300,
               decoration: BoxDecoration(
                 border: Border(
-                  left: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                  ),
+                  left: BorderSide(color: Theme.of(context).dividerColor),
                 ),
               ),
               child: SourceSelectionPanel(
@@ -768,9 +818,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         builder: (context, scrollController) => Container(
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(20),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -819,24 +867,57 @@ class _AIChatScreenState extends State<AIChatScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.chat_bubble_outline,
+            widget.preselectedFileId != null
+                ? Icons.picture_as_pdf
+                : Icons.chat_bubble_outline,
             size: 64,
-            color: Colors.grey[400],
+            color: widget.preselectedFileId != null
+                ? Colors.blue[400]
+                : Colors.grey[400],
           ),
           const SizedBox(height: 16),
           Text(
-            'Start a conversation',
+            widget.preselectedFileId != null
+                ? 'Chat with PDF'
+                : 'Start a conversation',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
+              color: widget.preselectedFileId != null
+                  ? Colors.blue[600]
+                  : Colors.grey[600],
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Ask questions about your documents',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[500],
-                ),
+            widget.preselectedFileId != null &&
+                    widget.preselectedFileName != null
+                ? 'Ask questions about "${widget.preselectedFileName}"'
+                : 'Ask questions about your documents',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
+            textAlign: TextAlign.center,
           ),
+          if (widget.preselectedFileId != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                  const SizedBox(width: 8),
+                  Text(
+                    'PDF automatically selected for context',
+                    style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -866,19 +947,40 @@ class _AIChatScreenState extends State<AIChatScreen> {
               child: Wrap(
                 spacing: 4,
                 children: [
-                  Chip(
-                    label: Text(
-                      '${_selectedFileIds.length} source${_selectedFileIds.length == 1 ? '' : 's'} selected',
-                      style: const TextStyle(fontSize: 12),
+                  // Show preselected file name if available
+                  if (widget.preselectedFileId != null &&
+                      _selectedFileIds.contains(widget.preselectedFileId) &&
+                      widget.preselectedFileName != null)
+                    Chip(
+                      avatar: const Icon(Icons.picture_as_pdf, size: 16),
+                      label: Text(
+                        widget.preselectedFileName!,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      backgroundColor: Colors.blue.withOpacity(0.1),
+                      deleteIcon: const Icon(Icons.close, size: 16),
+                      onDeleted: () =>
+                          _toggleSourceSelection(widget.preselectedFileId!),
                     ),
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                    deleteIcon: const Icon(Icons.close, size: 16),
-                    onDeleted: _clearAllSources,
-                  ),
+                  // Show general count for other files
+                  if (_selectedFileIds.length > 1 ||
+                      (widget.preselectedFileId == null &&
+                          _selectedFileIds.isNotEmpty))
+                    Chip(
+                      label: Text(
+                        '${_selectedFileIds.length} source${_selectedFileIds.length == 1 ? '' : 's'} selected',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).primaryColor.withOpacity(0.1),
+                      deleteIcon: const Icon(Icons.close, size: 16),
+                      onDeleted: _clearAllSources,
+                    ),
                 ],
               ),
             ),
-          
+
           // Input field
           Row(
             children: [
@@ -910,7 +1012,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : const Icon(Icons.send),

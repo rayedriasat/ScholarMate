@@ -12,6 +12,7 @@ import '../services/tts_service.dart';
 import '../widgets/annotation_toolbar.dart';
 import '../widgets/annotation_list_panel.dart';
 import '../widgets/tts_controls.dart';
+import 'ai_chat_screen.dart';
 
 /// Full-screen PDF viewer with navigation controls and annotations
 class PdfViewerScreen extends StatefulWidget {
@@ -26,8 +27,10 @@ class PdfViewerScreen extends StatefulWidget {
     this.fileId,
     this.fileName,
     this.initialPage,
-  }) : assert(file != null || (fileId != null && fileName != null),
-            'Either file or both fileId and fileName must be provided');
+  }) : assert(
+         file != null || (fileId != null && fileName != null),
+         'Either file or both fileId and fileName must be provided',
+       );
 
   @override
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
@@ -60,12 +63,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     WidgetsBinding.instance.addObserver(this);
     _loadPdf();
     _initializeAnnotationSettings();
-    
+
     // Navigate to initial page if specified (from citation)
     if (widget.initialPage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _pdfViewerController.jumpToPage(widget.initialPage!);
-        
+
         // Show a snackbar indicating navigation from citation
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -133,7 +136,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
 
   Future<void> _loadPdf({bool forceRefresh = false}) async {
     final pdfManager = context.read<PdfViewerManager>();
-    
+
     // If file is provided directly, use it
     if (widget.file != null) {
       await pdfManager.loadPdf(widget.file!, forceRefresh: forceRefresh);
@@ -350,7 +353,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
       // Get file ID (from either file object or fileId parameter)
       final fileId = widget.file?.id ?? widget.fileId;
       final fileName = widget.file?.name ?? widget.fileName;
-      
+
       if (fileId == null) {
         debugPrint('Cannot save PDF: file ID is null');
         return;
@@ -707,6 +710,35 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
         _speakCurrentPage();
       });
     }
+  }
+
+  void _openAiChatWithPdf() {
+    // Get the current file
+    final fileId = widget.file?.id ?? widget.fileId;
+    final fileName = widget.file?.name ?? widget.fileName;
+
+    if (fileId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot open chat: file information not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to AI chat screen with the current PDF preselected
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AIChatScreen(
+          preselectedFileId: fileId,
+          preselectedFileName: fileName,
+        ),
+      ),
+    ).then((_) {
+      // When returning from chat, we could optionally refresh or do something
+    });
   }
 
   @override
@@ -1106,6 +1138,18 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
           );
         },
       ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(
+          bottom: 80.0,
+        ), // Move up to avoid bottom controls
+        child: FloatingActionButton(
+          onPressed: _openAiChatWithPdf,
+          tooltip: 'Chat with this PDF',
+          backgroundColor: Theme.of(context).primaryColor,
+          child: const Icon(Icons.chat_bubble_outline),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
