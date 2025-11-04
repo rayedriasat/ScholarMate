@@ -91,8 +91,6 @@ class _AppNavigationState extends State<AppNavigation> {
 
   Widget _buildSidebar(BuildContext context) {
     final theme = Theme.of(context);
-    final authService = context.watch<AuthService>();
-    final user = authService.currentUser;
 
     return Container(
       width: 72,
@@ -105,18 +103,34 @@ class _AppNavigationState extends State<AppNavigation> {
           // App logo
           Container(
             padding: const EdgeInsets.all(16),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary,
-                  ],
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    // Navigate to Files page (index 0)
+                    _onItemTapped(0);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.secondary,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.school,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.school, color: Colors.white, size: 24),
             ),
           ),
 
@@ -138,47 +152,22 @@ class _AppNavigationState extends State<AppNavigation> {
             ),
           ),
 
-          // Settings section
-          _buildCompactSidebarItem(
-            context,
-            NavigationItem(
-              id: 'settings',
-              icon: Icons.settings_outlined,
-              activeIcon: Icons.settings,
-              label: 'Settings',
-              screen: Container(),
-            ),
-            _showSettings,
-            _toggleSettings,
-          ),
-
-          const SizedBox(height: 8),
-
-          // User profile
-          if (user != null)
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Tooltip(
-                message: user.displayName ?? user.email,
-                child: user.photoUrl != null
-                    ? CircleAvatar(
-                        radius: 20,
-                        backgroundImage: NetworkImage(user.photoUrl!),
-                      )
-                    : CircleAvatar(
-                        radius: 20,
-                        backgroundColor: theme.colorScheme.primary,
-                        child: Text(
-                          user.displayName?.substring(0, 1).toUpperCase() ??
-                              user.email.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+          // Settings section at bottom
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _buildCompactSidebarItem(
+              context,
+              NavigationItem(
+                id: 'settings',
+                icon: Icons.settings_outlined,
+                activeIcon: Icons.settings,
+                label: 'Settings',
+                screen: Container(),
               ),
+              _showSettings,
+              _toggleSettings,
             ),
+          ),
         ],
       ),
     );
@@ -217,59 +206,6 @@ class _AppNavigationState extends State<AppNavigation> {
                     : theme.colorScheme.onSurfaceVariant,
                 size: 24,
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSidebarItem(
-    BuildContext context,
-    NavigationItem item,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isSelected ? (item.activeIcon ?? item.icon) : item.icon,
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                  size: 24,
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  item.label,
-                  style: TextStyle(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface,
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                    fontSize: 15,
-                  ),
-                ),
-              ],
             ),
           ),
         ),
