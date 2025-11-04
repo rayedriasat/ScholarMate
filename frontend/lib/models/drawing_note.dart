@@ -16,22 +16,31 @@ Color _parseColor(dynamic colorValue) {
   }
 }
 
+/// Common interface for all drawable elements
+abstract class DrawableElement {
+  DateTime get createdAt;
+}
+
 /// Represents a drawing stroke on the canvas
-class DrawingStroke {
+class DrawingStroke implements DrawableElement {
   final List<Offset> points;
   final Color color;
   final double strokeWidth;
+  @override
+  final DateTime createdAt;
 
   DrawingStroke({
     required this.points,
     required this.color,
     required this.strokeWidth,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
     'points': points.map((p) => {'x': p.dx, 'y': p.dy}).toList(),
-    'color': color.value,
+    'color': color.toARGB32(),
     'strokeWidth': strokeWidth,
+    'createdAt': createdAt.toIso8601String(),
   };
 
   factory DrawingStroke.fromJson(Map<String, dynamic> json) {
@@ -41,17 +50,22 @@ class DrawingStroke {
           .toList(),
       color: _parseColor(json['color']),
       strokeWidth: json['strokeWidth'] as double,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
     );
   }
 }
 
 /// Represents a text note on the canvas
-class TextNote {
+class TextNote implements DrawableElement {
   final String id;
   Offset position;
   String text;
   final Color color;
   final double fontSize;
+  @override
+  final DateTime createdAt;
 
   TextNote({
     required this.id,
@@ -59,14 +73,16 @@ class TextNote {
     required this.text,
     this.color = const Color(0xFF000000),
     this.fontSize = 16.0,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'position': {'x': position.dx, 'y': position.dy},
     'text': text,
-    'color': color.value,
+    'color': color.toARGB32(),
     'fontSize': fontSize,
+    'createdAt': createdAt.toIso8601String(),
   };
 
   factory TextNote.fromJson(Map<String, dynamic> json) {
@@ -79,18 +95,23 @@ class TextNote {
       text: json['text'] as String,
       color: _parseColor(json['color']),
       fontSize: json['fontSize'] as double,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
     );
   }
 }
 
 /// Represents an image on the canvas
-class CanvasImage {
+class CanvasImage implements DrawableElement {
   final String id;
   Offset position;
   final Uint8List imageBytes;
   final double width;
   final double height;
   final double scale;
+  @override
+  final DateTime createdAt;
 
   CanvasImage({
     required this.id,
@@ -99,7 +120,8 @@ class CanvasImage {
     required this.width,
     required this.height,
     this.scale = 1.0,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -108,6 +130,7 @@ class CanvasImage {
     'width': width,
     'height': height,
     'scale': scale,
+    'createdAt': createdAt.toIso8601String(),
   };
 
   factory CanvasImage.fromJson(Map<String, dynamic> json) {
@@ -121,6 +144,9 @@ class CanvasImage {
       width: json['width'] as double,
       height: json['height'] as double,
       scale: json['scale'] as double? ?? 1.0,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
     );
   }
 }
@@ -143,12 +169,27 @@ class NotePage {
        textNotes = textNotes ?? <TextNote>[],
        images = images ?? <CanvasImage>[];
 
+  /// Get all drawable elements sorted by creation time (z-order)
+  /// Earlier elements are drawn first (bottom layer), later elements on top
+  List<DrawableElement> get allElementsInZOrder {
+    final List<DrawableElement> allElements = [
+      ...strokes,
+      ...textNotes,
+      ...images,
+    ];
+
+    // Sort by creation time - oldest first (bottom), newest last (top)
+    allElements.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    return allElements;
+  }
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'strokes': strokes.map((s) => s.toJson()).toList(),
     'textNotes': textNotes.map((t) => t.toJson()).toList(),
     'images': images.map((i) => i.toJson()).toList(),
-    'backgroundColor': backgroundColor.value,
+    'backgroundColor': backgroundColor.toARGB32(),
   };
 
   factory NotePage.fromJson(Map<String, dynamic> json) {

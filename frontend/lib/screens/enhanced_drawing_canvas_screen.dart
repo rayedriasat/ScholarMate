@@ -1150,21 +1150,20 @@ class EnhancedDrawingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw completed strokes
-    for (final stroke in page.strokes) {
-      final paint = Paint()
-        ..color = stroke.color
-        ..strokeWidth = stroke.strokeWidth
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke;
+    // Draw all elements in z-order (oldest to newest)
+    final elementsInZOrder = page.allElementsInZOrder;
 
-      for (int i = 0; i < stroke.points.length - 1; i++) {
-        canvas.drawLine(stroke.points[i], stroke.points[i + 1], paint);
+    for (final element in elementsInZOrder) {
+      if (element is DrawingStroke) {
+        _drawStroke(canvas, element);
+      } else if (element is CanvasImage) {
+        _drawImage(canvas, element);
+      } else if (element is TextNote) {
+        _drawTextNote(canvas, element);
       }
     }
 
-    // Draw current stroke
+    // Draw current stroke on top of everything
     if (!isErasing && currentStroke.length > 1) {
       final paint = Paint()
         ..color = currentColor
@@ -1178,132 +1177,7 @@ class EnhancedDrawingPainter extends CustomPainter {
       }
     }
 
-    // Draw images
-    for (final image in page.images) {
-      final imageRect = Rect.fromLTWH(
-        image.position.dx,
-        image.position.dy,
-        image.width * image.scale,
-        image.height * image.scale,
-      );
-
-      // Draw the actual image if available in cache
-      final cachedImage = imageCache[image.id];
-      if (cachedImage != null) {
-        canvas.drawImageRect(
-          cachedImage,
-          Rect.fromLTWH(
-            0,
-            0,
-            cachedImage.width.toDouble(),
-            cachedImage.height.toDouble(),
-          ),
-          imageRect,
-          Paint(),
-        );
-      } else {
-        // Draw placeholder while image loads
-        canvas.drawRect(
-          imageRect,
-          Paint()
-            ..color = Colors.grey.withValues(alpha: 0.3)
-            ..style = PaintingStyle.fill,
-        );
-        canvas.drawRect(
-          imageRect,
-          Paint()
-            ..color = Colors.grey
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1,
-        );
-
-        // Draw loading icon
-        final iconSize = (imageRect.width * 0.3).clamp(16.0, 48.0);
-        final iconRect = Rect.fromCenter(
-          center: imageRect.center,
-          width: iconSize,
-          height: iconSize,
-        );
-
-        final textPainter = TextPainter(
-          text: const TextSpan(text: '🖼️', style: TextStyle(fontSize: 24)),
-          textDirection: TextDirection.ltr,
-        )..layout();
-
-        textPainter.paint(
-          canvas,
-          Offset(
-            iconRect.center.dx - textPainter.width / 2,
-            iconRect.center.dy - textPainter.height / 2,
-          ),
-        );
-      }
-
-      // Draw selection box if selected
-      if (image == selectedItem) {
-        final selectionRect = Rect.fromLTWH(
-          image.position.dx - 4,
-          image.position.dy - 4,
-          (image.width * image.scale) + 8,
-          (image.height * image.scale) + 8,
-        );
-        canvas.drawRect(
-          selectionRect,
-          Paint()
-            ..color = Colors.blue.withValues(alpha: 0.3)
-            ..style = PaintingStyle.fill,
-        );
-        canvas.drawRect(
-          selectionRect,
-          Paint()
-            ..color = Colors.blue
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2,
-        );
-      }
-    }
-
-    // Draw text notes
-    for (final note in page.textNotes) {
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: note.text,
-          style: TextStyle(
-            color: note.color,
-            fontSize: note.fontSize,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-
-      // Draw selection box if selected
-      if (note == selectedItem) {
-        final rect = Rect.fromLTWH(
-          note.position.dx - 4,
-          note.position.dy - 4,
-          textPainter.width + 8,
-          textPainter.height + 8,
-        );
-        canvas.drawRect(
-          rect,
-          Paint()
-            ..color = Colors.blue.withValues(alpha: 0.3)
-            ..style = PaintingStyle.fill,
-        );
-        canvas.drawRect(
-          rect,
-          Paint()
-            ..color = Colors.blue
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2,
-        );
-      }
-
-      textPainter.paint(canvas, note.position);
-    }
-
-    // Draw eraser cursor
+    // Draw eraser cursor on top of everything
     if (isErasing && eraserPosition != null) {
       canvas.drawCircle(
         eraserPosition!,
@@ -1322,6 +1196,142 @@ class EnhancedDrawingPainter extends CustomPainter {
           ..strokeWidth = 2,
       );
     }
+  }
+
+  void _drawStroke(Canvas canvas, DrawingStroke stroke) {
+    final paint = Paint()
+      ..color = stroke.color
+      ..strokeWidth = stroke.strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i < stroke.points.length - 1; i++) {
+      canvas.drawLine(stroke.points[i], stroke.points[i + 1], paint);
+    }
+  }
+
+  void _drawImage(Canvas canvas, CanvasImage image) {
+    final imageRect = Rect.fromLTWH(
+      image.position.dx,
+      image.position.dy,
+      image.width * image.scale,
+      image.height * image.scale,
+    );
+
+    // Draw the actual image if available in cache
+    final cachedImage = imageCache[image.id];
+    if (cachedImage != null) {
+      canvas.drawImageRect(
+        cachedImage,
+        Rect.fromLTWH(
+          0,
+          0,
+          cachedImage.width.toDouble(),
+          cachedImage.height.toDouble(),
+        ),
+        imageRect,
+        Paint(),
+      );
+    } else {
+      // Draw placeholder while image loads
+      canvas.drawRect(
+        imageRect,
+        Paint()
+          ..color = Colors.grey.withValues(alpha: 0.3)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawRect(
+        imageRect,
+        Paint()
+          ..color = Colors.grey
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+
+      // Draw loading icon
+      final iconSize = (imageRect.width * 0.3).clamp(16.0, 48.0);
+      final iconRect = Rect.fromCenter(
+        center: imageRect.center,
+        width: iconSize,
+        height: iconSize,
+      );
+
+      final textPainter = TextPainter(
+        text: const TextSpan(text: '🖼️', style: TextStyle(fontSize: 24)),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      textPainter.paint(
+        canvas,
+        Offset(
+          iconRect.center.dx - textPainter.width / 2,
+          iconRect.center.dy - textPainter.height / 2,
+        ),
+      );
+    }
+
+    // Draw selection box if selected
+    if (image == selectedItem) {
+      final selectionRect = Rect.fromLTWH(
+        image.position.dx - 4,
+        image.position.dy - 4,
+        (image.width * image.scale) + 8,
+        (image.height * image.scale) + 8,
+      );
+      canvas.drawRect(
+        selectionRect,
+        Paint()
+          ..color = Colors.blue.withValues(alpha: 0.3)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawRect(
+        selectionRect,
+        Paint()
+          ..color = Colors.blue
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+  }
+
+  void _drawTextNote(Canvas canvas, TextNote note) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: note.text,
+        style: TextStyle(
+          color: note.color,
+          fontSize: note.fontSize,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    // Draw selection box if selected
+    if (note == selectedItem) {
+      final rect = Rect.fromLTWH(
+        note.position.dx - 4,
+        note.position.dy - 4,
+        textPainter.width + 8,
+        textPainter.height + 8,
+      );
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..color = Colors.blue.withValues(alpha: 0.3)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..color = Colors.blue
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+
+    textPainter.paint(canvas, note.position);
   }
 
   @override
