@@ -11,6 +11,7 @@ import 'package:path/path.dart' as path;
 import '../services/ocr_service.dart';
 import '../services/drive_service.dart';
 import '../services/cache_service.dart';
+import '../models/markdown_note.dart';
 import 'markdown_editor_screen.dart';
 import 'package:universal_html/html.dart' as html;
 
@@ -539,15 +540,16 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
 
       if (!mounted) return;
 
-      // Navigate to markdown editor
+      // Navigate to markdown editor with pre-filled content
+      final note = MarkdownNote.create(
+        title: 'Scanned_${DateTime.now().millisecondsSinceEpoch}',
+        content: markdownContent,
+      );
+
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => MarkdownEditorScreen(
-            initialContent: markdownContent,
-            fileName: 'Scanned_${DateTime.now().millisecondsSinceEpoch}.md',
-            parentFolderId: widget.parentFolderId,
-          ),
+          builder: (context) => MarkdownEditorScreen(existingNote: note),
         ),
       );
 
@@ -830,7 +832,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, -2),
               ),

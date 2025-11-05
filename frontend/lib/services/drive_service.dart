@@ -891,17 +891,20 @@ class DriveService extends ChangeNotifier {
   Future<List<DriveFile>> listAllFiles() async {
     final allFiles = <DriveFile>[];
     final appFolderId = await getAppFolderId();
-    
+
     await _listFilesRecursive(appFolderId, allFiles);
-    
+
     return allFiles;
   }
 
   /// Helper method to recursively list files
-  Future<void> _listFilesRecursive(String folderId, List<DriveFile> accumulator) async {
+  Future<void> _listFilesRecursive(
+    String folderId,
+    List<DriveFile> accumulator,
+  ) async {
     try {
       final files = await listFiles(folderId);
-      
+
       for (final file in files) {
         if (file.isFolder) {
           // Recursively list files in subfolder
@@ -913,6 +916,85 @@ class DriveService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error listing files in folder $folderId: $e');
+    }
+  }
+
+  /// Download file content as string (for text files like markdown)
+  Future<String> downloadFileAsString(String fileId) async {
+    final bytes = await downloadFile(fileId);
+    if (bytes == null) {
+      throw Exception('Failed to download file content');
+    }
+    return utf8.decode(bytes);
+  }
+
+  /// Update file content on Google Drive (for text files)
+  Future<void> updateFileContent(
+    String fileId,
+    String content, {
+    String? newName,
+  }) async {
+    if (!isOnline) {
+      throw Exception('Cannot update file while offline');
+    }
+
+    try {
+      final accessToken = await _getAccessToken();
+
+      // Prepare the request body
+      final boundary = 'boundary_${DateTime.now().millisecondsSinceEpoch}';
+
+      // Build multipart request
+      final requestBody = StringBuffer();
+
+      // Metadata part
+      requestBody.write('--$boundary\r\n');
+      requestBody.write(
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n',
+      );
+
+      final metadata = <String, dynamic>{};
+      if (newName != null) {
+        metadata['name'] = newName;
+      }
+
+      requestBody.write(jsonEncode(metadata));
+      requestBody.write('\r\n');
+
+      // Content part
+      requestBody.write('--$boundary\r\n');
+      requestBody.write('Content-Type: text/markdown\r\n\r\n');
+      requestBody.write(content);
+      requestBody.write('\r\n--$boundary--\r\n');
+
+      final url = '$_uploadUrl/files/$fileId?uploadType=multipart';
+
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'multipart/related; boundary=$boundary',
+        },
+        body: requestBody.toString(),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('File updated successfully: $fileId');
+
+        // Clear cache for this file to force refresh
+        if (_cacheService != null) {
+          await _cacheService.deleteCachedFile(fileId);
+        }
+
+        notifyListeners();
+      } else {
+        throw Exception(
+          'Failed to update file: ${response.statusCode} ${response.body}',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error updating file content: $e');
+      rethrow;
     }
   }
 }

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/drawing_note.dart';
+import '../models/markdown_note.dart';
 import '../services/drawing_storage_service.dart';
+import '../services/markdown_storage_service.dart';
 import 'enhanced_drawing_canvas_screen.dart';
+import 'markdown_editor_screen.dart';
 
-/// Notes screen for creating and managing drawing notes
+/// Notes screen for creating and managing both drawing and markdown notes
 class NotesScreen extends StatefulWidget {
   const NotesScreen({super.key});
 
@@ -12,10 +15,14 @@ class NotesScreen extends StatefulWidget {
 }
 
 class _NotesScreenState extends State<NotesScreen> {
-  final DrawingStorageService _storageService = DrawingStorageService();
-  List<DrawingNote> _notes = [];
+  final DrawingStorageService _drawingStorageService = DrawingStorageService();
+  final MarkdownStorageService _markdownStorageService =
+      MarkdownStorageService();
+  List<DrawingNote> _drawingNotes = [];
+  List<MarkdownNote> _markdownNotes = [];
   bool _isGridView = true;
   bool _isLoading = true;
+  int _selectedTab = 0; // 0: All, 1: Markdown, 2: Drawing
 
   @override
   void initState() {
@@ -29,9 +36,11 @@ class _NotesScreenState extends State<NotesScreen> {
     });
 
     try {
-      final notes = await _storageService.loadNotes();
+      final drawingNotes = await _drawingStorageService.loadNotes();
+      final markdownNotes = await _markdownStorageService.loadNotes();
       setState(() {
-        _notes = notes;
+        _drawingNotes = drawingNotes;
+        _markdownNotes = markdownNotes;
         _isLoading = false;
       });
     } catch (e) {
@@ -47,12 +56,50 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   void _createNewNote() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const EnhancedDrawingCanvasScreen(),
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Create New Note',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.edit_note),
+              title: const Text('Markdown Note'),
+              subtitle: const Text('Text-based note with markdown formatting'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MarkdownEditorScreen(),
+                  ),
+                ).then((_) => _loadNotes());
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.draw),
+              title: const Text('Drawing Note'),
+              subtitle: const Text('Canvas for drawing and handwritten notes'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EnhancedDrawingCanvasScreen(),
+                  ),
+                ).then((_) => _loadNotes());
+              },
+            ),
+          ],
+        ),
       ),
-    ).then((_) => _loadNotes());
+    );
   }
 
   void _toggleView() {
@@ -61,11 +108,100 @@ class _NotesScreenState extends State<NotesScreen> {
     });
   }
 
+  int _getTotalNotesCount() {
+    return _drawingNotes.length + _markdownNotes.length;
+  }
+
+  List<dynamic> _getFilteredNotes() {
+    switch (_selectedTab) {
+      case 1: // Markdown only
+        return _markdownNotes;
+      case 2: // Drawing only
+        return _drawingNotes;
+      default: // All notes
+        final allNotes = <dynamic>[];
+        allNotes.addAll(_markdownNotes);
+        allNotes.addAll(_drawingNotes);
+        // Sort by updated time
+        allNotes.sort((a, b) {
+          final aTime = a is MarkdownNote
+              ? a.updatedAt
+              : (a as DrawingNote).updatedAt;
+          final bTime = b is MarkdownNote
+              ? b.updatedAt
+              : (b as DrawingNote).updatedAt;
+          return bTime.compareTo(aTime);
+        });
+        return allNotes;
+    }
+  }
+
+  Widget _buildTabChip(String label, int index, int count) {
+    final theme = Theme.of(context);
+    final isSelected = _selectedTab == index;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTab = index;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primaryContainer
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected
+              ? Border.all(color: theme.colorScheme.primary)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? theme.colorScheme.onPrimaryContainer
+                    : theme.colorScheme.onSurfaceVariant,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: TextStyle(
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.surface,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Drawing Notes'),
+        title: const Text('Notes'),
         elevation: 0,
         actions: [
           IconButton(
@@ -74,15 +210,31 @@ class _NotesScreenState extends State<NotesScreen> {
             tooltip: _isGridView ? 'List view' : 'Grid view',
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                _buildTabChip('All', 0, _getTotalNotesCount()),
+                const SizedBox(width: 8),
+                _buildTabChip('Markdown', 1, _markdownNotes.length),
+                const SizedBox(width: 8),
+                _buildTabChip('Drawing', 2, _drawingNotes.length),
+              ],
+            ),
+          ),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _notes.isEmpty
+          : _getFilteredNotes().isEmpty
           ? _buildEmptyState(context)
           : _buildNotesList(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createNewNote,
-        icon: const Icon(Icons.draw),
+        icon: const Icon(Icons.add),
         label: const Text('New Note'),
       ),
     );
@@ -90,6 +242,31 @@ class _NotesScreenState extends State<NotesScreen> {
 
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
+
+    String title;
+    String subtitle;
+    IconData icon;
+
+    switch (_selectedTab) {
+      case 1:
+        title = 'No Markdown Notes Yet';
+        subtitle =
+            'Create your first markdown note\nWrite, format, and organize your thoughts';
+        icon = Icons.edit_note;
+        break;
+      case 2:
+        title = 'No Drawing Notes Yet';
+        subtitle =
+            'Create your first drawing note\nDraw, add text, and export as PDF';
+        icon = Icons.draw;
+        break;
+      default:
+        title = 'No Notes Yet';
+        subtitle =
+            'Create your first note\nChoose between markdown or drawing notes';
+        icon = Icons.note_add;
+        break;
+    }
 
     return Center(
       child: Column(
@@ -106,18 +283,18 @@ class _NotesScreenState extends State<NotesScreen> {
               ),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.draw, size: 64, color: theme.colorScheme.primary),
+            child: Icon(icon, size: 64, color: theme.colorScheme.primary),
           ),
           const SizedBox(height: 24),
           Text(
-            'No Drawing Notes Yet',
+            title,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Create your first drawing note\nDraw, add text, and export as PDF',
+            subtitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
@@ -127,8 +304,8 @@ class _NotesScreenState extends State<NotesScreen> {
           const SizedBox(height: 32),
           ElevatedButton.icon(
             onPressed: _createNewNote,
-            icon: const Icon(Icons.draw),
-            label: const Text('Create Drawing Note'),
+            icon: const Icon(Icons.add),
+            label: const Text('Create Note'),
           ),
         ],
       ),
@@ -136,14 +313,16 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Widget _buildNotesList() {
+    final notes = _getFilteredNotes();
+
     if (_isGridView) {
-      return _buildGridView();
+      return _buildGridView(notes);
     } else {
-      return _buildListView();
+      return _buildListView(notes);
     }
   }
 
-  Widget _buildGridView() {
+  Widget _buildGridView(List<dynamic> notes) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: LayoutBuilder(
@@ -163,9 +342,14 @@ class _NotesScreenState extends State<NotesScreen> {
               mainAxisSpacing: 16,
               childAspectRatio: 0.8,
             ),
-            itemCount: _notes.length,
+            itemCount: notes.length,
             itemBuilder: (context, index) {
-              return _buildNoteCard(_notes[index]);
+              final note = notes[index];
+              if (note is MarkdownNote) {
+                return _buildMarkdownNoteCard(note);
+              } else {
+                return _buildDrawingNoteCard(note as DrawingNote);
+              }
             },
           );
         },
@@ -173,27 +357,133 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  Widget _buildListView() {
+  Widget _buildListView(List<dynamic> notes) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _notes.length,
+      itemCount: notes.length,
       itemBuilder: (context, index) {
+        final note = notes[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _buildNoteListTile(_notes[index]),
+          child: note is MarkdownNote
+              ? _buildMarkdownNoteListTile(note)
+              : _buildDrawingNoteListTile(note as DrawingNote),
         );
       },
     );
   }
 
-  Widget _buildNoteCard(DrawingNote note) {
+  Widget _buildMarkdownNoteCard(MarkdownNote note) {
     final theme = Theme.of(context);
 
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () => _openNote(note),
+        onTap: () => _openMarkdownNote(note),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.edit_note,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      note.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) =>
+                        _handleMarkdownNoteAction(note, value),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (note.content.isNotEmpty) ...[
+                      Text(
+                        note.content,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    const Spacer(),
+                    Text(
+                      '${note.wordCount} words • ${note.characterCount} characters',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _formatDate(note.updatedAt),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawingNoteCard(DrawingNote note) {
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => _openDrawingNote(note),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -215,7 +505,8 @@ class _NotesScreenState extends State<NotesScreen> {
                     ),
                   ),
                   PopupMenuButton<String>(
-                    onSelected: (value) => _handleNoteAction(note, value),
+                    onSelected: (value) =>
+                        _handleDrawingNoteAction(note, value),
                     itemBuilder: (context) => [
                       const PopupMenuItem(
                         value: 'edit',
@@ -281,14 +572,94 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  Widget _buildNoteListTile(DrawingNote note) {
+  Widget _buildMarkdownNoteListTile(MarkdownNote note) {
     final theme = Theme.of(context);
 
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ListTile(
-        onTap: () => _openNote(note),
+        onTap: () => _openMarkdownNote(note),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(Icons.edit_note, color: theme.colorScheme.primary),
+        ),
+        title: Text(
+          note.title,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            if (note.content.isNotEmpty) ...[
+              Text(
+                note.content,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 4),
+            ],
+            Text(
+              '${note.wordCount} words • ${note.characterCount} characters',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _formatDate(note.updatedAt),
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) => _handleMarkdownNoteAction(note, value),
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  Icon(Icons.edit, size: 20),
+                  SizedBox(width: 8),
+                  Text('Edit'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, size: 20, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Delete', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        contentPadding: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Widget _buildDrawingNoteListTile(DrawingNote note) {
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: ListTile(
+        onTap: () => _openDrawingNote(note),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -323,7 +694,7 @@ class _NotesScreenState extends State<NotesScreen> {
           ],
         ),
         trailing: PopupMenuButton<String>(
-          onSelected: (value) => _handleNoteAction(note, value),
+          onSelected: (value) => _handleDrawingNoteAction(note, value),
           itemBuilder: (context) => [
             const PopupMenuItem(
               value: 'edit',
@@ -370,7 +741,7 @@ class _NotesScreenState extends State<NotesScreen> {
     }
   }
 
-  void _openNote(DrawingNote note) {
+  void _openDrawingNote(DrawingNote note) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -379,22 +750,42 @@ class _NotesScreenState extends State<NotesScreen> {
     ).then((_) => _loadNotes());
   }
 
-  void _handleNoteAction(DrawingNote note, String action) {
+  void _openMarkdownNote(MarkdownNote note) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MarkdownEditorScreen(existingNote: note),
+      ),
+    ).then((_) => _loadNotes());
+  }
+
+  void _handleDrawingNoteAction(DrawingNote note, String action) {
     switch (action) {
       case 'edit':
-        _openNote(note);
+        _openDrawingNote(note);
         break;
       case 'delete':
-        _showDeleteConfirmation(note);
+        _showDrawingNoteDeleteConfirmation(note);
         break;
     }
   }
 
-  void _showDeleteConfirmation(DrawingNote note) {
+  void _handleMarkdownNoteAction(MarkdownNote note, String action) {
+    switch (action) {
+      case 'edit':
+        _openMarkdownNote(note);
+        break;
+      case 'delete':
+        _showMarkdownNoteDeleteConfirmation(note);
+        break;
+    }
+  }
+
+  void _showDrawingNoteDeleteConfirmation(DrawingNote note) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Note'),
+        title: const Text('Delete Drawing Note'),
         content: Text('Are you sure you want to delete "${note.title}"?'),
         actions: [
           TextButton(
@@ -404,7 +795,7 @@ class _NotesScreenState extends State<NotesScreen> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              _deleteNote(note);
+              _deleteDrawingNote(note);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
@@ -414,21 +805,64 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  Future<void> _deleteNote(DrawingNote note) async {
+  void _showMarkdownNoteDeleteConfirmation(MarkdownNote note) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Markdown Note'),
+        content: Text('Are you sure you want to delete "${note.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteMarkdownNote(note);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteDrawingNote(DrawingNote note) async {
     try {
-      await _storageService.deleteNote(note.id);
+      await _drawingStorageService.deleteNote(note.id);
       await _loadNotes();
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Note "${note.title}" deleted')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Drawing note "${note.title}" deleted')),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error deleting note: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting drawing note: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteMarkdownNote(MarkdownNote note) async {
+    try {
+      await _markdownStorageService.deleteNote(note.id);
+      await _loadNotes();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Markdown note "${note.title}" deleted')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting markdown note: $e')),
+        );
       }
     }
   }

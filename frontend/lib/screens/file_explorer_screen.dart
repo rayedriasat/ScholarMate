@@ -14,6 +14,7 @@ import '../widgets/tag_selection_dialog.dart';
 import '../widgets/sharing_dialog.dart';
 import '../widgets/indexing_progress_panel.dart';
 import 'pdf_viewer_screen.dart';
+import 'markdown_viewer_screen.dart';
 import 'document_scanner_screen.dart';
 import 'tag_management_screen.dart';
 import 'shared_files_screen.dart';
@@ -1370,6 +1371,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       // Open PDF in viewer
       Navigator.of(context).push(
         MaterialPageRoute(builder: (context) => PdfViewerScreen(file: file)),
+      );
+    } else if (file.isMarkdown) {
+      // Open Markdown in viewer
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => MarkdownViewerScreen(file: file),
+        ),
       );
     } else {
       // TODO: Open other file types (will be implemented in later phases)

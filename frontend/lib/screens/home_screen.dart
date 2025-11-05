@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Initialize indexing service once
     if (!_indexingInitialized) {
       _indexingInitialized = true;
@@ -143,16 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         floatingActionButton: _selectedIndex == 0
             ? null // FileExplorerScreen has its own FAB
-            : _selectedIndex == 2
-            ? FloatingActionButton(
-                onPressed: () {
-                  // Create new note
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Note editor coming soon')),
-                  );
-                },
-                child: const Icon(Icons.add),
-              )
             : null,
       ),
     );
