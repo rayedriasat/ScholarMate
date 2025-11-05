@@ -57,6 +57,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String _searchQuery = '';
   FileSortOption _sortOption = FileSortOption.name;
   bool _sortAscending = true;
+  FileViewLayout _viewLayout = FileViewLayout.grid;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -838,6 +839,74 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
   }
 
+  Widget _buildViewLayoutToggle(ThemeData theme, bool isSmallScreen) {
+    return Container(
+      height: isSmallScreen ? 38 : 43,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildLayoutButton(
+            FileViewLayout.list,
+            Icons.view_list,
+            'List View',
+            theme,
+            isSmallScreen,
+          ),
+          _buildLayoutButton(
+            FileViewLayout.grid,
+            Icons.grid_view,
+            'Grid View',
+            theme,
+            isSmallScreen,
+          ),
+          _buildLayoutButton(
+            FileViewLayout.compact,
+            Icons.view_agenda,
+            'Compact View',
+            theme,
+            isSmallScreen,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLayoutButton(
+    FileViewLayout layout,
+    IconData icon,
+    String tooltip,
+    ThemeData theme,
+    bool isSmallScreen,
+  ) {
+    final isSelected = _viewLayout == layout;
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: () => setState(() => _viewLayout = layout),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+          decoration: BoxDecoration(
+            color: isSelected ? theme.colorScheme.primary : null,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: isSmallScreen ? 16 : 18,
+            color: isSelected
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildModernToolbar(ThemeData theme) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
 
@@ -923,6 +992,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               ],
             ),
           ),
+          SizedBox(width: isSmallScreen ? 6 : 8),
+
+          // View layout toggle
+          _buildViewLayoutToggle(theme, isSmallScreen),
           SizedBox(width: isSmallScreen ? 6 : 8),
 
           // Filter button
@@ -1045,66 +1118,186 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       );
     }
 
-    // Responsive layout
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Mobile: List view
-          if (constraints.maxWidth < 600) {
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _files.length,
-              itemBuilder: (context, index) {
-                final file = _files[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: FileCard(
-                    file: file,
-                    isSelected: _selectedFiles.contains(file.id),
-                    onTap: () => _handleFileTap(file),
-                    onLongPress: () => _toggleFileSelection(file.id),
-                    onRename: () => _showRenameDialog(file),
-                    onDelete: () => _showDeleteConfirmation(file),
-                    onShare: () => _shareFile(file),
-                  ),
-                );
-              },
-            );
-          }
+    // Layout-based view
+    return RefreshIndicator(onRefresh: _refresh, child: _buildLayoutView());
+  }
 
-          // Desktop/Tablet: Grid view
-          final crossAxisCount = constraints.maxWidth > 1200
-              ? 4
-              : constraints.maxWidth > 800
-              ? 3
-              : 2;
+  Widget _buildLayoutView() {
+    switch (_viewLayout) {
+      case FileViewLayout.grid:
+        return _buildGridView();
+      case FileViewLayout.compact:
+        return _buildCompactView();
+      case FileViewLayout.list:
+        return _buildListView();
+    }
+  }
 
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.2,
-            ),
-            itemCount: _files.length,
-            itemBuilder: (context, index) {
-              final file = _files[index];
-              return FileCard(
-                file: file,
-                isSelected: _selectedFiles.contains(file.id),
-                onTap: () => _handleFileTap(file),
-                onLongPress: () => _toggleFileSelection(file.id),
-                onRename: () => _showRenameDialog(file),
-                onDelete: () => _showDeleteConfirmation(file),
-                onShare: () => _shareFile(file),
-              );
-            },
-          );
-        },
-      ),
+  Widget _buildListView() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _files.length,
+      itemBuilder: (context, index) {
+        final file = _files[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: FileCard(
+            file: file,
+            isSelected: _selectedFiles.contains(file.id),
+            onTap: () => _handleFileTap(file),
+            onLongPress: () => _toggleFileSelection(file.id),
+            onRename: () => _showRenameDialog(file),
+            onDelete: () => _showDeleteConfirmation(file),
+            onShare: () => _shareFile(file),
+            onReindex: file.isPdf ? () => _reindexFile(file) : null,
+          ),
+        );
+      },
     );
+  }
+
+  Widget _buildGridView() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth > 1200
+            ? 4
+            : constraints.maxWidth > 800
+            ? 3
+            : constraints.maxWidth > 600
+            ? 2
+            : 2;
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1.2,
+          ),
+          itemCount: _files.length,
+          itemBuilder: (context, index) {
+            final file = _files[index];
+            return FileCard(
+              file: file,
+              isSelected: _selectedFiles.contains(file.id),
+              onTap: () => _handleFileTap(file),
+              onLongPress: () => _toggleFileSelection(file.id),
+              onRename: () => _showRenameDialog(file),
+              onDelete: () => _showDeleteConfirmation(file),
+              onShare: () => _shareFile(file),
+              onReindex: file.isPdf ? () => _reindexFile(file) : null,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCompactView() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(8),
+      itemCount: _files.length,
+      itemBuilder: (context, index) {
+        final file = _files[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          elevation: _selectedFiles.contains(file.id) ? 4 : 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: _selectedFiles.contains(file.id)
+                ? BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  )
+                : BorderSide.none,
+          ),
+          child: ListTile(
+            leading: _buildCompactIcon(file),
+            title: Text(
+              file.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              '${file.formattedSize} • ${_formatCompactDate(file.modifiedTime)}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (file.isShared)
+                  Icon(Icons.people, size: 16, color: Colors.blue[600]),
+                FileContextMenu(
+                  file: file,
+                  onRename: () => _showRenameDialog(file),
+                  onMove: null,
+                  onDelete: () => _showDeleteConfirmation(file),
+                  onShare: () => _shareFile(file),
+                  onManageTags: file.isFolder
+                      ? null
+                      : () => _showTagDialog(file),
+                  onReindex: file.isPdf ? () => _reindexFile(file) : null,
+                ),
+              ],
+            ),
+            onTap: () => _handleFileTap(file),
+            onLongPress: () => _toggleFileSelection(file.id),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCompactIcon(DriveFile file) {
+    if (file.isFolder) {
+      return Icon(Icons.folder, color: Colors.blue[700]);
+    }
+
+    Color iconColor;
+    IconData iconData;
+
+    if (file.isPdf) {
+      iconColor = Colors.red[700]!;
+      iconData = Icons.picture_as_pdf;
+    } else if (file.isMarkdown) {
+      iconColor = Colors.green[700]!;
+      iconData = Icons.description;
+    } else {
+      iconColor = Colors.grey[700]!;
+      iconData = Icons.insert_drive_file;
+    }
+
+    return Icon(iconData, color: iconColor);
+  }
+
+  String _formatCompactDate(DateTime? date) {
+    if (date == null) return 'Unknown';
+
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes}m ago';
+      }
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  Future<void> _showTagDialog(DriveFile file) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => TagSelectionDialog(fileIds: [file.id]),
+    );
+
+    if (result == true) {
+      _loadFiles();
+    }
   }
 
   Widget _buildFAB() {
@@ -1306,6 +1499,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
 /// Sort options for files
 enum FileSortOption { name, date, size, tag }
+
+/// View layout options for files
+enum FileViewLayout { list, grid, compact }
 
 class _CreateFolderDialog extends StatefulWidget {
   final Function(String) onCreateFolder;
