@@ -743,6 +743,8 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -754,118 +756,246 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
               overflow: TextOverflow.ellipsis,
             ),
             if (_totalPages > 0)
-              Row(
-                children: [
-                  Text(
-                    'Page $_currentPage of $_totalPages',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                  if (widget.initialPage != null) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.bookmark,
-                            size: 10,
-                            color: Colors.blue[700],
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            'From citation',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.blue[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+              Flexible(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Page $_currentPage of $_totalPages',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (widget.initialPage != null && !isAndroid) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bookmark,
+                              size: 10,
+                              color: Colors.blue[700],
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              'From citation',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
           ],
         ),
         actions: [
-          // Refresh button - Check for updates from Drive
-          Consumer<ConnectivityService>(
-            builder: (context, connectivity, child) {
-              return IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: connectivity.isOnline ? _refreshPdf : null,
-                tooltip: connectivity.isOnline
-                    ? 'Refresh from Google Drive'
-                    : 'Offline - Cannot refresh',
-                color: connectivity.isOnline ? null : Colors.grey,
-              );
-            },
-          ),
-          // TTS toggle
-          IconButton(
-            icon: Icon(
-              _showTtsControls ? Icons.volume_off : Icons.volume_up,
-              color: _showTtsControls ? Colors.blue : null,
-            ),
-            onPressed: _toggleTtsControls,
-            tooltip: 'Read Aloud',
-          ),
-          // Annotation toolbar toggle
-          IconButton(
-            icon: Icon(
-              _showAnnotationToolbar ? Icons.edit_off : Icons.edit,
-              color: _showAnnotationToolbar ? Colors.blue : null,
-            ),
-            onPressed: _toggleAnnotationToolbar,
-            tooltip: 'Annotations',
-          ),
-          // Annotation list toggle
-          IconButton(
-            icon: Icon(
-              Icons.bookmark,
-              color: _showAnnotations ? Colors.blue : null,
-            ),
-            onPressed: _toggleAnnotationPanel,
-            tooltip: 'Show annotations',
-          ),
-          // Save button
-          if (_annotations.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.cloud_upload),
-              onPressed: () async {
-                await _savePdfWithAnnotations(uploadToDrive: true);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('PDF saved and uploaded to Google Drive'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+          // On Android, use overflow menu to prevent toolbar overflow
+          if (isAndroid)
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                switch (value) {
+                  case 'refresh':
+                    final connectivity = context.read<ConnectivityService>();
+                    if (connectivity.isOnline) await _refreshPdf();
+                    break;
+                  case 'tts':
+                    _toggleTtsControls();
+                    break;
+                  case 'annotate':
+                    _toggleAnnotationToolbar();
+                    break;
+                  case 'annotations':
+                    _toggleAnnotationPanel();
+                    break;
+                  case 'save':
+                    await _savePdfWithAnnotations(uploadToDrive: true);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'PDF saved and uploaded to Google Drive',
+                          ),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                    break;
+                  case 'search':
+                    _toggleSearch();
+                    break;
+                  case 'goto':
+                    if (_totalPages > 0) _showPageNavigator();
+                    break;
                 }
               },
-              tooltip: 'Upload to Drive',
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'refresh',
+                  enabled: context.read<ConnectivityService>().isOnline,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.refresh, size: 20),
+                      SizedBox(width: 12),
+                      Text('Refresh'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'tts',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _showTtsControls ? Icons.volume_off : Icons.volume_up,
+                        size: 20,
+                        color: _showTtsControls ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Read Aloud'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'annotate',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _showAnnotationToolbar ? Icons.edit_off : Icons.edit,
+                        size: 20,
+                        color: _showAnnotationToolbar ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Annotations'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'annotations',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.bookmark,
+                        size: 20,
+                        color: _showAnnotations ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Show Annotations'),
+                    ],
+                  ),
+                ),
+                if (_annotations.isNotEmpty)
+                  const PopupMenuItem(
+                    value: 'save',
+                    child: Row(
+                      children: [
+                        Icon(Icons.cloud_upload, size: 20),
+                        SizedBox(width: 12),
+                        Text('Upload to Drive'),
+                      ],
+                    ),
+                  ),
+                PopupMenuItem(
+                  value: 'search',
+                  child: Row(
+                    children: [
+                      Icon(_isSearching ? Icons.close : Icons.search, size: 20),
+                      const SizedBox(width: 12),
+                      const Text('Search'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'goto',
+                  enabled: _totalPages > 0,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.format_list_numbered, size: 20),
+                      SizedBox(width: 12),
+                      Text('Go to Page'),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          else ...[
+            // Desktop/non-Android: Show all buttons in toolbar
+            Consumer<ConnectivityService>(
+              builder: (context, connectivity, child) {
+                return IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: connectivity.isOnline ? _refreshPdf : null,
+                  tooltip: connectivity.isOnline
+                      ? 'Refresh from Google Drive'
+                      : 'Offline - Cannot refresh',
+                  color: connectivity.isOnline ? null : Colors.grey,
+                );
+              },
             ),
-          // Search button
-          IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-            onPressed: _toggleSearch,
-            tooltip: 'Search',
-          ),
-          // Page navigator
-          IconButton(
-            icon: const Icon(Icons.format_list_numbered),
-            onPressed: _totalPages > 0 ? _showPageNavigator : null,
-            tooltip: 'Go to page',
-          ),
+            IconButton(
+              icon: Icon(
+                _showTtsControls ? Icons.volume_off : Icons.volume_up,
+                color: _showTtsControls ? Colors.blue : null,
+              ),
+              onPressed: _toggleTtsControls,
+              tooltip: 'Read Aloud',
+            ),
+            IconButton(
+              icon: Icon(
+                _showAnnotationToolbar ? Icons.edit_off : Icons.edit,
+                color: _showAnnotationToolbar ? Colors.blue : null,
+              ),
+              onPressed: _toggleAnnotationToolbar,
+              tooltip: 'Annotations',
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.bookmark,
+                color: _showAnnotations ? Colors.blue : null,
+              ),
+              onPressed: _toggleAnnotationPanel,
+              tooltip: 'Show annotations',
+            ),
+            if (_annotations.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.cloud_upload),
+                onPressed: () async {
+                  await _savePdfWithAnnotations(uploadToDrive: true);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('PDF saved and uploaded to Google Drive'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                tooltip: 'Upload to Drive',
+              ),
+            IconButton(
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              onPressed: _toggleSearch,
+              tooltip: 'Search',
+            ),
+            IconButton(
+              icon: const Icon(Icons.format_list_numbered),
+              onPressed: _totalPages > 0 ? _showPageNavigator : null,
+              tooltip: 'Go to page',
+            ),
+          ],
         ],
       ),
       body: Consumer<PdfViewerManager>(

@@ -58,7 +58,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String _searchQuery = '';
   FileSortOption _sortOption = FileSortOption.name;
   bool _sortAscending = true;
-  FileViewLayout _viewLayout = FileViewLayout.grid;
+  FileViewLayout _viewLayout =
+      FileViewLayout.list; // Default to list view for Android
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -841,6 +842,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   Widget _buildViewLayoutToggle(ThemeData theme, bool isSmallScreen) {
+    // On Android, only show list and compact views (no grid)
+    final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+
     return Container(
       height: isSmallScreen ? 38 : 43,
       decoration: BoxDecoration(
@@ -858,13 +862,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             theme,
             isSmallScreen,
           ),
-          _buildLayoutButton(
-            FileViewLayout.grid,
-            Icons.grid_view,
-            'Grid View',
-            theme,
-            isSmallScreen,
-          ),
+          if (!isAndroid) // Hide grid view on Android
+            _buildLayoutButton(
+              FileViewLayout.grid,
+              Icons.grid_view,
+              'Grid View',
+              theme,
+              isSmallScreen,
+            ),
           _buildLayoutButton(
             FileViewLayout.compact,
             Icons.view_agenda,
