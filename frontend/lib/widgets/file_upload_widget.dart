@@ -207,7 +207,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
 
   Future<void> _uploadSingleFile(UploadTask task) async {
     DriveFile? uploadedFile;
-    
+
     try {
       setState(() {
         task.status = UploadStatus.uploading;
@@ -283,7 +283,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
       });
 
       // Trigger automatic indexing for PDF files
-      if (uploadedFile != null && _isPdfFile(task.fileName)) {
+      if (_isPdfFile(task.fileName)) {
         await _triggerAutoIndexing(uploadedFile);
       }
     } catch (e) {
@@ -329,9 +329,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
               children: [
                 const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text('Indexing started for ${file.name}'),
-                ),
+                Expanded(child: Text('Indexing started for ${file.name}')),
               ],
             ),
             backgroundColor: Colors.blue,
@@ -349,7 +347,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
       }
     } catch (e) {
       debugPrint('Failed to trigger automatic indexing: $e');
-      
+
       // Show error notification
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

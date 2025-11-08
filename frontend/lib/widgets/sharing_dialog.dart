@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 /// Model representing a collaborator with their role
 class Collaborator {
@@ -216,7 +215,7 @@ class _SharingDialogState extends State<SharingDialog> {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onPrimaryContainer
-                                    .withOpacity(0.8),
+                                    .withValues(alpha: 0.8),
                               ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -414,16 +413,17 @@ class _SharingDialogState extends State<SharingDialog> {
                                 size: 64,
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.3),
+                                ).colorScheme.onSurface.withValues(alpha: 0.3),
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'No collaborators yet',
                                 style: Theme.of(context).textTheme.bodyLarge
                                     ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface.withOpacity(0.6),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
                                     ),
                               ),
                               const SizedBox(height: 8),
@@ -431,9 +431,10 @@ class _SharingDialogState extends State<SharingDialog> {
                                 'Add someone above to start collaborating',
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface.withOpacity(0.5),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.5),
                                     ),
                               ),
                             ],
@@ -479,12 +480,14 @@ class _RoleOption extends StatelessWidget {
           border: Border.all(
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
           color: isSelected
-              ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+              ? Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3)
               : null,
         ),
         child: Column(
@@ -515,7 +518,9 @@ class _RoleOption extends StatelessWidget {
             Text(
               description,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],

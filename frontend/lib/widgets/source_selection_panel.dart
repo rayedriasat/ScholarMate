@@ -30,11 +30,9 @@ class SourceSelectionPanel extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             border: Border(
-              bottom: BorderSide(
-                color: Theme.of(context).dividerColor,
-              ),
+              bottom: BorderSide(color: Theme.of(context).dividerColor),
             ),
           ),
           child: Column(
@@ -51,8 +49,8 @@ class SourceSelectionPanel extends StatelessWidget {
                     child: Text(
                       'Source Selection',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -65,9 +63,9 @@ class SourceSelectionPanel extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '${selectedFileIds.length} of ${availableFiles.length} selected',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
               ),
               const SizedBox(height: 12),
               Row(
@@ -104,16 +102,16 @@ class SourceSelectionPanel extends StatelessWidget {
           child: isLoading
               ? const Center(child: CircularProgressIndicator())
               : availableFiles.isEmpty
-                  ? _buildEmptyState(context)
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(8),
-                      itemCount: availableFiles.length,
-                      itemBuilder: (context, index) {
-                        final file = availableFiles[index];
-                        final isSelected = selectedFileIds.contains(file.id);
-                        return _buildFileItem(context, file, isSelected);
-                      },
-                    ),
+              ? _buildEmptyState(context)
+              : ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: availableFiles.length,
+                  itemBuilder: (context, index) {
+                    final file = availableFiles[index];
+                    final isSelected = selectedFileIds.contains(file.id);
+                    return _buildFileItem(context, file, isSelected);
+                  },
+                ),
         ),
       ],
     );
@@ -124,24 +122,20 @@ class SourceSelectionPanel extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.folder_open,
-            size: 48,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.folder_open, size: 48, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'No PDF files found',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'Upload PDFs to use as sources',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
           ),
         ],
       ),
@@ -153,7 +147,7 @@ class SourceSelectionPanel extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
       elevation: isSelected ? 2 : 0,
       color: isSelected
-          ? Theme.of(context).primaryColor.withOpacity(0.1)
+          ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
           : null,
       child: CheckboxListTile(
         value: isSelected,
@@ -170,17 +164,12 @@ class SourceSelectionPanel extends StatelessWidget {
         subtitle: file.size != null
             ? Text(
                 _formatFileSize(file.size!),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               )
             : null,
         secondary: Icon(
           Icons.picture_as_pdf,
-          color: isSelected
-              ? Theme.of(context).primaryColor
-              : Colors.grey[600],
+          color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
         ),
         controlAffinity: ListTileControlAffinity.leading,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -4,7 +4,6 @@ import '../models/drive_file.dart';
 import '../services/drive_service.dart';
 import '../widgets/file_card.dart';
 import '../widgets/file_card_compact.dart';
-import '../widgets/breadcrumb_navigation.dart';
 
 /// Enhanced file explorer with multiple view layouts (list, grid, compact)
 class FileExplorerEnhanced extends StatefulWidget {
@@ -45,13 +44,21 @@ class _FileExplorerEnhancedState extends State<FileExplorerEnhanced> {
 
     try {
       final driveService = context.read<DriveService>();
-      final files = await driveService.listFiles(
-        folderId: _currentFolderId,
-        query: _searchQuery.isNotEmpty ? _searchQuery : null,
-      );
+      final files = await driveService.listFiles(_currentFolderId);
+
+      // Apply search filter if needed
+      final filteredFiles = _searchQuery.isNotEmpty
+          ? files
+                .where(
+                  (file) => file.name.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ),
+                )
+                .toList()
+          : files;
 
       // Apply sorting
-      final sortedFiles = _sortFiles(files);
+      final sortedFiles = _sortFiles(filteredFiles);
 
       if (mounted) {
         setState(() {
@@ -77,7 +84,11 @@ class _FileExplorerEnhancedState extends State<FileExplorerEnhanced> {
         sorted.sort((a, b) => a.name.compareTo(b.name));
         break;
       case FileSortOption.date:
-        sorted.sort((a, b) => a.modifiedTime.compareTo(b.modifiedTime));
+        sorted.sort((a, b) {
+          final aTime = a.modifiedTime ?? DateTime(1970);
+          final bTime = b.modifiedTime ?? DateTime(1970);
+          return aTime.compareTo(bTime);
+        });
         break;
       case FileSortOption.size:
         sorted.sort((a, b) {
@@ -90,7 +101,9 @@ class _FileExplorerEnhancedState extends State<FileExplorerEnhanced> {
         sorted.sort((a, b) {
           if (a.isFolder && !b.isFolder) return -1;
           if (!a.isFolder && b.isFolder) return 1;
-          return a.mimeType.compareTo(b.mimeType);
+          final aMime = a.mimeType ?? '';
+          final bMime = b.mimeType ?? '';
+          return aMime.compareTo(bMime);
         });
         break;
     }
@@ -162,13 +175,6 @@ class _FileExplorerEnhancedState extends State<FileExplorerEnhanced> {
           preferredSize: const Size.fromHeight(120),
           child: Column(
             children: [
-              // Breadcrumb navigation
-              if (_currentFolderId != null)
-                BreadcrumbNavigation(
-                  currentFolderId: _currentFolderId!,
-                  onNavigate: _navigateToFolder,
-                ),
-
               // Search bar and view controls
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -369,7 +375,6 @@ class _FileExplorerEnhancedState extends State<FileExplorerEnhanced> {
       case FileViewLayout.compact:
         return _buildCompactView();
       case FileViewLayout.list:
-      default:
         return _buildListView();
     }
   }
@@ -463,7 +468,7 @@ class _FileExplorerEnhancedState extends State<FileExplorerEnhanced> {
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Text(
-              '${file.formattedSize} • ${_formatDate(file.modifiedTime)}',
+              '${file.formattedSize} • ${_formatDate(file.modifiedTime ?? DateTime.now())}',
               style: const TextStyle(fontSize: 12),
             ),
             trailing: file.isShared

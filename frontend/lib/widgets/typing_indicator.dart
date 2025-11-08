@@ -47,7 +47,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 5,
                   offset: const Offset(0, 2),
                 ),
@@ -76,7 +76,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
         final delay = index * 0.2;
         final value = (_controller.value - delay) % 1.0;
         final opacity = value < 0.5 ? value * 2 : (1 - value) * 2;
-        
+
         return Opacity(
           opacity: opacity.clamp(0.3, 1.0),
           child: Container(

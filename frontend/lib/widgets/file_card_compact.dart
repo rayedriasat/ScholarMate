@@ -67,7 +67,7 @@ class FileCardCompact extends StatelessWidget {
                 ],
 
                 Text(
-                  _formatDate(file.modifiedTime),
+                  _formatDate(file.modifiedTime ?? DateTime.now()),
                   style: TextStyle(color: Colors.grey[600], fontSize: 11),
                 ),
               ],

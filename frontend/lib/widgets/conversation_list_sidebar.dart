@@ -30,9 +30,7 @@ class ConversationListSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         border: Border(
-          right: BorderSide(
-            color: Theme.of(context).dividerColor,
-          ),
+          right: BorderSide(color: Theme.of(context).dividerColor),
         ),
       ),
       child: Column(
@@ -42,9 +40,7 @@ class ConversationListSidebar extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).dividerColor,
-                ),
+                bottom: BorderSide(color: Theme.of(context).dividerColor),
               ),
             ),
             child: SizedBox(
@@ -65,26 +61,24 @@ class ConversationListSidebar extends StatelessWidget {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : conversations.isEmpty
-                    ? _buildEmptyState(context)
-                    : ListView.builder(
-                        itemCount: conversations.length,
-                        itemBuilder: (context, index) {
-                          final conversation = conversations[index];
-                          final isSelected =
-                              conversation.id == currentConversationId;
+                ? _buildEmptyState(context)
+                : ListView.builder(
+                    itemCount: conversations.length,
+                    itemBuilder: (context, index) {
+                      final conversation = conversations[index];
+                      final isSelected =
+                          conversation.id == currentConversationId;
 
-                          return _ConversationListItem(
-                            conversation: conversation,
-                            isSelected: isSelected,
-                            onTap: () =>
-                                onConversationSelected(conversation.id),
-                            onDelete: () =>
-                                onDeleteConversation(conversation.id),
-                            onRename: (newTitle) =>
-                                onRenameConversation(conversation.id, newTitle),
-                          );
-                        },
-                      ),
+                      return _ConversationListItem(
+                        conversation: conversation,
+                        isSelected: isSelected,
+                        onTap: () => onConversationSelected(conversation.id),
+                        onDelete: () => onDeleteConversation(conversation.id),
+                        onRename: (newTitle) =>
+                            onRenameConversation(conversation.id, newTitle),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -98,24 +92,20 @@ class ConversationListSidebar extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: 48,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No conversations yet',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
             Text(
               'Start a new chat to begin',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
               textAlign: TextAlign.center,
             ),
           ],
@@ -145,7 +135,8 @@ class _ConversationListItem extends StatelessWidget {
     final dateFormat = DateFormat('MMM d, y');
     final timeFormat = DateFormat('h:mm a');
     final now = DateTime.now();
-    final isToday = conversation.updatedAt.year == now.year &&
+    final isToday =
+        conversation.updatedAt.year == now.year &&
         conversation.updatedAt.month == now.month &&
         conversation.updatedAt.day == now.day;
 
@@ -155,7 +146,7 @@ class _ConversationListItem extends StatelessWidget {
 
     return Material(
       color: isSelected
-          ? Theme.of(context).primaryColor.withOpacity(0.1)
+          ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
           : Colors.transparent,
       child: InkWell(
         onTap: onTap,
@@ -170,28 +161,25 @@ class _ConversationListItem extends StatelessWidget {
                     Text(
                       conversation.title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight:
-                                isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       dateText,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
               PopupMenuButton<String>(
-                icon: Icon(
-                  Icons.more_vert,
-                  size: 20,
-                  color: Colors.grey[600],
-                ),
+                icon: Icon(Icons.more_vert, size: 20, color: Colors.grey[600]),
                 onSelected: (value) {
                   if (value == 'rename') {
                     _showRenameDialog(context);

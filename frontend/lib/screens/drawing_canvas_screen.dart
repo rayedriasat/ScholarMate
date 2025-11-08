@@ -331,13 +331,18 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
     });
 
     try {
+      final page = NotePage(
+        id: 'page_1',
+        strokes: _strokes,
+        textNotes: _textNotes,
+      );
+
       final note = DrawingNote(
         id: _noteId!,
         title: _titleController.text.isEmpty
             ? 'Untitled Note'
             : _titleController.text,
-        strokes: _strokes,
-        textNotes: _textNotes,
+        pages: [page],
         createdAt: widget.existingNote?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -750,11 +755,6 @@ class DrawingPainter extends CustomPainter {
 
       // Draw eraser icon in the center
       final iconSize = strokeWidth * 2;
-      final iconRect = Rect.fromCenter(
-        center: eraserPosition!,
-        width: iconSize,
-        height: iconSize,
-      );
 
       // Draw a simple eraser shape (rectangle with rounded corners)
       canvas.drawRRect(
