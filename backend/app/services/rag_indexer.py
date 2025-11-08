@@ -15,8 +15,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_groq import ChatGroq
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
-from .chroma_service import get_chroma_service
+from .pinecone_service import get_pinecone_service
 from .drive_service import get_drive_service
 from .supabase_service import get_supabase_service
 
@@ -33,7 +34,7 @@ class RAGIndexer:
     
     def __init__(self):
         """Initialize RAG indexer with required services."""
-        self.chroma_service = get_chroma_service()
+        self.pinecone_service = get_pinecone_service()
         self.drive_service = get_drive_service()
         self.supabase_service = get_supabase_service()
         
@@ -45,8 +46,7 @@ class RAGIndexer:
             separators=["\n\n", "\n", " ", ""]
         )
         
-        # Initialize GROQ chat model for embeddings
-        # Note: GROQ doesn't have native embeddings yet, we'll use ChromaDB's default
+        # Initialize GROQ chat model
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
             raise ValueError("GROQ_API_KEY is required")
@@ -54,6 +54,15 @@ class RAGIndexer:
         self.groq_chat = ChatGroq(
             api_key=groq_api_key,
             model="llama-3.3-70b-versatile"
+        )
+        
+        # Initialize embedding model (using HuggingFace sentence-transformers)
+        # This is free and runs locally
+        embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=embedding_model,
+            model_kwargs={'device': 'cpu'},
+            encode_kwargs={'normalize_embeddings': True}
         )
         
         logger.info("RAG Indexer initialized with chunk_size=1000, chunk_overlap=200")
@@ -259,24 +268,26 @@ class RAGIndexer:
     async def generate_embeddings(
         self,
         documents: List[Document]
-    ) -> Optional[List[List[float]]]:
+    ) -> List[List[float]]:
         """
-        Generate embeddings using GROQ via LangChain.
-        
-        Note: GROQ doesn't have native embeddings yet, so we return None
-        and let ChromaDB use its default embedding function.
+        Generate embeddings using HuggingFace sentence-transformers.
         
         Args:
             documents: List of LangChain Document objects
             
         Returns:
-            None (ChromaDB will use default embeddings)
+            List of embedding vectors
         """
         try:
-            # GROQ doesn't have native embeddings yet
-            # ChromaDB will use its default embedding function
-            logger.info(f"Using ChromaDB default embeddings for {len(documents)} documents")
-            return None
+            # Extract text from documents
+            texts = [doc.page_content for doc in documents]
+            
+            # Generate embeddings
+            logger.info(f"Generating embeddings for {len(documents)} documents")
+            embeddings = self.embeddings.embed_documents(texts)
+            
+            logger.info(f"Generated {len(embeddings)} embeddings")
+            return embeddings
             
         except Exception as e:
             logger.error(f"Failed to generate embeddings: {str(e)}")
@@ -290,7 +301,7 @@ class RAGIndexer:
         job_id: str
     ) -> None:
         """
-        Store embeddings in user-specific ChromaDB collection.
+        Store embeddings in user-specific Pinecone namespace.
         
         Args:
             documents: List of LangChain Document objects
@@ -304,17 +315,16 @@ class RAGIndexer:
                 logger.warning(f"Attempted to store 0 documents for file {file_id} - skipping")
                 return
             
-            # Generate embeddings (returns None for ChromaDB default)
+            # Generate embeddings (required for Pinecone)
             embeddings = await self.generate_embeddings(documents)
             
-            # Prepare data for ChromaDB
+            # Prepare data for Pinecone
             texts = [doc.page_content for doc in documents]
             metadatas = [doc.metadata for doc in documents]
             ids = [f"{file_id}_chunk_{i}" for i in range(len(documents))]
             
-            # Store in user's ChromaDB collection
-            # If embeddings is None, ChromaDB will use its default embedding function
-            self.chroma_service.add_documents(
+            # Store in user's Pinecone namespace
+            self.pinecone_service.add_documents(
                 user_id=user_id,
                 documents=texts,
                 metadatas=metadatas,
@@ -335,17 +345,17 @@ class RAGIndexer:
             logger.error(f"Failed to store embeddings: {str(e)}")
             raise ValueError(f"Embedding storage failed: {str(e)}")
     
-    async def get_user_collection(self, user_id: str):
+    async def get_user_namespace(self, user_id: str) -> str:
         """
-        Get or create user's vector store.
+        Get user's Pinecone namespace.
         
         Args:
             user_id: User UUID
             
         Returns:
-            ChromaDB Collection object
+            Namespace string
         """
-        return self.chroma_service.get_or_create_user_collection(user_id)
+        return self.pinecone_service.get_user_namespace(user_id)
     
 
     

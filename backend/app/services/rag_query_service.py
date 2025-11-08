@@ -11,8 +11,9 @@ from datetime import datetime
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_core.documents import Document
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
-from .chroma_service import get_chroma_service
+from .pinecone_service import get_pinecone_service
 from .groq_service import get_groq_service
 from .supabase_service import get_supabase_service
 
@@ -91,7 +92,7 @@ class RAGQueryService:
     
     def __init__(self):
         """Initialize RAG query service with required services."""
-        self.chroma_service = get_chroma_service()
+        self.pinecone_service = get_pinecone_service()
         self.groq_service = get_groq_service()
         self.supabase_service = get_supabase_service()
         
@@ -104,6 +105,14 @@ class RAGQueryService:
             api_key=groq_api_key,
             model="llama-3.3-70b-versatile",
             temperature=0.7
+        )
+        
+        # Initialize embedding model (same as indexer)
+        embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=embedding_model,
+            model_kwargs={'device': 'cpu'},
+            encode_kwargs={'normalize_embeddings': True}
         )
         
         # Define prompt template for RAG
@@ -199,9 +208,9 @@ Answer:""",
         top_k: int = 5
     ) -> List[RetrievedChunk]:
         """
-        Retrieve relevant chunks from user's ChromaDB collection with filtering.
+        Retrieve relevant chunks from user's Pinecone namespace with filtering.
         
-        Uses LangChain retriever with metadata filtering for selected sources.
+        Uses Pinecone query with metadata filtering for selected sources.
         
         Args:
             question: User's question
@@ -215,20 +224,22 @@ Answer:""",
         try:
             logger.info(f"Retrieving context for user {user_id}, top_k={top_k}")
             
+            # Generate query embedding
+            query_embedding = self.embeddings.embed_query(question)
+            
             # Build metadata filter for selected files
-            where_filter = None
+            filter_dict = None
             if selected_file_ids:
-                # ChromaDB where filter for file_id in selected_file_ids
-                # Note: ChromaDB supports $in operator for list matching
-                where_filter = {"file_id": {"$in": selected_file_ids}}
+                # Pinecone filter for file_id in selected_file_ids
+                filter_dict = {"file_id": {"$in": selected_file_ids}}
                 logger.info(f"Filtering by {len(selected_file_ids)} selected files")
             
-            # Query ChromaDB collection
-            results = self.chroma_service.query_documents(
+            # Query Pinecone namespace
+            results = self.pinecone_service.query_documents(
                 user_id=user_id,
-                query_texts=[question],
+                query_embeddings=[query_embedding],
                 n_results=top_k,
-                where=where_filter
+                filter=filter_dict
             )
             
             # Parse results into RetrievedChunk objects
@@ -373,17 +384,17 @@ Answer:""",
         
         return citations
     
-    async def get_user_vectorstore(self, user_id: str):
+    async def get_user_namespace(self, user_id: str) -> str:
         """
-        Get user-specific vector store.
+        Get user-specific Pinecone namespace.
         
         Args:
             user_id: User UUID
             
         Returns:
-            ChromaDB Collection object
+            Namespace string
         """
-        return self.chroma_service.get_or_create_user_collection(user_id)
+        return self.pinecone_service.get_user_namespace(user_id)
     
     async def _get_or_create_user_uuid(self, google_user_id: str) -> str:
         """

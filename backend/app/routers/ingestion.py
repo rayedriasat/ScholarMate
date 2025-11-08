@@ -191,7 +191,7 @@ async def reindex_file(
         rag_indexer = get_rag_indexer()
         
         # Delete existing embeddings first (synchronous)
-        rag_indexer.chroma_service.delete_documents_by_file(request.user_id, file_id)
+        rag_indexer.pinecone_service.delete_documents_by_file(request.user_id, file_id)
         
         # Create new indexing job (returns immediately)
         job_id = await rag_indexer.index_file(
