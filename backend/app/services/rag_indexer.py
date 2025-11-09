@@ -57,14 +57,20 @@ class RAGIndexer:
             logger.error(f"Failed to initialize Supabase service: {str(e)}")
             raise
         
-        # Initialize text splitter with specified parameters
+        # Initialize text splitter with smaller chunks for memory efficiency
+        # Smaller chunks = less memory usage during embedding generation
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
+            chunk_size=500,  # Reduced from 1000 to save memory
+            chunk_overlap=50,  # Reduced from 200 to save memory
             length_function=len,
             separators=["\n\n", "\n", " ", ""]
         )
-        logger.info("Text splitter initialized")
+        
+        # Batch sizes for processing (configurable via env vars for memory tuning)
+        self.BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "10"))  # Chunks per batch
+        self.PAGE_BATCH_SIZE = int(os.getenv("PDF_PAGE_BATCH_SIZE", "5"))  # Pages per batch
+        
+        logger.info(f"Text splitter initialized: chunk_size=500, embedding_batch={self.BATCH_SIZE}, page_batch={self.PAGE_BATCH_SIZE} (memory-optimized)")
         
         # Initialize GROQ chat model
         groq_api_key = os.getenv("GROQ_API_KEY")
@@ -82,30 +88,36 @@ class RAGIndexer:
             logger.error(f"Failed to initialize GROQ: {str(e)}")
             raise
         
-        # Initialize embedding model (using HuggingFace sentence-transformers)
-        # Load from local models directory to avoid download latency
+        # Lazy-load embeddings to avoid blocking startup
+        self._embeddings = None
         local_model_path = os.path.join(os.path.dirname(__file__), "..", "..", "models", "all-MiniLM-L6-v2")
         
         # Check if local model exists, otherwise fall back to downloading
         if os.path.exists(local_model_path):
-            embedding_model = local_model_path
-            logger.info(f"Loading local embedding model from: {local_model_path}")
+            self._embedding_model = local_model_path
+            logger.info(f"Will use local embedding model from: {local_model_path}")
         else:
-            embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-            logger.warning(f"Local model not found, downloading: {embedding_model}")
+            self._embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+            logger.info(f"Will download embedding model on first use: {self._embedding_model}")
         
-        try:
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name=embedding_model,
-                model_kwargs={'device': 'cpu'},
-                encode_kwargs={'normalize_embeddings': True}
-            )
-            logger.info("HuggingFace embeddings initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize HuggingFace embeddings: {str(e)}")
-            raise
-        
-        logger.info("RAG Indexer initialized with chunk_size=1000, chunk_overlap=200")
+        logger.info("RAG Indexer initialized with chunk_size=1000, chunk_overlap=200 (embeddings will load on first use)")
+    
+    @property
+    def embeddings(self):
+        """Lazy-load embeddings model on first access."""
+        if self._embeddings is None:
+            logger.info(f"Loading embedding model: {self._embedding_model}")
+            try:
+                self._embeddings = HuggingFaceEmbeddings(
+                    model_name=self._embedding_model,
+                    model_kwargs={'device': 'cpu'},
+                    encode_kwargs={'normalize_embeddings': True}
+                )
+                logger.info("HuggingFace embeddings loaded successfully")
+            except Exception as e:
+                logger.error(f"Failed to load HuggingFace embeddings: {str(e)}")
+                raise
+        return self._embeddings
     
     async def index_file(
         self,
@@ -254,6 +266,7 @@ class RAGIndexer:
     ) -> List[Document]:
         """
         Extract text from PDF and chunk using LangChain.
+        Memory-optimized: processes pages one at a time to minimize memory usage.
         
         Args:
             pdf_bytes: PDF file bytes
@@ -264,6 +277,7 @@ class RAGIndexer:
             List of LangChain Document objects with metadata
         """
         import tempfile
+        import gc
         
         try:
             # Save PDF bytes to temporary file for PyPDFLoader
@@ -271,20 +285,41 @@ class RAGIndexer:
                 temp_path = temp_file.name
                 temp_file.write(pdf_bytes)
             
+            # Clear pdf_bytes from memory immediately
+            del pdf_bytes
+            gc.collect()
+            
             # Load PDF using LangChain PyPDFLoader
             loader = PyPDFLoader(temp_path)
             pages = loader.load()
             
-            # Clean up temp file
+            # Clean up temp file immediately
             os.remove(temp_path)
             
             logger.info(f"Extracted {len(pages)} pages from {file_name}")
             
             # Split documents into chunks
-            chunks = self.text_splitter.split_documents(pages)
+            # Process in smaller batches to avoid memory spikes
+            all_chunks = []
+            for i in range(0, len(pages), self.PAGE_BATCH_SIZE):
+                page_batch = pages[i:i+self.PAGE_BATCH_SIZE]
+                batch_chunks = self.text_splitter.split_documents(page_batch)
+                all_chunks.extend(batch_chunks)
+                
+                # Clear batch from memory
+                del page_batch
+                del batch_chunks
+                gc.collect()
+                
+                logger.debug(f"Processed pages {i+1}-{min(i+self.PAGE_BATCH_SIZE, len(pages))} of {len(pages)}")
+            
+            # Clear pages from memory
+            del pages
+            gc.collect()
             
             # Add file metadata to each chunk
-            for i, chunk in enumerate(chunks):
+            total_chunks = len(all_chunks)
+            for i, chunk in enumerate(all_chunks):
                 # Extract page number from source metadata
                 page_number = chunk.metadata.get("page", 0)
                 
@@ -293,13 +328,13 @@ class RAGIndexer:
                     "file_id": file_id,
                     "file_name": file_name,
                     "chunk_index": i,
-                    "total_chunks": len(chunks),
+                    "total_chunks": total_chunks,
                     "page_number": page_number,
                     "timestamp": datetime.utcnow().isoformat()
                 })
             
-            logger.info(f"Created {len(chunks)} chunks from {file_name}")
-            return chunks
+            logger.info(f"Created {total_chunks} chunks from {file_name} (memory-optimized)")
+            return all_chunks
             
         except Exception as e:
             logger.error(f"Failed to extract and chunk text: {str(e)}")
@@ -307,27 +342,52 @@ class RAGIndexer:
     
     async def generate_embeddings(
         self,
-        documents: List[Document]
+        documents: List[Document],
+        batch_size: int = None
     ) -> List[List[float]]:
         """
         Generate embeddings using HuggingFace sentence-transformers.
+        Memory-optimized: processes in small batches to stay under memory limit.
         
         Args:
             documents: List of LangChain Document objects
+            batch_size: Number of documents to process at once (default: self.BATCH_SIZE)
             
         Returns:
             List of embedding vectors
         """
+        import gc
+        
         try:
+            if batch_size is None:
+                batch_size = self.BATCH_SIZE
+            
             # Extract text from documents
             texts = [doc.page_content for doc in documents]
             
-            # Generate embeddings
-            logger.info(f"Generating embeddings for {len(documents)} documents")
-            embeddings = self.embeddings.embed_documents(texts)
+            logger.info(f"Generating embeddings for {len(documents)} documents in batches of {batch_size}")
             
-            logger.info(f"Generated {len(embeddings)} embeddings")
-            return embeddings
+            # Process in batches to avoid memory spikes
+            all_embeddings = []
+            for i in range(0, len(texts), batch_size):
+                batch_texts = texts[i:i+batch_size]
+                
+                # Generate embeddings for this batch
+                batch_embeddings = self.embeddings.embed_documents(batch_texts)
+                all_embeddings.extend(batch_embeddings)
+                
+                # Clear batch from memory
+                del batch_texts
+                del batch_embeddings
+                gc.collect()
+                
+                logger.debug(f"Generated embeddings for batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
+                
+                # Small delay to allow garbage collection
+                await asyncio.sleep(0.1)
+            
+            logger.info(f"Generated {len(all_embeddings)} embeddings (memory-optimized)")
+            return all_embeddings
             
         except Exception as e:
             logger.error(f"Failed to generate embeddings: {str(e)}")
@@ -342,6 +402,7 @@ class RAGIndexer:
     ) -> None:
         """
         Store embeddings in user-specific Pinecone namespace.
+        Memory-optimized: processes and stores in small batches.
         
         Args:
             documents: List of LangChain Document objects
@@ -349,37 +410,61 @@ class RAGIndexer:
             file_id: File identifier
             job_id: Job ID for progress tracking
         """
+        import gc
+        
         try:
             # Safety check: don't try to store empty documents
             if not documents or len(documents) == 0:
                 logger.warning(f"Attempted to store 0 documents for file {file_id} - skipping")
                 return
             
-            # Generate embeddings (required for Pinecone)
-            embeddings = await self.generate_embeddings(documents)
+            total_chunks = len(documents)
+            logger.info(f"Storing {total_chunks} documents in batches of {self.BATCH_SIZE}")
             
-            # Prepare data for Pinecone
-            texts = [doc.page_content for doc in documents]
-            metadatas = [doc.metadata for doc in documents]
-            ids = [f"{file_id}_chunk_{i}" for i in range(len(documents))]
+            # Process and store in batches to minimize memory usage
+            for i in range(0, total_chunks, self.BATCH_SIZE):
+                batch_docs = documents[i:i+self.BATCH_SIZE]
+                batch_size = len(batch_docs)
+                
+                # Generate embeddings for this batch only
+                batch_embeddings = await self.generate_embeddings(batch_docs, batch_size=batch_size)
+                
+                # Prepare data for Pinecone
+                batch_texts = [doc.page_content for doc in batch_docs]
+                batch_metadatas = [doc.metadata for doc in batch_docs]
+                batch_ids = [f"{file_id}_chunk_{i+j}" for j in range(batch_size)]
+                
+                # Store this batch in user's Pinecone namespace
+                self.pinecone_service.add_documents(
+                    user_id=user_id,
+                    documents=batch_texts,
+                    metadatas=batch_metadatas,
+                    ids=batch_ids,
+                    embeddings=batch_embeddings
+                )
+                
+                # Update job progress
+                chunks_processed = min(i + self.BATCH_SIZE, total_chunks)
+                await self._update_job_progress(
+                    job_id=job_id,
+                    chunks_processed=chunks_processed,
+                    total_chunks=total_chunks
+                )
+                
+                # Clear batch from memory
+                del batch_docs
+                del batch_embeddings
+                del batch_texts
+                del batch_metadatas
+                del batch_ids
+                gc.collect()
+                
+                logger.info(f"Stored batch {i//self.BATCH_SIZE + 1}/{(total_chunks + self.BATCH_SIZE - 1)//self.BATCH_SIZE} ({chunks_processed}/{total_chunks} chunks)")
+                
+                # Small delay between batches to allow garbage collection
+                await asyncio.sleep(0.2)
             
-            # Store in user's Pinecone namespace
-            self.pinecone_service.add_documents(
-                user_id=user_id,
-                documents=texts,
-                metadatas=metadatas,
-                ids=ids,
-                embeddings=embeddings
-            )
-            
-            # Update job progress
-            await self._update_job_progress(
-                job_id=job_id,
-                chunks_processed=len(documents),
-                total_chunks=len(documents)
-            )
-            
-            logger.info(f"Stored {len(documents)} documents for file {file_id}")
+            logger.info(f"Stored all {total_chunks} documents for file {file_id} (memory-optimized)")
             
         except Exception as e:
             logger.error(f"Failed to store embeddings: {str(e)}")

@@ -11,7 +11,7 @@ from datetime import datetime
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_core.documents import Document
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from .pinecone_service import get_pinecone_service
 from .groq_service import get_groq_service
@@ -107,13 +107,9 @@ class RAGQueryService:
             temperature=0.7
         )
         
-        # Initialize embedding model (same as indexer)
-        embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=embedding_model,
-            model_kwargs={'device': 'cpu'},
-            encode_kwargs={'normalize_embeddings': True}
-        )
+        # Lazy-load embeddings to avoid blocking startup
+        self._embeddings = None
+        self._embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
         
         # Define prompt template for RAG
         self.prompt_template = PromptTemplate(
@@ -134,7 +130,20 @@ Answer:""",
             input_variables=["context", "question"]
         )
         
-        logger.info("RAG Query Service initialized with GROQ chat model")
+        logger.info("RAG Query Service initialized (embeddings will load on first use)")
+    
+    @property
+    def embeddings(self):
+        """Lazy-load embeddings model on first access."""
+        if self._embeddings is None:
+            logger.info(f"Loading embedding model: {self._embedding_model}")
+            self._embeddings = HuggingFaceEmbeddings(
+                model_name=self._embedding_model,
+                model_kwargs={'device': 'cpu'},
+                encode_kwargs={'normalize_embeddings': True}
+            )
+            logger.info("Embedding model loaded successfully")
+        return self._embeddings
     
     async def query(
         self,
