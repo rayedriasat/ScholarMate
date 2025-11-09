@@ -120,6 +120,39 @@ flutter run -d linux                  # Linux
 flutter run                           # Mobile (connected device/emulator)
 ```
 
+#### 4. Deploy to Vercel (Web Only)
+
+Deploy the prebuilt Flutter web app to Vercel:
+
+```bash
+# Build the web app locally
+cd frontend
+flutter build web --release --web-renderer canvaskit
+
+# Commit the build folder (it's force-included in git)
+cd ..
+git add frontend/build/web
+git commit -m "Build web app for deployment"
+git push
+
+# Deploy to Vercel
+vercel --prod
+```
+
+**Setup**:
+1. Set environment variables in Vercel dashboard (see `.env.vercel.example`)
+2. Update `GOOGLE_REDIRECT_URI` to your Vercel URL
+3. Add Vercel URL to Google OAuth authorized redirect URIs
+
+**Documentation**: See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for complete guide
+- 🚀 First deployment: [FIRST_DEPLOYMENT.md](FIRST_DEPLOYMENT.md)
+- ⚡ Quick start: [VERCEL_QUICK_START.md](VERCEL_QUICK_START.md)
+- 📚 Full guide: [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)
+- 📋 Quick reference: [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
+
+The app automatically detects Vercel and fetches config from the serverless function
+```
+
 ### Google OAuth Setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)

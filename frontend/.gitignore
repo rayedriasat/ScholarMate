@@ -30,8 +30,15 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
 /coverage/
+
+# Build folders - exclude all except web (needed for Vercel)
+/build/android/
+/build/ios/
+/build/linux/
+/build/macos/
+/build/windows/
+# /build/web/ is intentionally NOT ignored - needed for Vercel deployment
 
 # Symbolication related
 app.*.symbols

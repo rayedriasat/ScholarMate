@@ -39,13 +39,18 @@ env/
 .packages
 .pub-cache/
 .pub/
-build/
 *.iml
 *.ipr
 *.iws
 .idea/
 .metadata
 .flutter-plugins-dependencies
+
+# Build folders (exclude all build artifacts EXCEPT frontend/build/web for Vercel)
+build/
+!frontend/build/
+frontend/build/*
+!frontend/build/web/
 
 # Flutter generated files
 **/GeneratedPluginRegistrant.swift

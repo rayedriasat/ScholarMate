@@ -1,0 +1,19 @@
+{
+  "name": "scholarmate",
+  "version": "1.0.0",
+  "description": "ScholarMate - Offline-first AI research workspace",
+  "scripts": {
+    "build": "echo 'Build manually: cd frontend && flutter build web --release --web-renderer canvaskit'",
+    "dev": "cd frontend && flutter run -d chrome",
+    "deploy": "echo 'Deploying prebuilt files from frontend/build/web' && vercel --prod"
+  },
+  "keywords": [
+    "flutter",
+    "pdf",
+    "research",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "note": "This project uses prebuilt Flutter web files. Build locally before deploying."
+}
