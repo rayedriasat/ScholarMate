@@ -49,10 +49,14 @@ class BackendDriveService:
         )
         
         if not encrypted_refresh_token:
-            raise ValueError(f"No refresh token found for user {user_id}")
+            raise ValueError(f"No refresh token found for user {user_id}. Please re-authenticate in the app.")
         
         # Decrypt refresh token
         refresh_token = self.encryption_service.decrypt(encrypted_refresh_token)
+        
+        # Check if token is client-managed (google_sign_in v7+ handles refresh internally)
+        if refresh_token == "CLIENT_MANAGED":
+            raise ValueError(f"Refresh token is managed by client app. Please refresh token in the app and retry.")
         
         # Exchange refresh token for new access token
         token_url = "https://oauth2.googleapis.com/token"

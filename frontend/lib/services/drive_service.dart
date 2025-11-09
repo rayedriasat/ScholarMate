@@ -661,6 +661,19 @@ class DriveService extends ChangeNotifier {
     }
   }
 
+  /// Get cached file name by ID (for UI display)
+  /// Returns null if file not found in cache
+  /// This is async but can be called from build methods using FutureBuilder
+  Future<String?> getCachedFileName(String fileId) async {
+    try {
+      final cachedFile = await _cacheService?.getCachedFile(fileId);
+      return cachedFile?.name;
+    } catch (e) {
+      debugPrint('Error getting cached file name: $e');
+      return null;
+    }
+  }
+
   /// Share a file with another user
   /// Returns the permission ID for the created permission
   Future<String> shareFile(String fileId, String email, String role) async {

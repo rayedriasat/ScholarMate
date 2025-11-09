@@ -52,12 +52,22 @@ async def store_tokens(request: StoreTokensRequest):
         )
         
         # Encrypt and store refresh token if provided
+        # Note: google_sign_in v7+ doesn't expose refresh tokens directly
+        # They're managed internally by the plugin
         if request.refresh_token and request.refresh_token.strip() != "":
             encrypted_refresh_token = encryption_service.encrypt(request.refresh_token)
             await supabase_service.store_encrypted_token(
                 user_id=db_user_id,
                 token_type="refresh_token",
                 encrypted_token=encrypted_refresh_token
+            )
+        else:
+            # Store a placeholder to indicate token refresh is handled client-side
+            logger.info(f"No refresh token provided for user {db_user_id} - using client-side refresh")
+            await supabase_service.store_encrypted_token(
+                user_id=db_user_id,
+                token_type="refresh_token",
+                encrypted_token=encryption_service.encrypt("CLIENT_MANAGED")
             )
         
         # Encrypt and store ID token if provided

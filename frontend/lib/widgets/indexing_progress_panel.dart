@@ -34,8 +34,9 @@ class _IndexingProgressPanelState extends State<IndexingProgressPanel> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -50,22 +51,18 @@ class _IndexingProgressPanelState extends State<IndexingProgressPanel> {
                         children: [
                           Text(
                             'Indexing Progress',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${indexingService.activeJobCount} active • ${indexingService.completedJobCount} completed • ${indexingService.failedJobCount} failed',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(context)
                                       .colorScheme
@@ -190,14 +187,16 @@ class _IndexingProgressPanelState extends State<IndexingProgressPanel> {
 
       // Get all PDF files
       final allFiles = await driveService.listAllFiles();
-      final pdfFileIds =
-          allFiles.where((file) => file.isPdf).map((file) => file.id).toList();
+      final pdfFileIds = allFiles
+          .where((file) => file.isPdf)
+          .map((file) => file.id)
+          .toList();
 
       if (pdfFileIds.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No PDF files found')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('No PDF files found')));
         }
         return;
       }
@@ -214,9 +213,9 @@ class _IndexingProgressPanelState extends State<IndexingProgressPanel> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to reindex files: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to reindex files: $e')));
       }
     }
   }
@@ -229,11 +228,23 @@ class _IndexingJobTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get file name from DriveService cache
+    final driveService = context.watch<DriveService>();
+
     return ListTile(
       leading: _buildStatusIcon(),
-      title: Text(
-        'File: ${job.fileId.substring(0, 8)}...',
-        style: const TextStyle(fontWeight: FontWeight.w500),
+      title: FutureBuilder<String?>(
+        future: driveService.getCachedFileName(job.fileId),
+        builder: (context, snapshot) {
+          final fileName =
+              snapshot.data ?? 'File: ${job.fileId.substring(0, 12)}...';
+          return Text(
+            fileName,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,15 +362,15 @@ class _IndexingJobTile extends StatelessWidget {
       await indexingService.reindexFile(fileId: job.fileId);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reindexing started')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Reindexing started')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to reindex: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to reindex: $e')));
       }
     }
   }
@@ -385,10 +396,7 @@ class _IndexingJobTile extends StatelessWidget {
             const SizedBox(height: 8),
             const Divider(),
             const SizedBox(height: 8),
-            const Text(
-              'Error:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('Error:', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(job.errorMessage ?? 'Unknown error'),
           ],
