@@ -147,7 +147,7 @@ Answer:""",
         Query user's vector store with source filtering using GROQ.
         
         This is the main end-to-end RAG pipeline that:
-        1. Retrieves relevant context from user's ChromaDB collection
+        1. Retrieves relevant context from user's Pinecone namespace
         2. Filters by selected source files if specified
         3. Generates AI response using GROQ
         4. Extracts and formats citations

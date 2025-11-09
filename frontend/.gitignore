@@ -32,6 +32,10 @@ migrate_working_dir/
 .pub/
 /coverage/
 
+# Environment configuration (sensitive)
+dart_defines.json
+.env
+
 # Build folders - exclude all except web (needed for Vercel)
 /build/android/
 /build/ios/

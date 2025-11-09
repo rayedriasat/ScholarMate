@@ -19,7 +19,7 @@ inclusion: always
 - **Auth**: google_sign_in v7+ (new API)
 - **TTS**: flutter_tts
 - **HTTP**: http package
-- **Env**: flutter_dotenv
+- **Config**: dart_defines.json (compile-time environment variables)
 
 ## Backend Stack (FastAPI)
 
@@ -28,7 +28,9 @@ inclusion: always
 - **Package Manager**: uv (with pyproject.toml)
 - **Database**: Supabase Python SDK (PostgreSQL + Realtime)
 - **OCR**: DeepSeek OCR (online, high accuracy)
-- **Vector DB**: ChromaDB (self-hosted)
+- **Vector DB**: Pinecone (cloud-hosted, free tier)
+- **Embeddings**: HuggingFace sentence-transformers (local, free)
+- **LLM**: GROQ (llama-3.3-70b-versatile, free tier)
 - **Encryption**: cryptography (Fernet)
 
 ## Infrastructure Constraints
@@ -60,10 +62,10 @@ uv run pytest                      # Run tests
 
 ## Environment Files
 
-`.env` files (never commit):
-- `backend/.env` - Backend config
-- `frontend/.env` - Frontend config
-- Templates: `backend.env.template`, `frontend.env.template`
+Configuration files (never commit):
+- `backend/.env` - Backend config (traditional .env)
+- `frontend/dart_defines.json` - Frontend config (compile-time)
+- Templates: `backend/.env.template`, `frontend/dart_defines.json.template`
 
 ## API Endpoints (when backend running)
 

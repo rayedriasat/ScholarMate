@@ -1,6 +1,5 @@
 """Services package"""
 
-from .chroma_service import ChromaService, get_chroma_service
 from .drive_service import BackendDriveService, get_drive_service
 from .encryption_service import EncryptionService, get_encryption_service
 from .supabase_service import SupabaseService, get_supabase_service
@@ -9,8 +8,6 @@ from .rag_indexer import RAGIndexer, get_rag_indexer
 from .rag_query_service import RAGQueryService, get_rag_query_service
 
 __all__ = [
-    "ChromaService",
-    "get_chroma_service",
     "BackendDriveService",
     "get_drive_service",
     "EncryptionService",

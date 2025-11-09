@@ -44,7 +44,6 @@ dependencies:
   http: ^1.2.2
   
   # Environment variables
-  flutter_dotenv: ^5.2.1
   
   # State management
   provider: ^6.1.2

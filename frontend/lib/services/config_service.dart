@@ -1,9 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 
 /// Service for managing application configuration
+/// Uses compile-time --dart-define variables
 class ConfigService {
   static final ConfigService _instance = ConfigService._internal();
   factory ConfigService() => _instance;
@@ -12,81 +10,57 @@ class ConfigService {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
-  // Store config values fetched from Vercel
-  Map<String, String> _vercelConfig = {};
-  bool _isVercelEnvironment = false;
-
   /// Initialize the configuration service
-  /// Loads environment variables from .env file (local) or Vercel API (production)
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    try {
-      // Check if running on web and detect Vercel environment
-      if (kIsWeb) {
-        _isVercelEnvironment = _detectVercelEnvironment();
-        
-        if (_isVercelEnvironment) {
-          debugPrint('Detected Vercel environment, fetching config from API...');
-          await _loadVercelConfig();
-        } else {
-          debugPrint('Local web environment, loading .env file...');
-          await dotenv.load(fileName: '.env');
-        }
-      } else {
-        // Mobile/Desktop: always use .env
-        await dotenv.load(fileName: '.env');
-      }
-      
-      _isInitialized = true;
-      debugPrint('ConfigService initialized successfully');
-    } catch (e) {
-      debugPrint('Warning: Could not load configuration: $e');
-      debugPrint('Using default configuration values');
-      _isInitialized = true;
+    debugPrint('ConfigService: Loading compile-time configuration');
+    _isInitialized = true;
+    debugPrint('ConfigService initialized successfully');
+
+    // Log configuration summary for debugging
+    if (kDebugMode) {
+      debugPrint('Config Summary:');
+      debugPrint(
+        '  Google Client ID: ${googleClientId.isNotEmpty ? "Configured" : "Missing"}',
+      );
+      debugPrint('  API Base URL: $apiBaseUrl');
+      debugPrint(
+        '  Supabase URL: ${supabaseUrl.isNotEmpty ? "Configured" : "Missing"}',
+      );
     }
   }
 
-  /// Detect if running on Vercel by checking the hostname
-  bool _detectVercelEnvironment() {
-    // In web, check if the hostname contains 'vercel.app'
-    // This is a simple heuristic - you can also use environment-specific URLs
-    if (kIsWeb) {
-      final hostname = Uri.base.host;
-      return hostname.contains('vercel.app') || 
-             hostname.contains('vercel.com') ||
-             // Add your custom domain here if you have one
-             hostname.contains('your-custom-domain.com');
-    }
-    return false;
-  }
-
-  /// Load configuration from Vercel serverless function
-  Future<void> _loadVercelConfig() async {
-    try {
-      final response = await http.get(
-        Uri.parse('/api/config'),
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        _vercelConfig = data.map((key, value) => MapEntry(key, value.toString()));
-        debugPrint('Successfully loaded config from Vercel API');
-      } else {
-        debugPrint('Failed to load config from Vercel API: ${response.statusCode}');
-      }
-    } catch (e) {
-      debugPrint('Error loading config from Vercel API: $e');
-    }
-  }
-
-  /// Get configuration value (from Vercel API or .env)
+  /// Get configuration value from compile-time constants
   String _getConfigValue(String key, {String defaultValue = ''}) {
-    if (_isVercelEnvironment) {
-      return _vercelConfig[key] ?? defaultValue;
+    switch (key) {
+      case 'GOOGLE_CLIENT_ID':
+        return const String.fromEnvironment(
+          'GOOGLE_CLIENT_ID',
+          defaultValue: '',
+        );
+      case 'GOOGLE_CLIENT_SECRET':
+        return const String.fromEnvironment(
+          'GOOGLE_CLIENT_SECRET',
+          defaultValue: '',
+        );
+      case 'GOOGLE_REDIRECT_URI':
+        return const String.fromEnvironment(
+          'GOOGLE_REDIRECT_URI',
+          defaultValue: '',
+        );
+      case 'API_BASE_URL':
+        return const String.fromEnvironment('API_BASE_URL', defaultValue: '');
+      case 'SUPABASE_URL':
+        return const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+      case 'SUPABASE_ANON_KEY':
+        return const String.fromEnvironment(
+          'SUPABASE_ANON_KEY',
+          defaultValue: '',
+        );
+      default:
+        return defaultValue;
     }
-    return dotenv.env[key] ?? defaultValue;
   }
 
   /// Get Google OAuth Client ID
