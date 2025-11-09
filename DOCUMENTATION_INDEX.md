@@ -29,6 +29,8 @@ Detailed documentation for specific topics:
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Technical implementation details
 - **[PREBUILT_DEPLOYMENT_SUMMARY.md](PREBUILT_DEPLOYMENT_SUMMARY.md)** - Prebuilt approach overview
 - **[CHANGES_SUMMARY.md](CHANGES_SUMMARY.md)** - All changes made
+- **[GITIGNORE_FIX.md](GITIGNORE_FIX.md)** - Fix for missing web build files
+- **[DEPLOY_FIX_NOW.md](DEPLOY_FIX_NOW.md)** - Quick deployment of the fix
 
 ### API Documentation
 - **[api/README.md](api/README.md)** - Serverless functions documentation
@@ -46,6 +48,9 @@ Detailed documentation for specific topics:
 
 ### "I'm having git issues"
 → [GITIGNORE_EXPLANATION.md](GITIGNORE_EXPLANATION.md)
+
+### "I'm getting 404 errors on Vercel"
+→ [GITIGNORE_FIX.md](GITIGNORE_FIX.md) or [DEPLOY_FIX_NOW.md](DEPLOY_FIX_NOW.md)
 
 ### "I need to set environment variables"
 → [VERCEL_ENV_SETUP.md](VERCEL_ENV_SETUP.md)
