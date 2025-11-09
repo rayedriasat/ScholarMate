@@ -36,8 +36,18 @@ if os.getenv("DEBUG", "False").lower() == "true":
     cors_origins = ["*"]
 else:
     # In production, use specific origins from environment
-    cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:8080").split(",")
-    cors_origins = [origin.strip() for origin in cors_origins]
+    cors_origins_env = os.getenv("CORS_ORIGINS", "")
+    if cors_origins_env:
+        cors_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+    else:
+        # Fallback to default production origins
+        cors_origins = [
+            "https://scholar-mate-nine.vercel.app",
+            "http://localhost:8080",
+            "http://localhost:3000"
+        ]
+    
+logger.info(f"CORS enabled for origins: {cors_origins}")
 
 app.add_middleware(
     CORSMiddleware,
