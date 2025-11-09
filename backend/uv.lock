@@ -170,6 +170,7 @@ dependencies = [
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-groq" },
+    { name = "langchain-huggingface" },
     { name = "langchain-pinecone" },
     { name = "langchain-text-splitters" },
     { name = "pdf2image" },
@@ -202,6 +203,7 @@ requires-dist = [
     { name = "langchain-community", specifier = ">=0.4.1" },
     { name = "langchain-core", specifier = ">=1.0.2" },
     { name = "langchain-groq", specifier = ">=1.0.0" },
+    { name = "langchain-huggingface", specifier = ">=1.0.0" },
     { name = "langchain-pinecone", specifier = ">=0.2.13" },
     { name = "langchain-text-splitters", specifier = ">=1.0.0" },
     { name = "pdf2image", specifier = ">=1.17.0" },
@@ -999,6 +1001,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b8/9f/0a80b243f1b890cdc2d856f98d2243f49a58621de16fa80a73eba290bcb4/langchain_groq-1.0.0.tar.gz", hash = "sha256:46645591654c36db7ebc624503f26b38544b9aac0d8cf93e8db7105e049dab74", size = 196702, upload-time = "2025-10-17T15:24:30.81Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/03/0a/fd2b7545f63f2b05790c76260dc63b7cc9b0af88aa1c1e14fab9795805c2/langchain_groq-1.0.0-py3-none-any.whl", hash = "sha256:378124c2a5247df720093617afbd2dae28b06fc666372ffe7a279a0ce86b28d0", size = 16841, upload-time = "2025-10-17T15:24:29.348Z" },
+]
+
+[[package]]
+name = "langchain-huggingface"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "langchain-core" },
+    { name = "tokenizers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1d/0d/2a22659534cc70410573a53d32756cf7971de7923ba2ccf940c03ecbe12a/langchain_huggingface-1.0.0.tar.gz", hash = "sha256:0d2eb924ff77dc08bb7dd340ab10d47c1b71372e4297bc12e84c4a66df9a4414", size = 247750, upload-time = "2025-10-17T15:30:35.179Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ac/30/7476a926e31498ebc4be3131e06650c5136ffb8ba12067f56212e187dd7c/langchain_huggingface-1.0.0-py3-none-any.whl", hash = "sha256:06d6ac57951c6a1c47d329c38f2b32472a839eab2fa14883be784916ea075da0", size = 27493, upload-time = "2025-10-17T15:30:34.023Z" },
 ]
 
 [[package]]

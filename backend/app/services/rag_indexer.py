@@ -15,7 +15,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_groq import ChatGroq
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from .pinecone_service import get_pinecone_service
 from .drive_service import get_drive_service
@@ -83,9 +83,16 @@ class RAGIndexer:
             raise
         
         # Initialize embedding model (using HuggingFace sentence-transformers)
-        # This is free and runs locally but requires downloading model on first run
-        embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-        logger.info(f"Initializing HuggingFace embeddings model: {embedding_model}")
+        # Load from local models directory to avoid download latency
+        local_model_path = os.path.join(os.path.dirname(__file__), "..", "..", "models", "all-MiniLM-L6-v2")
+        
+        # Check if local model exists, otherwise fall back to downloading
+        if os.path.exists(local_model_path):
+            embedding_model = local_model_path
+            logger.info(f"Loading local embedding model from: {local_model_path}")
+        else:
+            embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+            logger.warning(f"Local model not found, downloading: {embedding_model}")
         
         try:
             self.embeddings = HuggingFaceEmbeddings(
