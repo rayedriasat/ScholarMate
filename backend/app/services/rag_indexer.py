@@ -34,9 +34,28 @@ class RAGIndexer:
     
     def __init__(self):
         """Initialize RAG indexer with required services."""
-        self.pinecone_service = get_pinecone_service()
-        self.drive_service = get_drive_service()
-        self.supabase_service = get_supabase_service()
+        logger.info("Initializing RAG indexer services...")
+        
+        try:
+            self.pinecone_service = get_pinecone_service()
+            logger.info("Pinecone service initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize Pinecone service: {str(e)}")
+            raise
+        
+        try:
+            self.drive_service = get_drive_service()
+            logger.info("Drive service initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize Drive service: {str(e)}")
+            raise
+        
+        try:
+            self.supabase_service = get_supabase_service()
+            logger.info("Supabase service initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize Supabase service: {str(e)}")
+            raise
         
         # Initialize text splitter with specified parameters
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -45,25 +64,39 @@ class RAGIndexer:
             length_function=len,
             separators=["\n\n", "\n", " ", ""]
         )
+        logger.info("Text splitter initialized")
         
         # Initialize GROQ chat model
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
+            logger.error("GROQ_API_KEY not found in environment")
             raise ValueError("GROQ_API_KEY is required")
         
-        self.groq_chat = ChatGroq(
-            api_key=groq_api_key,
-            model="llama-3.3-70b-versatile"
-        )
+        try:
+            self.groq_chat = ChatGroq(
+                api_key=groq_api_key,
+                model="llama-3.3-70b-versatile"
+            )
+            logger.info("GROQ chat model initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize GROQ: {str(e)}")
+            raise
         
         # Initialize embedding model (using HuggingFace sentence-transformers)
-        # This is free and runs locally
+        # This is free and runs locally but requires downloading model on first run
         embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=embedding_model,
-            model_kwargs={'device': 'cpu'},
-            encode_kwargs={'normalize_embeddings': True}
-        )
+        logger.info(f"Initializing HuggingFace embeddings model: {embedding_model}")
+        
+        try:
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=embedding_model,
+                model_kwargs={'device': 'cpu'},
+                encode_kwargs={'normalize_embeddings': True}
+            )
+            logger.info("HuggingFace embeddings initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize HuggingFace embeddings: {str(e)}")
+            raise
         
         logger.info("RAG Indexer initialized with chunk_size=1000, chunk_overlap=200")
     
@@ -669,5 +702,11 @@ def get_rag_indexer() -> RAGIndexer:
     """Get or create RAG indexer singleton."""
     global _rag_indexer
     if _rag_indexer is None:
-        _rag_indexer = RAGIndexer()
+        try:
+            logger.info("Initializing RAG indexer singleton...")
+            _rag_indexer = RAGIndexer()
+            logger.info("RAG indexer initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize RAG indexer: {str(e)}", exc_info=True)
+            raise
     return _rag_indexer
