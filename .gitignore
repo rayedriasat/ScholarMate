@@ -106,11 +106,16 @@ frontend/build/*
 **/linux/flutter/generated_plugin_registrant.h
 **/linux/flutter/generated_plugins.cmake
 
-# Web generated files
+# Web generated files (exclude from source, but include in build)
 **/web/flutter_service_worker.js
 **/web/flutter.js
 **/web/main.dart.js
 **/web/main.dart.js.map
+# EXCEPT: Include these files in the build folder for Vercel
+!frontend/build/web/flutter_service_worker.js
+!frontend/build/web/flutter.js
+!frontend/build/web/main.dart.js
+!frontend/build/web/main.dart.js.map
 
 # ChromaDB
 chroma_db/
