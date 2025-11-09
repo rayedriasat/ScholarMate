@@ -235,12 +235,36 @@ cd frontend
 flutter test
 ```
 
+## 🚀 Deployment
+
+### Production Setup
+- **Frontend**: Vercel (https://scholar-mate-nine.vercel.app)
+- **Backend**: Render.com (https://scholarmate-backend.onrender.com)
+
+### Quick Deploy
+```bash
+# Deploy backend to Render
+# See DEPLOY_TO_RENDER.md for step-by-step guide
+git push origin main
+# Then follow Render Blueprint setup
+
+# Frontend auto-deploys to Vercel on push
+```
+
+### Deployment Guides
+- **DEPLOY_TO_RENDER.md** - Step-by-step backend deployment
+- **RENDER_QUICK_START.md** - Quick reference
+- **FULL_DEPLOYMENT_GUIDE.md** - Complete frontend + backend guide
+- **RENDER_CHECKLIST.md** - Deployment checklist
+
 ## 📚 Documentation
 
 - **Requirements**: `.kiro/specs/scholarmate/requirements.md`
 - **Design**: `.kiro/specs/scholarmate/design.md`
 - **Tasks**: `.kiro/specs/scholarmate/tasks.md`
-- **API Docs**: `http://localhost:8000/docs` (when backend is running)
+- **API Docs**: 
+  - Local: `http://localhost:8000/docs`
+  - Production: `https://scholarmate-backend.onrender.com/docs`
 
 ## 🔒 Security
 

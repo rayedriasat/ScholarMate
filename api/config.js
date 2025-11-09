@@ -31,7 +31,8 @@ export default function handler(req, res) {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
     GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || '',
-    API_BASE_URL: process.env.API_BASE_URL || '',
+    // Support both BACKEND_URL and API_BASE_URL for Render deployment
+    API_BASE_URL: process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:8000',
     SUPABASE_URL: process.env.SUPABASE_URL || '',
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || '',
   };
