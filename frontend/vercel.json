@@ -4,7 +4,7 @@
     {
       "src": "build/web/**",
       "use": "@vercel/static"
-    },
+    }
   ],
   "routes": [
     {
