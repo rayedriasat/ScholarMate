@@ -60,17 +60,19 @@ class RAGIndexer:
         # Initialize text splitter with smaller chunks for memory efficiency
         # Smaller chunks = less memory usage during embedding generation
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500,  # Reduced from 1000 to save memory
-            chunk_overlap=50,  # Reduced from 200 to save memory
+            chunk_size=400,  # Further reduced to minimize memory
+            chunk_overlap=40,  # Reduced overlap
             length_function=len,
             separators=["\n\n", "\n", " ", ""]
         )
         
         # Batch sizes for processing (configurable via env vars for memory tuning)
-        self.BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "10"))  # Chunks per batch
-        self.PAGE_BATCH_SIZE = int(os.getenv("PDF_PAGE_BATCH_SIZE", "5"))  # Pages per batch
+        # CRITICAL: Keep these small to avoid memory spikes on Render free tier (512MB)
+        self.BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "3"))  # Chunks per batch - REDUCED
+        self.PAGE_BATCH_SIZE = int(os.getenv("PDF_PAGE_BATCH_SIZE", "2"))  # Pages per batch - REDUCED
+        self.PINECONE_BATCH_SIZE = int(os.getenv("PINECONE_BATCH_SIZE", "25"))  # Pinecone upsert batch - REDUCED
         
-        logger.info(f"Text splitter initialized: chunk_size=500, embedding_batch={self.BATCH_SIZE}, page_batch={self.PAGE_BATCH_SIZE} (memory-optimized)")
+        logger.info(f"Text splitter initialized: chunk_size=400, embedding_batch={self.BATCH_SIZE}, page_batch={self.PAGE_BATCH_SIZE}, pinecone_batch={self.PINECONE_BATCH_SIZE} (memory-optimized)")
         
         # Initialize GROQ chat model
         groq_api_key = os.getenv("GROQ_API_KEY")
@@ -266,7 +268,7 @@ class RAGIndexer:
     ) -> List[Document]:
         """
         Extract text from PDF and chunk using LangChain.
-        Memory-optimized: processes pages one at a time to minimize memory usage.
+        ULTRA memory-optimized: processes pages one at a time, immediate cleanup.
         
         Args:
             pdf_bytes: PDF file bytes
@@ -299,17 +301,20 @@ class RAGIndexer:
             logger.info(f"Extracted {len(pages)} pages from {file_name}")
             
             # Split documents into chunks
-            # Process in smaller batches to avoid memory spikes
+            # Process in VERY small batches to avoid memory spikes
             all_chunks = []
             for i in range(0, len(pages), self.PAGE_BATCH_SIZE):
                 page_batch = pages[i:i+self.PAGE_BATCH_SIZE]
                 batch_chunks = self.text_splitter.split_documents(page_batch)
                 all_chunks.extend(batch_chunks)
                 
-                # Clear batch from memory
+                # Clear batch from memory immediately
                 del page_batch
                 del batch_chunks
                 gc.collect()
+                
+                # Small delay to allow GC to complete
+                await asyncio.sleep(0.05)
                 
                 logger.debug(f"Processed pages {i+1}-{min(i+self.PAGE_BATCH_SIZE, len(pages))} of {len(pages)}")
             
@@ -333,7 +338,7 @@ class RAGIndexer:
                     "timestamp": datetime.utcnow().isoformat()
                 })
             
-            logger.info(f"Created {total_chunks} chunks from {file_name} (memory-optimized)")
+            logger.info(f"Created {total_chunks} chunks from {file_name} (ultra memory-optimized)")
             return all_chunks
             
         except Exception as e:
@@ -347,7 +352,7 @@ class RAGIndexer:
     ) -> List[List[float]]:
         """
         Generate embeddings using HuggingFace sentence-transformers.
-        Memory-optimized: processes in small batches to stay under memory limit.
+        ULTRA memory-optimized: processes in tiny batches with aggressive cleanup.
         
         Args:
             documents: List of LangChain Document objects
@@ -367,7 +372,7 @@ class RAGIndexer:
             
             logger.info(f"Generating embeddings for {len(documents)} documents in batches of {batch_size}")
             
-            # Process in batches to avoid memory spikes
+            # Process in TINY batches to avoid memory spikes
             all_embeddings = []
             for i in range(0, len(texts), batch_size):
                 batch_texts = texts[i:i+batch_size]
@@ -376,17 +381,21 @@ class RAGIndexer:
                 batch_embeddings = self.embeddings.embed_documents(batch_texts)
                 all_embeddings.extend(batch_embeddings)
                 
-                # Clear batch from memory
+                # Aggressive memory cleanup
                 del batch_texts
                 del batch_embeddings
                 gc.collect()
                 
                 logger.debug(f"Generated embeddings for batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
                 
-                # Small delay to allow garbage collection
-                await asyncio.sleep(0.1)
+                # Longer delay to allow complete garbage collection
+                await asyncio.sleep(0.2)
             
-            logger.info(f"Generated {len(all_embeddings)} embeddings (memory-optimized)")
+            # Final cleanup
+            del texts
+            gc.collect()
+            
+            logger.info(f"Generated {len(all_embeddings)} embeddings (ultra memory-optimized)")
             return all_embeddings
             
         except Exception as e:
@@ -402,7 +411,7 @@ class RAGIndexer:
     ) -> None:
         """
         Store embeddings in user-specific Pinecone namespace.
-        Memory-optimized: processes and stores in small batches.
+        ULTRA memory-optimized: sequential processing with aggressive cleanup.
         
         Args:
             documents: List of LangChain Document objects
@@ -419,9 +428,9 @@ class RAGIndexer:
                 return
             
             total_chunks = len(documents)
-            logger.info(f"Storing {total_chunks} documents in batches of {self.BATCH_SIZE}")
+            logger.info(f"Storing {total_chunks} documents in batches of {self.BATCH_SIZE} (ultra memory-optimized)")
             
-            # Process and store in batches to minimize memory usage
+            # Process and store in TINY batches to minimize memory usage
             for i in range(0, total_chunks, self.BATCH_SIZE):
                 batch_docs = documents[i:i+self.BATCH_SIZE]
                 batch_size = len(batch_docs)
@@ -434,8 +443,8 @@ class RAGIndexer:
                 batch_metadatas = [doc.metadata for doc in batch_docs]
                 batch_ids = [f"{file_id}_chunk_{i+j}" for j in range(batch_size)]
                 
-                # Store this batch in user's Pinecone namespace
-                self.pinecone_service.add_documents(
+                # Store this batch in user's Pinecone namespace with smaller sub-batches
+                await self._store_to_pinecone_in_batches(
                     user_id=user_id,
                     documents=batch_texts,
                     metadatas=batch_metadatas,
@@ -451,7 +460,7 @@ class RAGIndexer:
                     total_chunks=total_chunks
                 )
                 
-                # Clear batch from memory
+                # Aggressive memory cleanup
                 del batch_docs
                 del batch_embeddings
                 del batch_texts
@@ -461,14 +470,66 @@ class RAGIndexer:
                 
                 logger.info(f"Stored batch {i//self.BATCH_SIZE + 1}/{(total_chunks + self.BATCH_SIZE - 1)//self.BATCH_SIZE} ({chunks_processed}/{total_chunks} chunks)")
                 
-                # Small delay between batches to allow garbage collection
-                await asyncio.sleep(0.2)
+                # Longer delay between batches to allow complete garbage collection
+                await asyncio.sleep(0.3)
             
-            logger.info(f"Stored all {total_chunks} documents for file {file_id} (memory-optimized)")
+            # Final cleanup
+            del documents
+            gc.collect()
+            
+            logger.info(f"Stored all {total_chunks} documents for file {file_id} (ultra memory-optimized)")
             
         except Exception as e:
             logger.error(f"Failed to store embeddings: {str(e)}")
             raise ValueError(f"Embedding storage failed: {str(e)}")
+    
+    async def _store_to_pinecone_in_batches(
+        self,
+        user_id: str,
+        documents: List[str],
+        metadatas: List[Dict[str, Any]],
+        ids: List[str],
+        embeddings: List[List[float]]
+    ) -> None:
+        """
+        Store to Pinecone in smaller sub-batches to avoid memory spikes.
+        
+        Args:
+            user_id: User UUID
+            documents: List of document texts
+            metadatas: List of metadata dicts
+            ids: List of unique document IDs
+            embeddings: Pre-computed embeddings
+        """
+        import gc
+        
+        # Store in smaller sub-batches
+        for i in range(0, len(documents), self.PINECONE_BATCH_SIZE):
+            sub_docs = documents[i:i+self.PINECONE_BATCH_SIZE]
+            sub_metas = metadatas[i:i+self.PINECONE_BATCH_SIZE]
+            sub_ids = ids[i:i+self.PINECONE_BATCH_SIZE]
+            sub_embeddings = embeddings[i:i+self.PINECONE_BATCH_SIZE]
+            
+            # Store this sub-batch
+            self.pinecone_service.add_documents(
+                user_id=user_id,
+                documents=sub_docs,
+                metadatas=sub_metas,
+                ids=sub_ids,
+                embeddings=sub_embeddings
+            )
+            
+            # Cleanup
+            del sub_docs
+            del sub_metas
+            del sub_ids
+            del sub_embeddings
+            gc.collect()
+            
+            # Small delay
+            await asyncio.sleep(0.1)
+        
+        logger.debug(f"Stored {len(documents)} documents to Pinecone in sub-batches of {self.PINECONE_BATCH_SIZE}")
     
     async def get_user_namespace(self, user_id: str) -> str:
         """

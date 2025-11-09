@@ -89,6 +89,7 @@ class PineconeService:
     ) -> None:
         """
         Add documents to a user's namespace.
+        Memory-optimized: processes in small batches with cleanup.
         
         Args:
             user_id: User UUID
@@ -97,26 +98,40 @@ class PineconeService:
             ids: List of unique document IDs
             embeddings: Pre-computed embeddings (required for Pinecone)
         """
+        import gc
+        
         namespace = self.get_user_namespace(user_id)
         
-        # Prepare vectors for upsert
-        vectors = []
-        for i, (doc_id, embedding, metadata, text) in enumerate(zip(ids, embeddings, metadatas, documents)):
-            # Add text to metadata for retrieval
-            metadata_with_text = {**metadata, "text": text}
-            vectors.append({
-                "id": doc_id,
-                "values": embedding,
-                "metadata": metadata_with_text
-            })
+        # Use smaller batch size to reduce memory usage (Pinecone supports up to 100)
+        # But we use 25 to stay well under memory limits
+        batch_size = int(os.getenv("PINECONE_BATCH_SIZE", "25"))
         
-        # Upsert in batches of 100 (Pinecone limit)
-        batch_size = 100
-        for i in range(0, len(vectors), batch_size):
-            batch = vectors[i:i + batch_size]
-            self.index.upsert(vectors=batch, namespace=namespace)
+        # Process in batches to avoid holding all vectors in memory
+        total_docs = len(documents)
+        for i in range(0, total_docs, batch_size):
+            # Prepare vectors for this batch only
+            batch_vectors = []
+            batch_end = min(i + batch_size, total_docs)
+            
+            for j in range(i, batch_end):
+                # Add text to metadata for retrieval
+                metadata_with_text = {**metadatas[j], "text": documents[j]}
+                batch_vectors.append({
+                    "id": ids[j],
+                    "values": embeddings[j],
+                    "metadata": metadata_with_text
+                })
+            
+            # Upsert this batch
+            self.index.upsert(vectors=batch_vectors, namespace=namespace)
+            
+            # Cleanup
+            del batch_vectors
+            gc.collect()
+            
+            logger.debug(f"Upserted batch {i//batch_size + 1}/{(total_docs + batch_size - 1)//batch_size} to namespace {namespace}")
         
-        logger.info(f"Added {len(documents)} documents to namespace {namespace}")
+        logger.info(f"Added {total_docs} documents to namespace {namespace} (memory-optimized)")
     
     def query_documents(
         self,
