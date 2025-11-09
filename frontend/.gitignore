@@ -34,6 +34,7 @@ migrate_working_dir/
 
 # Environment configuration (sensitive)
 dart_defines.json
+dart_defines_prod.json
 .env
 
 # Build folders - exclude all except web (needed for Vercel)
