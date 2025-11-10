@@ -137,11 +137,29 @@ Answer:""",
         """Lazy-load embeddings model on first access."""
         if self._embeddings is None:
             logger.info(f"Loading embedding model: {self._embedding_model}")
-            self._embeddings = HuggingFaceEmbeddings(
-                model_name=self._embedding_model,
-                model_kwargs={'device': 'cpu'},
-                encode_kwargs={'normalize_embeddings': True}
-            )
+            
+            # Get HuggingFace token from environment
+            hf_token = os.getenv("HUGGINGFACE_TOKEN")
+            
+            # Prepare model kwargs
+            model_kwargs = {'device': 'cpu'}
+            
+            # Initialize embeddings with token if available
+            if hf_token and hf_token != "your_huggingface_token":
+                logger.info("Using HuggingFace token for authentication")
+                self._embeddings = HuggingFaceEmbeddings(
+                    model_name=self._embedding_model,
+                    model_kwargs=model_kwargs,
+                    encode_kwargs={'normalize_embeddings': True},
+                    huggingfacehub_api_token=hf_token
+                )
+            else:
+                logger.warning("No HuggingFace token found - you may hit rate limits. Get token from: https://huggingface.co/settings/tokens")
+                self._embeddings = HuggingFaceEmbeddings(
+                    model_name=self._embedding_model,
+                    model_kwargs=model_kwargs,
+                    encode_kwargs={'normalize_embeddings': True}
+                )
             logger.info("Embedding model loaded successfully")
         return self._embeddings
     

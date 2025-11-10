@@ -44,6 +44,8 @@ defang config set GROQ_API_KEY="gsk_R7AsMzdZH7b8BLN4Oep8WGdyb3FYuwgEouLreHXpz7fp
 defang config set ENCRYPTION_KEY="bCEHyCVfwr0YFierwQoeoydXxiheidfajPIP4pDd_dE="
 
 defang config set DEEPSEEK_API_KEY="yourdummykey"
+
+defang config set HUGGINGFACE_TOKEN=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
 ```
 
 ## 5. Deploy!
