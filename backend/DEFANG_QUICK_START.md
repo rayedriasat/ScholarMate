@@ -45,7 +45,7 @@ defang config set ENCRYPTION_KEY="bCEHyCVfwr0YFierwQoeoydXxiheidfajPIP4pDd_dE="
 
 defang config set DEEPSEEK_API_KEY="yourdummykey"
 
-defang config set HUGGINGFACE_TOKEN=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
+defang config set HUGGINGFACEHUB_API_TOKEN=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
 ```
 
 ## 5. Deploy!

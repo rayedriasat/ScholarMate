@@ -26,6 +26,7 @@ services:
       - GOOGLE_CLIENT_SECRET
       
       # Pinecone Vector Database - REQUIRED: Set these as secrets
+      - HUGGINGFACEHUB_API_TOKEN
       - PINECONE_API_KEY
       - PINECONE_INDEX_NAME=scholarmate
       - PINECONE_DIMENSION=384
