@@ -110,10 +110,16 @@ class RAGIndexer:
         if self._embeddings is None:
             logger.info(f"Loading embedding model: {self._embedding_model}")
             try:
-                # Check for HuggingFace token (should be set via HUGGINGFACEHUB_API_TOKEN env var)
+                # Check for HuggingFace token and authenticate
                 hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
                 if hf_token:
-                    logger.info("Using HuggingFace token for authentication")
+                    logger.info("Authenticating with HuggingFace Hub")
+                    try:
+                        from huggingface_hub import login
+                        login(token=hf_token)
+                        logger.info("Successfully authenticated with HuggingFace Hub")
+                    except Exception as e:
+                        logger.warning(f"Failed to login to HuggingFace Hub: {e}")
                 else:
                     logger.warning("No HUGGINGFACEHUB_API_TOKEN found - you may hit rate limits. Get token from: https://huggingface.co/settings/tokens")
                 
