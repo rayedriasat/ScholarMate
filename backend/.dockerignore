@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Development and testing
+.pytest_cache/
+.coverage
+htmlcov/
+test_*.py
+old_tests_chromadb/
+
+# Documentation
+*.md
+docs/
+
+# Database
+chroma_db/
+*.sqlite3
+
+# Models (if already included, exclude local copies)
+models/
+
+# Environment files
+.env
+.env.*
+!.env.template
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Lock files
+uv.lock
+*.lock
+
+# Migration scripts and utilities
+migrations/
+supabase_migrations/
+check_*.py
+cleanup_*.py
+debug_*.py
+find_*.py
+fix_*.py
+quick_reset.py
+reset_indexing.py
+run.py
+test_*.py
+
+# Test data
+test_data/
+
+# Build artifacts
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+

@@ -1,0 +1,76 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - mode: ingress
+        target: 8000
+    environment:
+      # Server Configuration
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      
+      # CORS - will be updated with actual frontend URL
+      - CORS_ORIGINS=*
+      
+      # Supabase - REQUIRED: Set these as secrets in Defang
+      - SUPABASE_URL
+      - SUPABASE_KEY
+      - SUPABASE_SERVICE_KEY
+      
+      # Google OAuth - REQUIRED: Set these as secrets
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      
+      # Pinecone Vector Database - REQUIRED: Set these as secrets
+      - PINECONE_API_KEY
+      - PINECONE_INDEX_NAME=scholarmate
+      - PINECONE_DIMENSION=384
+      - PINECONE_CLOUD=aws
+      - PINECONE_REGION=us-east-1
+      
+      # Embedding Model
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      
+      # Memory Optimization for Free Tier (CRITICAL)
+      # These are tuned for ~512MB-1GB memory limit
+      - EMBEDDING_BATCH_SIZE=3
+      - PDF_PAGE_BATCH_SIZE=2
+      - PINECONE_BATCH_SIZE=25
+      
+      # AI Providers - OPTIONAL: Set if using
+      - OPENROUTER_API_KEY
+      - DEFAULT_EMBEDDING_MODEL=text-embedding-3-small
+      - DEFAULT_CHAT_MODEL=moonshotai/kimi-k2:free
+      
+      # GROQ AI - REQUIRED for AI features
+      - GROQ_API_KEY
+      - GROQ_CHAT_MODEL=llama-3.3-70b-versatile
+      - GROQ_EMBEDDING_MODEL=llama-3.3-70b-versatile
+      
+      # OCR Configuration - OPTIONAL
+      - DEEPSEEK_API_KEY
+      - DEEPSEEK_OCR_ENDPOINT=https://api.deepseek.com/v1/ocr
+      
+      # Encryption - REQUIRED
+      - ENCRYPTION_KEY
+    
+    # Health check configuration
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Deploy configuration for free tier
+    deploy:
+      resources:
+        reservations:
+          # Free tier typically offers 512MB-1GB
+          memory: 900M
+          cpus: "0.9"
+
