@@ -4,6 +4,9 @@ flutter run --dart-define-from-file=dart_defines.json
 flutter run -d chrome --web-port=8080 --dart-define-from-file=dart_defines.json
 flutter run -d edge --web-port=8080 --dart-define-from-file=dart_defines.json
 
+flutter build web --dart-define-from-file=dart_defines_defang.json
+flutter build apk --release --dart-define-from-file=dart_defines_defang.json
+
 flutter pub get
 flutter analyze
 flutter build web
