@@ -18,6 +18,7 @@ import 'markdown_viewer_screen.dart';
 import 'document_scanner_screen.dart';
 import 'tag_management_screen.dart';
 import 'shared_files_screen.dart';
+import 'ai_chat_screen.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -564,6 +565,38 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         );
       }
     }
+  }
+
+  Future<void> _chatWithFolder() async {
+    // Get all non-folder files (PDFs and Markdown) from current folder
+    final filesInFolder = _files.where((f) => !f.isFolder).toList();
+
+    if (filesInFolder.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No files in this folder to chat with'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Get file IDs
+    final fileIds = filesInFolder.map((f) => f.id).toList();
+
+    // Get current folder name
+    final folderName = _navigationPath.isNotEmpty
+        ? _navigationPath.last.name
+        : 'ScholarMate';
+
+    // Navigate to AI chat with all files preselected
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            AIChatScreen(preselectedFileIds: fileIds, folderName: folderName),
+      ),
+    );
   }
 
   void _showIndexingProgressPanel() {
@@ -1308,10 +1341,24 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   Widget _buildFAB() {
     final theme = Theme.of(context);
+    final hasFiles = _files.where((f) => !f.isFolder).isNotEmpty;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Chat with Folder button - show when there are files in current folder
+        if (hasFiles) ...[
+          FloatingActionButton(
+            heroTag: "chat_folder",
+            onPressed: _chatWithFolder,
+            tooltip: 'Chat with this folder',
+            backgroundColor: theme.colorScheme.secondaryContainer,
+            foregroundColor: theme.colorScheme.onSecondaryContainer,
+            child: const Icon(Icons.forum),
+          ),
+          const SizedBox(height: 16),
+        ],
+
         // Upload FAB
         if (_showFABMenu) ...[
           FloatingActionButton(

@@ -22,11 +22,15 @@ import 'pdf_viewer_screen.dart';
 class AIChatScreen extends StatefulWidget {
   final String? preselectedFileId;
   final String? preselectedFileName;
+  final List<String>? preselectedFileIds;
+  final String? folderName;
 
   const AIChatScreen({
     super.key,
     this.preselectedFileId,
     this.preselectedFileName,
+    this.preselectedFileIds,
+    this.folderName,
   });
 
   @override
@@ -61,6 +65,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
     // If a file is preselected, add it to selected files
     if (widget.preselectedFileId != null) {
       _selectedFileIds.add(widget.preselectedFileId!);
+    }
+
+    // If multiple files are preselected (folder chat), add them all
+    if (widget.preselectedFileIds != null) {
+      _selectedFileIds.addAll(widget.preselectedFileIds!);
     }
   }
 
@@ -648,13 +657,25 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
+            if (widget.folderName != null && widget.preselectedFileIds != null)
+              Text(
+                'Chatting with folder: ${widget.folderName} (${widget.preselectedFileIds!.length} files)',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.grey,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
           ],
         ),
-        leading: widget.preselectedFileId != null
+        leading: widget.preselectedFileId != null || widget.folderName != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => Navigator.pop(context),
-                tooltip: 'Back to PDF',
+                tooltip: widget.folderName != null
+                    ? 'Back to Folder'
+                    : 'Back to PDF',
               )
             : isWideScreen
             ? IconButton(
@@ -866,34 +887,40 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildEmptyState() {
+    final hasPreselection =
+        widget.preselectedFileId != null || widget.folderName != null;
+    final isFolderChat = widget.folderName != null;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            widget.preselectedFileId != null
+            isFolderChat
+                ? Icons.folder
+                : widget.preselectedFileId != null
                 ? Icons.picture_as_pdf
                 : Icons.chat_bubble_outline,
             size: 64,
-            color: widget.preselectedFileId != null
-                ? Colors.blue[400]
-                : Colors.grey[400],
+            color: hasPreselection ? Colors.blue[400] : Colors.grey[400],
           ),
           const SizedBox(height: 16),
           Text(
-            widget.preselectedFileId != null
+            isFolderChat
+                ? 'Chat with Folder'
+                : widget.preselectedFileId != null
                 ? 'Chat with PDF'
                 : 'Start a conversation',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: widget.preselectedFileId != null
-                  ? Colors.blue[600]
-                  : Colors.grey[600],
+              color: hasPreselection ? Colors.blue[600] : Colors.grey[600],
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            widget.preselectedFileId != null &&
-                    widget.preselectedFileName != null
+            isFolderChat && widget.folderName != null
+                ? 'Ask questions about files in "${widget.folderName}"'
+                : widget.preselectedFileId != null &&
+                      widget.preselectedFileName != null
                 ? 'Ask questions about "${widget.preselectedFileName}"'
                 : 'Ask questions about your documents',
             style: Theme.of(
@@ -901,7 +928,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
-          if (widget.preselectedFileId != null) ...[
+          if (hasPreselection) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -919,7 +946,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'PDF automatically selected for context',
+                    isFolderChat
+                        ? '${widget.preselectedFileIds?.length ?? 0} files automatically selected'
+                        : 'PDF automatically selected for context',
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
