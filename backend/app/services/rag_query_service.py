@@ -16,6 +16,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from .pinecone_service import get_pinecone_service
 from .groq_service import get_groq_service
 from .supabase_service import get_supabase_service
+from .api_key_service import get_api_key_service
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +96,9 @@ class RAGQueryService:
         self.pinecone_service = get_pinecone_service()
         self.groq_service = get_groq_service()
         self.supabase_service = get_supabase_service()
+        self.api_key_service = get_api_key_service()
         
-        # Initialize GROQ chat model for LangChain
+        # Initialize GROQ chat model for LangChain (system default)
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
             raise ValueError("GROQ_API_KEY is required")
@@ -168,22 +170,25 @@ Answer:""",
         question: str,
         user_id: str,
         selected_file_ids: Optional[List[str]] = None,
-        top_k: int = 5
+        top_k: int = 5,
+        preferred_provider: Optional[str] = None
     ) -> ChatResponse:
         """
-        Query user's vector store with source filtering using GROQ.
+        Query user's vector store with source filtering using multi-provider AI.
         
         This is the main end-to-end RAG pipeline that:
         1. Retrieves relevant context from user's Pinecone namespace
         2. Filters by selected source files if specified
-        3. Generates AI response using GROQ
+        3. Generates AI response using user's preferred provider (with fallback)
         4. Extracts and formats citations
+        5. Logs usage
         
         Args:
             question: User's question
             user_id: User UUID or Google sub ID (will be converted to UUID)
             selected_file_ids: Optional list of file IDs to filter sources
             top_k: Number of chunks to retrieve
+            preferred_provider: Optional preferred AI provider
             
         Returns:
             ChatResponse with answer and citations
@@ -192,7 +197,7 @@ Answer:""",
             ValueError: If query fails
         """
         try:
-            logger.info(f"RAG query for user {user_id}: {question[:100]}...")
+            logger.info(f"RAG query for user {user_id}: {question[:100]}... (provider: {preferred_provider or 'auto'})")
             
             # Convert Google user ID to Supabase UUID if needed
             # This handles both UUID format and Google sub format
@@ -214,10 +219,12 @@ Answer:""",
                     citations=[]
                 )
             
-            # Step 2: Generate response with citations
-            response = await self.generate_response(
+            # Step 2: Generate response with citations using multi-provider
+            response = await self.generate_response_with_provider(
                 question=question,
-                context=retrieved_chunks
+                context=retrieved_chunks,
+                user_id=resolved_user_id,
+                preferred_provider=preferred_provider
             )
             
             logger.info(f"RAG query completed with {len(response.citations)} citations")
@@ -352,6 +359,112 @@ Answer:""",
         except Exception as e:
             logger.error(f"Response generation failed: {str(e)}")
             raise ValueError(f"Response generation failed: {str(e)}")
+    
+    async def generate_response_with_provider(
+        self,
+        question: str,
+        context: List[RetrievedChunk],
+        user_id: str,
+        preferred_provider: Optional[str] = None
+    ) -> ChatResponse:
+        """
+        Generate AI response using user's preferred provider with fallback.
+        
+        Priority:
+        1. User's preferred provider (if specified and valid)
+        2. User's highest priority validated key
+        3. System default (GROQ from env)
+        
+        Args:
+            question: User's question
+            context: List of retrieved chunks
+            user_id: User UUID
+            preferred_provider: Optional preferred provider name
+            
+        Returns:
+            ChatResponse with answer and citations
+        """
+        provider_used = None
+        error_message = None
+        
+        try:
+            logger.info(f"Generating response with multi-provider support")
+            
+            # Format context for prompt
+            context_text = self._format_context(context)
+            
+            # Generate prompt using template
+            prompt = self.prompt_template.format(
+                context=context_text,
+                question=question
+            )
+            
+            messages = [
+                {"role": "user", "content": prompt}
+            ]
+            
+            # Get active provider for user
+            provider = await self.api_key_service.get_active_provider(
+                user_id=user_id,
+                preferred_provider=preferred_provider
+            )
+            
+            if not provider:
+                raise ValueError("No AI provider available")
+            
+            provider_used = provider.get_provider_name()
+            logger.info(f"Using provider: {provider_used}")
+            
+            # Call provider's chat API
+            response = await provider.chat(
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1000
+            )
+            
+            answer = response['content']
+            usage = response.get('usage', {})
+            
+            # Extract citations from context
+            citations = self.format_citations(context)
+            
+            # Log successful usage
+            await self.api_key_service.log_usage(
+                user_id=user_id,
+                provider=provider_used,
+                endpoint="rag_query",
+                request_tokens=usage.get('prompt_tokens', 0),
+                response_tokens=usage.get('completion_tokens', 0),
+                status="success",
+                metadata={
+                    "model": response.get('model'),
+                    "question_length": len(question),
+                    "context_chunks": len(context)
+                }
+            )
+            
+            logger.info(f"Generated response with {len(citations)} citations using {provider_used}")
+            
+            return ChatResponse(
+                message=answer,
+                citations=citations
+            )
+            
+        except Exception as e:
+            logger.error(f"Response generation failed with {provider_used or 'unknown'}: {str(e)}")
+            error_message = str(e)
+            
+            # Log failed usage
+            if provider_used:
+                await self.api_key_service.log_usage(
+                    user_id=user_id,
+                    provider=provider_used,
+                    endpoint="rag_query",
+                    status="error",
+                    error_message=error_message
+                )
+            
+            raise ValueError(f"Response generation failed: {error_message}")
     
     def _format_context(self, chunks: List[RetrievedChunk]) -> str:
         """

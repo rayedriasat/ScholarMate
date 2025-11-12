@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/simple_theme_service.dart';
+import 'api_key_settings_tile.dart';
 
 /// Navigation item model
 class NavigationItem {
@@ -327,6 +328,20 @@ class _AppNavigationState extends State<AppNavigation> {
           _buildSettingsSection(context, 'Appearance', [
             _buildThemeToggle(context),
           ]),
+
+          const SizedBox(height: 24),
+
+          // AI & API Keys section
+          if (user != null)
+            _buildSettingsSection(context, 'AI & API Keys', [
+              ApiKeySettingsTile(
+                userId: user.id,
+                baseUrl: const String.fromEnvironment(
+                  'API_BASE_URL',
+                  defaultValue: 'http://localhost:8000',
+                ),
+              ),
+            ]),
 
           const SizedBox(height: 24),
 

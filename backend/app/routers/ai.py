@@ -195,12 +195,13 @@ async def rag_chat(request: RAGChatRequest) -> RAGChatResponse:
         # Get RAG query service
         rag_service = get_rag_query_service()
         
-        # Perform RAG query with source filtering
+        # Perform RAG query with source filtering and provider selection
         response = await rag_service.query(
             question=request.question,
             user_id=request.user_id,
             selected_file_ids=request.selected_file_ids,
-            top_k=request.top_k
+            top_k=request.top_k,
+            preferred_provider=request.preferred_provider
         )
         
         # Convert to Pydantic models

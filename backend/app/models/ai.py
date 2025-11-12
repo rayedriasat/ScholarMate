@@ -55,6 +55,7 @@ class RAGChatRequest(BaseModel):
     user_id: str = Field(..., description="User UUID")
     selected_file_ids: Optional[List[str]] = Field(None, description="Optional list of file IDs to filter sources")
     top_k: int = Field(5, ge=1, le=20, description="Number of chunks to retrieve (1-20)")
+    preferred_provider: Optional[str] = Field(None, description="Preferred AI provider (groq, openai, anthropic, etc.)")
 
 
 class Citation(BaseModel):
