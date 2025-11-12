@@ -104,6 +104,22 @@ class SupabaseService:
             response = self.client.table("encrypted_tokens").insert(token_data).execute()
             return response.data[0]
     
+    async def get_user_by_google_sub(self, google_sub: str) -> Optional[Dict[str, Any]]:
+        """
+        Get user by Google sub claim
+        
+        Args:
+            google_sub: Google OAuth sub claim (unique user ID)
+            
+        Returns:
+            User record or None if not found
+        """
+        response = self.client.table("users").select("*").eq("google_sub", google_sub).execute()
+        
+        if response.data and len(response.data) > 0:
+            return response.data[0]
+        return None
+    
     async def get_encrypted_token(
         self,
         user_id: str,
@@ -113,13 +129,25 @@ class SupabaseService:
         Get encrypted token for user
         
         Args:
-            user_id: User UUID
+            user_id: User UUID or Google sub
             token_type: Type of token
             
         Returns:
             Encrypted token string or None if not found
         """
-        response = self.client.table("encrypted_tokens").select("encrypted_token").eq("user_id", user_id).eq("token_type", token_type).execute()
+        # Check if user_id is a UUID or Google sub
+        # If it's not a valid UUID format, treat it as Google sub
+        actual_user_id = user_id
+        
+        # Simple check: UUIDs contain hyphens, Google subs don't
+        if '-' not in user_id:
+            # This is likely a Google sub, look up the UUID
+            user = await self.get_user_by_google_sub(user_id)
+            if not user:
+                return None
+            actual_user_id = user["id"]
+        
+        response = self.client.table("encrypted_tokens").select("encrypted_token").eq("user_id", actual_user_id).eq("token_type", token_type).execute()
         
         if response.data and len(response.data) > 0:
             return response.data[0]["encrypted_token"]

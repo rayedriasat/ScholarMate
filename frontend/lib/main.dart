@@ -17,6 +17,7 @@ import 'services/tts_service.dart';
 import 'services/sharing_service.dart';
 import 'services/permission_service.dart';
 import 'services/indexing_service.dart';
+import 'services/metadata_service.dart';
 import 'services/simple_theme_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -183,6 +184,20 @@ class ScholarMateApp extends StatelessWidget {
           update: (context, auth, previous) =>
               previous ??
               IndexingService(apiService: ApiService(), authService: auth),
+        ),
+        ProxyProvider<AuthService, MetadataService>(
+          create: (context) => MetadataService(
+            baseUrl: ConfigService().apiBaseUrl,
+            getToken: () => context.read<AuthService>().currentUser?.idToken ?? '',
+            getUserId: () => context.read<AuthService>().currentUser?.id ?? '',
+          ),
+          update: (context, auth, previous) =>
+              previous ??
+              MetadataService(
+                baseUrl: ConfigService().apiBaseUrl,
+                getToken: () => auth.currentUser?.idToken ?? '',
+                getUserId: () => auth.currentUser?.id ?? '',
+              ),
         ),
       ],
       child: Consumer<SimpleThemeService>(

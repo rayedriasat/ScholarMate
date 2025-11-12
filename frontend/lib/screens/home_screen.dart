@@ -8,6 +8,8 @@ import '../widgets/app_navigation.dart';
 import 'file_explorer_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'notes_screen.dart';
+import 'citation_generator_screen.dart';
+import '../services/metadata_service.dart';
 
 /// Home screen shown after successful authentication
 class HomeScreen extends StatefulWidget {
@@ -42,29 +44,40 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  final List<NavigationItem> _navigationItems = [
-    NavigationItem(
-      id: 'files',
-      icon: Icons.folder_outlined,
-      activeIcon: Icons.folder,
-      label: 'Files',
-      screen: const FileExplorerScreen(),
-    ),
-    NavigationItem(
-      id: 'ai',
-      icon: Icons.psychology_outlined,
-      activeIcon: Icons.psychology,
-      label: 'AI Assistant',
-      screen: const AIAssistantScreen(),
-    ),
-    NavigationItem(
-      id: 'notes',
-      icon: Icons.note_outlined,
-      activeIcon: Icons.note,
-      label: 'Notes',
-      screen: const NotesScreen(),
-    ),
-  ];
+  List<NavigationItem> get _navigationItems {
+    final metadataService = context.read<MetadataService>();
+    
+    return [
+      NavigationItem(
+        id: 'files',
+        icon: Icons.folder_outlined,
+        activeIcon: Icons.folder,
+        label: 'Files',
+        screen: const FileExplorerScreen(),
+      ),
+      NavigationItem(
+        id: 'ai',
+        icon: Icons.psychology_outlined,
+        activeIcon: Icons.psychology,
+        label: 'AI Assistant',
+        screen: const AIAssistantScreen(),
+      ),
+      NavigationItem(
+        id: 'notes',
+        icon: Icons.note_outlined,
+        activeIcon: Icons.note,
+        label: 'Notes',
+        screen: const NotesScreen(),
+      ),
+      NavigationItem(
+        id: 'citations',
+        icon: Icons.format_quote_outlined,
+        activeIcon: Icons.format_quote,
+        label: 'Citations',
+        screen: CitationGeneratorScreen(metadataService: metadataService),
+      ),
+    ];
+  }
 
   /// Handle back button press at app level
   Future<bool> _onWillPop() async {

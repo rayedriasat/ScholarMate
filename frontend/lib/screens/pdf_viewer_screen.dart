@@ -9,9 +9,11 @@ import '../services/auth_service.dart';
 import '../services/drive_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/tts_service.dart';
+import '../services/metadata_service.dart';
 import '../widgets/annotation_toolbar.dart';
 import '../widgets/annotation_list_panel.dart';
 import '../widgets/tts_controls.dart';
+import '../widgets/file_metadata_sidebar.dart';
 import 'ai_chat_screen.dart';
 
 /// Full-screen PDF viewer with navigation controls and annotations
@@ -56,6 +58,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
   bool _showTtsControls = false;
   String _currentPageText = '';
   TtsService? _ttsService;
+
+  // Metadata sidebar state
+  bool _showMetadataSidebar = false;
 
   @override
   void initState() {
@@ -320,6 +325,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
       if (!_showAnnotationToolbar) {
         _pdfViewerController.annotationMode = PdfAnnotationMode.none;
       }
+    });
+  }
+
+  void _toggleMetadataSidebar() {
+    setState(() {
+      _showMetadataSidebar = !_showMetadataSidebar;
     });
   }
 
@@ -841,6 +852,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                   case 'goto':
                     if (_totalPages > 0) _showPageNavigator();
                     break;
+                  case 'metadata':
+                    _toggleMetadataSidebar();
+                    break;
                 }
               },
               itemBuilder: (context) => [
@@ -929,6 +943,20 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                     ],
                   ),
                 ),
+                PopupMenuItem(
+                  value: 'metadata',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 20,
+                        color: _showMetadataSidebar ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Metadata & Citations'),
+                    ],
+                  ),
+                ),
               ],
             )
           else ...[
@@ -994,6 +1022,14 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
               icon: const Icon(Icons.format_list_numbered),
               onPressed: _totalPages > 0 ? _showPageNavigator : null,
               tooltip: 'Go to page',
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.info_outline,
+                color: _showMetadataSidebar ? Colors.blue : null,
+              ),
+              onPressed: _toggleMetadataSidebar,
+              tooltip: 'Metadata & Citations',
             ),
           ],
         ],
@@ -1205,6 +1241,27 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                           annotations: _annotations,
                           onAnnotationTap: _onAnnotationTap,
                           onAnnotationDelete: _onAnnotationDelete,
+                        ),
+                      ),
+                    // Metadata sidebar (desktop only)
+                    if (_showMetadataSidebar &&
+                        MediaQuery.of(context).size.width >= 600)
+                      SizedBox(
+                        width: 350,
+                        child: FileMetadataSidebar(
+                          file: widget.file ?? DriveFile(
+                            id: widget.fileId ?? '',
+                            name: widget.fileName ?? '',
+                            mimeType: 'application/pdf',
+                            modifiedTime: DateTime.now(),
+                            size: 0,
+                          ),
+                          metadataService: context.read<MetadataService>(),
+                          onClose: () {
+                            setState(() {
+                              _showMetadataSidebar = false;
+                            });
+                          },
                         ),
                       ),
                   ],
