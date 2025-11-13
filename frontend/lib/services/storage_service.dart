@@ -11,8 +11,11 @@ class StorageService {
   static const String _refreshTokenKey = 'refresh_token';
   static const String _lastAuthKey = 'last_auth_time';
 
-  // Token validity duration (30 days)
-  static const Duration _tokenValidityDuration = Duration(days: 30);
+  // Google access tokens expire in ~1 hour, but we'll refresh at 50 minutes to be safe
+  static const Duration _tokenValidityDuration = Duration(minutes: 50);
+
+  // Session validity (keep user logged in for 30 days even if tokens need refresh)
+  static const Duration _sessionValidityDuration = Duration(days: 30);
 
   static SharedPreferences? _prefs;
 
@@ -91,7 +94,7 @@ class StorageService {
     }
   }
 
-  /// Check if stored tokens are still valid
+  /// Check if stored tokens are still valid (not expired)
   static Future<bool> areTokensValid() async {
     await initialize();
 
@@ -100,6 +103,18 @@ class StorageService {
 
     final expiryTime = DateTime.fromMillisecondsSinceEpoch(expiryTimestamp);
     return DateTime.now().isBefore(expiryTime);
+  }
+
+  /// Check if the session is still valid (user should stay logged in)
+  static Future<bool> isSessionValid() async {
+    await initialize();
+
+    final lastAuthTimestamp = _prefs!.getInt(_lastAuthKey);
+    if (lastAuthTimestamp == null) return false;
+
+    final lastAuthTime = DateTime.fromMillisecondsSinceEpoch(lastAuthTimestamp);
+    final sessionExpiry = lastAuthTime.add(_sessionValidityDuration);
+    return DateTime.now().isBefore(sessionExpiry);
   }
 
   /// Get time until token expiry
@@ -116,19 +131,30 @@ class StorageService {
     return expiryTime.difference(now);
   }
 
-  /// Check if user needs to re-authenticate (tokens expired or missing)
+  /// Check if user needs to re-authenticate (session expired)
   static Future<bool> needsReAuthentication() async {
     await initialize();
 
     // Check if user exists
     if (!await hasStoredUser()) return true;
 
-    // Check if tokens are valid
-    if (!await areTokensValid()) return true;
+    // Check if session is still valid (30 days)
+    // Even if tokens expired, we can try to refresh them silently
+    return !await isSessionValid();
+  }
 
-    // Check if access token exists
-    final accessToken = _prefs!.getString(_accessTokenKey);
-    return accessToken == null || accessToken.isEmpty;
+  /// Check if tokens need to be refreshed (expired but session still valid)
+  static Future<bool> needsTokenRefresh() async {
+    await initialize();
+
+    // If no user, no need to refresh
+    if (!await hasStoredUser()) return false;
+
+    // If session expired, need full re-auth
+    if (!await isSessionValid()) return false;
+
+    // Check if tokens are expired
+    return !await areTokensValid();
   }
 
   /// Clear all stored user data

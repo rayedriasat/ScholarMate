@@ -38,6 +38,7 @@ class AuthService extends ChangeNotifier {
   ];
 
   StreamSubscription<GoogleSignInAuthenticationEvent>? _authEventsSub;
+  Timer? _tokenRefreshTimer;
 
   /// Initialize the Google Sign-In singleton
   /// Must be called exactly once before any other methods
@@ -71,17 +72,23 @@ class AuthService extends ChangeNotifier {
 
       _isInitialized = true;
 
-      // Only attempt lightweight authentication if we don't have valid tokens AND no current user
-      if (_currentUser == null &&
-          await StorageService.needsReAuthentication()) {
-        debugPrint(
-          'No valid tokens found, attempting lightweight authentication',
-        );
+      // Check if we need to refresh tokens or re-authenticate
+      if (_currentUser != null) {
+        // User restored from storage, check if tokens need refresh
+        if (await StorageService.needsTokenRefresh()) {
+          debugPrint('Tokens expired, attempting silent refresh...');
+          await _silentTokenRefresh();
+        } else {
+          debugPrint('User restored with valid tokens');
+        }
+        // Start periodic token refresh
+        _startTokenRefreshTimer();
+      } else if (!await StorageService.needsReAuthentication()) {
+        // Session still valid but user not restored, try lightweight auth
+        debugPrint('Session valid, attempting lightweight authentication');
         GoogleSignIn.instance.attemptLightweightAuthentication();
       } else {
-        debugPrint(
-          'Valid tokens found or user already restored, skipping lightweight authentication',
-        );
+        debugPrint('No valid session, user needs to sign in');
       }
 
       notifyListeners();
@@ -111,6 +118,11 @@ class AuthService extends ChangeNotifier {
 
           // Store user and tokens in backend database
           await _storeUserInBackend(user);
+
+          // Start token refresh timer if not already running
+          if (_tokenRefreshTimer == null) {
+            _startTokenRefreshTimer();
+          }
 
           _authStateController.add(user);
           notifyListeners();
@@ -179,6 +191,10 @@ class AuthService extends ChangeNotifier {
       await _storeUserInBackend(user);
 
       _authStateController.add(user);
+
+      // Start token refresh timer
+      _startTokenRefreshTimer();
+
       notifyListeners();
 
       debugPrint('Sign-in completed successfully for user: ${user.email}');
@@ -216,6 +232,9 @@ class AuthService extends ChangeNotifier {
   Future<void> _handleSignOut() async {
     debugPrint('Handling sign out for user: ${_currentUser?.email}');
 
+    // Stop token refresh timer
+    _stopTokenRefreshTimer();
+
     // Clear user data
     await _clearUserData();
 
@@ -251,7 +270,18 @@ class AuthService extends ChangeNotifier {
 
   /// Get current access token
   /// Returns null if user is not authenticated or token is not available
+  /// Automatically refreshes token if expired
   Future<String?> getAccessToken() async {
+    // Check if tokens need refresh
+    if (await StorageService.needsTokenRefresh()) {
+      debugPrint('Token expired, refreshing before use...');
+      final refreshedToken = await refreshToken();
+      if (refreshedToken != null) {
+        return refreshedToken;
+      }
+      // If refresh failed, continue to try getting token normally
+    }
+
     // First check if we have a valid cached token
     if (_currentUser?.accessToken != null &&
         await StorageService.areTokensValid()) {
@@ -298,8 +328,14 @@ class AuthService extends ChangeNotifier {
 
   /// Refresh the access token (non-interactive if possible)
   Future<String?> refreshToken() async {
-    if (_account == null) return null;
+    if (_account == null) {
+      debugPrint('No account available for token refresh');
+      return null;
+    }
+
     try {
+      debugPrint('Refreshing access token...');
+
       final existing = await _account!.authorizationClient
           .authorizationForScopes(_scopes);
       if (existing != null) {
@@ -308,24 +344,77 @@ class AuthService extends ChangeNotifier {
           accessToken: existing.accessToken,
         );
       }
+
       final refreshed = await _account!.authorizationClient
           .authorizationForScopes(_scopes);
+
       if (refreshed != null) {
-        _currentUser = _currentUser!.copyWith(
-          accessToken: refreshed.accessToken,
-        );
+        final newToken = refreshed.accessToken;
 
-        // Update stored token
-        await StorageService.updateAccessToken(refreshed.accessToken);
+        if (_currentUser != null) {
+          // Update current user with fresh token
+          _currentUser = _currentUser!.copyWith(accessToken: newToken);
 
-        notifyListeners();
-        return refreshed.accessToken;
+          // Update stored token with new expiry
+          await StorageService.updateAccessToken(newToken);
+
+          // Update backend with new token
+          await _storeUserInBackend(_currentUser!);
+
+          debugPrint('Token refreshed successfully');
+          notifyListeners();
+        }
+
+        return newToken;
       }
+
+      debugPrint('Failed to get refreshed token');
       return null;
     } catch (e) {
       debugPrint('Failed to refresh token: $e');
       return null;
     }
+  }
+
+  /// Silent token refresh (no user interaction)
+  Future<void> _silentTokenRefresh() async {
+    try {
+      final newToken = await refreshToken();
+      if (newToken == null) {
+        debugPrint('Silent token refresh failed, will retry later');
+      } else {
+        debugPrint('Silent token refresh successful');
+      }
+    } catch (e) {
+      debugPrint('Error during silent token refresh: $e');
+    }
+  }
+
+  /// Start periodic token refresh timer
+  void _startTokenRefreshTimer() {
+    // Cancel existing timer if any
+    _tokenRefreshTimer?.cancel();
+
+    // Check and refresh tokens every 45 minutes
+    _tokenRefreshTimer = Timer.periodic(const Duration(minutes: 45), (_) async {
+      if (_currentUser != null) {
+        debugPrint('Periodic token refresh check...');
+        if (await StorageService.needsTokenRefresh()) {
+          await _silentTokenRefresh();
+        } else {
+          debugPrint('Tokens still valid, no refresh needed');
+        }
+      }
+    });
+
+    debugPrint('Token refresh timer started');
+  }
+
+  /// Stop token refresh timer
+  void _stopTokenRefreshTimer() {
+    _tokenRefreshTimer?.cancel();
+    _tokenRefreshTimer = null;
+    debugPrint('Token refresh timer stopped');
   }
 
   /// Create User object from GoogleSignInAccount
@@ -473,6 +562,7 @@ class AuthService extends ChangeNotifier {
   @override
   void dispose() {
     _authEventsSub?.cancel();
+    _tokenRefreshTimer?.cancel();
     _authStateController.close();
     super.dispose();
   }
