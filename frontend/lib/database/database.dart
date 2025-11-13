@@ -1,5 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'tables.dart';
 
 part 'database.g.dart';
@@ -476,11 +479,29 @@ class AppDatabase extends _$AppDatabase {
 
 /// Open database connection with platform-specific implementation
 QueryExecutor _openConnection() {
-  return driftDatabase(
-    name: 'scholarmate_cache',
-    web: DriftWebOptions(
-      sqlite3Wasm: Uri.parse('sqlite3.wasm'),
-      driftWorker: Uri.parse('drift_worker.dart.js'),
-    ),
-  );
+  if (kIsWeb) {
+    // Web platform
+    return driftDatabase(
+      name: 'scholarmate_cache',
+      web: DriftWebOptions(
+        sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+        driftWorker: Uri.parse('drift_worker.dart.js'),
+      ),
+    );
+  } else {
+    // Native platforms (Android, iOS, Windows, Linux, macOS)
+    // Use driftDatabase with native configuration for better Windows support
+    return driftDatabase(
+      name: 'scholarmate_cache',
+      native: DriftNativeOptions(
+        databasePath: _getDatabasePathSync,
+      ),
+    );
+  }
+}
+
+/// Get database path synchronously for native platforms
+Future<String> _getDatabasePathSync() async {
+  final dbFolder = await getApplicationDocumentsDirectory();
+  return p.join(dbFolder.path, 'scholarmate_cache.db');
 }

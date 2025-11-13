@@ -77,7 +77,7 @@ class AuthService extends ChangeNotifier {
           clientId: clientId,
           clientSecret: clientSecret,
           scopes: _scopes,
-          redirectPort: 8000, // Default port for desktop platforms
+          redirectPort: 3000, // Port for desktop OAuth callback (avoiding 8000 used by backend)
           timeout: const Duration(minutes: 2), // Timeout for desktop login
         ),
       );
