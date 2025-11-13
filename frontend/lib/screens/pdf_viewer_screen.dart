@@ -329,9 +329,60 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
   }
 
   void _toggleMetadataSidebar() {
-    setState(() {
-      _showMetadataSidebar = !_showMetadataSidebar;
-    });
+    // On mobile (width < 600), show metadata in a bottom sheet
+    if (MediaQuery.of(context).size.width < 600) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => DraggableScrollableSheet(
+          initialChildSize: 0.9,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) => Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Metadata content
+                Expanded(
+                  child: FileMetadataSidebar(
+                    file: widget.file ?? DriveFile(
+                      id: widget.fileId ?? '',
+                      name: widget.fileName ?? '',
+                      mimeType: 'application/pdf',
+                      modifiedTime: DateTime.now(),
+                      size: 0,
+                    ),
+                    metadataService: context.read<MetadataService>(),
+                    onClose: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      // On desktop/tablet, toggle sidebar
+      setState(() {
+        _showMetadataSidebar = !_showMetadataSidebar;
+      });
+    }
   }
 
   void _onAnnotationModeChanged(PdfAnnotationMode mode) {
