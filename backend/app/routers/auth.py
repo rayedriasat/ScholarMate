@@ -1,8 +1,11 @@
 """Authentication endpoints"""
+import logging
 from fastapi import APIRouter, HTTPException, status
 from ..models.auth import StoreTokensRequest, StoreTokensResponse, RefreshTokenResponse
 from ..services.encryption_service import get_encryption_service
 from ..services.supabase_service import get_supabase_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 

@@ -5,7 +5,9 @@ class User {
   final String? displayName;
   final String? photoUrl;
   final String? accessToken;
+  final String? refreshToken;
   final String? idToken;
+  final DateTime? tokenExpiry;
 
   User({
     required this.id,
@@ -13,7 +15,9 @@ class User {
     this.displayName,
     this.photoUrl,
     this.accessToken,
+    this.refreshToken,
     this.idToken,
+    this.tokenExpiry,
   });
 
   /// Create User from Google Sign-In account data
@@ -23,7 +27,9 @@ class User {
     String? displayName,
     String? photoUrl,
     String? accessToken,
+    String? refreshToken,
     String? idToken,
+    DateTime? tokenExpiry,
   }) {
     return User(
       id: id,
@@ -31,7 +37,9 @@ class User {
       displayName: displayName,
       photoUrl: photoUrl,
       accessToken: accessToken,
+      refreshToken: refreshToken,
       idToken: idToken,
+      tokenExpiry: tokenExpiry,
     );
   }
 
@@ -42,7 +50,9 @@ class User {
     String? displayName,
     String? photoUrl,
     String? accessToken,
+    String? refreshToken,
     String? idToken,
+    DateTime? tokenExpiry,
   }) {
     return User(
       id: id ?? this.id,
@@ -50,7 +60,9 @@ class User {
       displayName: displayName ?? this.displayName,
       photoUrl: photoUrl ?? this.photoUrl,
       accessToken: accessToken ?? this.accessToken,
+      refreshToken: refreshToken ?? this.refreshToken,
       idToken: idToken ?? this.idToken,
+      tokenExpiry: tokenExpiry ?? this.tokenExpiry,
     );
   }
 
@@ -61,7 +73,9 @@ class User {
       'displayName': displayName,
       'photoUrl': photoUrl,
       'accessToken': accessToken,
+      'refreshToken': refreshToken,
       'idToken': idToken,
+      'tokenExpiry': tokenExpiry?.toIso8601String(),
     };
   }
 
@@ -72,7 +86,11 @@ class User {
       displayName: json['displayName'] as String?,
       photoUrl: json['photoUrl'] as String?,
       accessToken: json['accessToken'] as String?,
+      refreshToken: json['refreshToken'] as String?,
       idToken: json['idToken'] as String?,
+      tokenExpiry: json['tokenExpiry'] != null
+          ? DateTime.parse(json['tokenExpiry'] as String)
+          : null,
     );
   }
 

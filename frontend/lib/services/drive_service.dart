@@ -39,12 +39,15 @@ class DriveService extends ChangeNotifier {
 
   /// Get access token with retry logic
   Future<String> _getAccessToken() async {
-    // First try to get current token (uses cache if valid)
+    // First try to get current token (automatically refreshes if expired)
     var accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      debugPrint('No access token available, attempting to refresh...');
-      accessToken = await _authService.refreshToken();
+      debugPrint('No access token available, attempting silent sign-in...');
+      
+      // Try silent sign-in to restore session
+      final user = await _authService.silentSignIn();
+      accessToken = user?.accessToken;
 
       if (accessToken == null) {
         throw Exception('No access token available. Please sign in again.');
@@ -65,11 +68,12 @@ class DriveService extends ChangeNotifier {
 
     // If unauthorized, try to refresh token and retry once
     if (response.statusCode == 401) {
-      debugPrint('Access token expired, refreshing...');
+      debugPrint('Access token expired, attempting to refresh...');
 
-      final newToken = await _authService.refreshToken();
-      if (newToken != null) {
-        response = await requestFunction(newToken);
+      // Try silent sign-in to get fresh token
+      final user = await _authService.silentSignIn();
+      if (user?.accessToken != null) {
+        response = await requestFunction(user!.accessToken!);
       } else {
         throw Exception(
           'Unable to refresh access token. Please sign in again.',

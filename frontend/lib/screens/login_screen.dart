@@ -1,9 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import '../services/auth_service.dart';
-import '../services/web_wrapper.dart' as web;
 
 /// Login screen with Google Sign-In (v7 API)
 class LoginScreen extends StatefulWidget {
@@ -48,6 +47,12 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleSignIn() async {
+    // On web, this should not be called - use signInButton() widget instead
+    if (kIsWeb) {
+      debugPrint('Warning: Direct signIn() called on web, should use signInButton()');
+      return;
+    }
+
     setState(() {
       _errorMessage = null;
     });
@@ -72,6 +77,46 @@ class _LoginScreenState extends State<LoginScreen>
         }
       });
     }
+  }
+
+  /// Build the web-specific sign-in button
+  Widget _buildWebSignInButton(AuthService authService) {
+    if (authService.isLoading) {
+      return const SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Get the sign-in button widget from AuthService
+    final signInButton = authService.getWebSignInButton();
+
+    if (signInButton == null) {
+      // Fallback if button not available
+      return Container(
+        width: double.infinity,
+        height: 56,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Web sign-in not available',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    // Wrap the Google sign-in button in a styled container
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: signInButton,
+    );
   }
 
   @override
@@ -187,8 +232,14 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             const SizedBox(height: 32),
 
-                            // Google Sign-In
-                            if (GoogleSignIn.instance.supportsAuthenticate())
+                            // Google Sign-In Button
+                            // Web requires using the signInButton() widget
+                            // Other platforms use custom button
+                            if (kIsWeb)
+                              // Web: Use Google's official sign-in button
+                              _buildWebSignInButton(authService)
+                            else
+                              // Mobile/Desktop: Use custom styled button
                               SizedBox(
                                 width: double.infinity,
                                 height: 56,
@@ -236,9 +287,7 @@ class _LoginScreenState extends State<LoginScreen>
                                           ],
                                         ),
                                 ),
-                              )
-                            else
-                              Center(child: web.renderButton()),
+                              ),
 
                             // Error Message
                             if (_errorMessage != null) ...[

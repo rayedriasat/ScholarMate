@@ -7,8 +7,8 @@ class StorageService {
   static const String _userKey = 'current_user';
   static const String _accessTokenKey = 'access_token';
   static const String _idTokenKey = 'id_token';
-  static const String _tokenExpiryKey = 'token_expiry';
   static const String _refreshTokenKey = 'refresh_token';
+  static const String _tokenExpiryKey = 'token_expiry';
   static const String _lastAuthKey = 'last_auth_time';
 
   // Google access tokens expire in ~1 hour, but we'll refresh at 50 minutes to be safe
@@ -33,9 +33,14 @@ class StorageService {
 
     if (user.accessToken != null) {
       await _prefs!.setString(_accessTokenKey, user.accessToken!);
-      // Set token expiry to 30 days from now
-      final expiryTime = DateTime.now().add(_tokenValidityDuration);
+      
+      // Use the token expiry from the user object if available, otherwise use default duration
+      final expiryTime = user.tokenExpiry ?? DateTime.now().add(_tokenValidityDuration);
       await _prefs!.setInt(_tokenExpiryKey, expiryTime.millisecondsSinceEpoch);
+    }
+
+    if (user.refreshToken != null) {
+      await _prefs!.setString(_refreshTokenKey, user.refreshToken!);
     }
 
     if (user.idToken != null) {
@@ -58,11 +63,20 @@ class StorageService {
 
       // Get fresh tokens from separate storage
       final accessToken = _prefs!.getString(_accessTokenKey);
+      final refreshToken = _prefs!.getString(_refreshTokenKey);
       final idToken = _prefs!.getString(_idTokenKey);
+      
+      // Get token expiry
+      final expiryTimestamp = _prefs!.getInt(_tokenExpiryKey);
+      final tokenExpiry = expiryTimestamp != null
+          ? DateTime.fromMillisecondsSinceEpoch(expiryTimestamp)
+          : null;
 
       // Update user with fresh tokens
       userMap['accessToken'] = accessToken;
+      userMap['refreshToken'] = refreshToken;
       userMap['idToken'] = idToken;
+      userMap['tokenExpiry'] = tokenExpiry?.toIso8601String();
 
       return User.fromJson(userMap);
     } catch (e) {

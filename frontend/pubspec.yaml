@@ -35,10 +35,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   
-  # Google Sign-In v7 (new API with initialize/authenticate)
-  google_sign_in: ^7.2.0
-  # Web-only helpers for renderButton
-  google_sign_in_web: ^1.1.0
+  # Google Sign-In All Platforms (supports Windows, Linux, and all other platforms)
+  google_sign_in_all_platforms: ^2.0.2
   
   # HTTP client for API calls
   http: ^1.2.2
