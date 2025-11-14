@@ -14,6 +14,7 @@ import '../widgets/annotation_toolbar.dart';
 import '../widgets/annotation_list_panel.dart';
 import '../widgets/tts_controls.dart';
 import '../widgets/file_metadata_sidebar.dart';
+import '../widgets/connectivity_indicator.dart';
 import 'ai_chat_screen.dart';
 
 /// Full-screen PDF viewer with navigation controls and annotations
@@ -866,6 +867,11 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
           ],
         ),
         actions: [
+          // Connectivity and sync status indicator
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: ConnectivityIndicator(),
+          ),
           // On Android, use overflow menu to prevent toolbar overflow
           if (isAndroid)
             PopupMenuButton<String>(

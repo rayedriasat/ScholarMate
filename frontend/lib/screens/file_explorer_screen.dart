@@ -13,6 +13,7 @@ import '../widgets/tag_filter_panel.dart';
 import '../widgets/tag_selection_dialog.dart';
 import '../widgets/sharing_dialog.dart';
 import '../widgets/indexing_progress_panel.dart';
+import '../widgets/connectivity_indicator.dart';
 import 'pdf_viewer_screen.dart';
 import 'markdown_viewer_screen.dart';
 import 'document_scanner_screen.dart';
@@ -651,6 +652,11 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               icon: const Icon(Icons.refresh),
               onPressed: _refresh,
               tooltip: 'Refresh',
+            ),
+            // Connectivity and sync status indicator
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: ConnectivityIndicator(),
             ),
             // Indexing progress button
             Consumer<IndexingService>(
