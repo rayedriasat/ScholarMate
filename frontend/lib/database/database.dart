@@ -1,3 +1,4 @@
+import 'dart:io' as io;
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -490,18 +491,44 @@ QueryExecutor _openConnection() {
     );
   } else {
     // Native platforms (Android, iOS, Windows, Linux, macOS)
-    // Use driftDatabase with native configuration for better Windows support
+    // Use driftDatabase with native configuration
     return driftDatabase(
       name: 'scholarmate_cache',
       native: DriftNativeOptions(
-        databasePath: _getDatabasePathSync,
+        databasePath: () async {
+          print('🔵 Starting database path resolution...');
+          
+          try {
+            // Use ApplicationSupport directory instead of Documents
+            // This avoids OneDrive sync issues on Windows
+            final dbFolder = await getApplicationSupportDirectory();
+            print('🔵 Got app support directory: ${dbFolder.path}');
+            
+            // Ensure the directory exists
+            final directory = io.Directory(dbFolder.path);
+            if (!await directory.exists()) {
+              print('🔵 Creating directory: ${directory.path}');
+              await directory.create(recursive: true);
+              print('🔵 Directory created successfully');
+            }
+            
+            final dbPath = p.join(dbFolder.path, 'scholarmate_cache.db');
+            print('🟢 Database path resolved: $dbPath');
+            
+            return dbPath;
+          } catch (e, stackTrace) {
+            // If there's any error, fall back to temp directory
+            print('🔴 Error getting app support directory: $e');
+            print('🔴 Stack trace: $stackTrace');
+            
+            final tempDir = io.Directory.systemTemp;
+            final fallbackPath = p.join(tempDir.path, 'scholarmate_cache.db');
+            print('🟡 Using fallback database path: $fallbackPath');
+            
+            return fallbackPath;
+          }
+        },
       ),
     );
   }
-}
-
-/// Get database path synchronously for native platforms
-Future<String> _getDatabasePathSync() async {
-  final dbFolder = await getApplicationDocumentsDirectory();
-  return p.join(dbFolder.path, 'scholarmate_cache.db');
 }

@@ -9,7 +9,14 @@ class CacheService extends ChangeNotifier {
   late final AppDatabase _database;
 
   CacheService() {
-    _database = AppDatabase();
+    try {
+      debugPrint('Initializing database...');
+      _database = AppDatabase();
+      debugPrint('Database initialized successfully');
+    } catch (e) {
+      debugPrint('ERROR: Failed to initialize database: $e');
+      rethrow;
+    }
   }
 
   /// Get database instance

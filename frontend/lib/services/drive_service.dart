@@ -118,20 +118,20 @@ class DriveService extends ChangeNotifier {
 
   /// Create the ScholarMate app folder in Drive root
   Future<String> createAppFolder() async {
-    final accessToken = await _getAccessToken();
-
     final folderMetadata = {
       'name': _appFolderName,
       'mimeType': 'application/vnd.google-apps.folder',
     };
 
-    final response = await http.post(
-      Uri.parse('$_baseUrl/files'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(folderMetadata),
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.post(
+        Uri.parse('$_baseUrl/files'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(folderMetadata),
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -257,8 +257,6 @@ class DriveService extends ChangeNotifier {
     }
 
     // Online: Upload immediately
-    final accessToken = await _getAccessToken();
-
     // Determine MIME type based on file extension
     String mimeType = 'application/octet-stream';
     final extension = fileName.split('.').last.toLowerCase();
@@ -306,14 +304,16 @@ class DriveService extends ChangeNotifier {
       ...endBoundaryBytes,
     ]);
 
-    final response = await http.post(
-      Uri.parse('$_uploadUrl/files?uploadType=multipart'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'multipart/related; boundary=$boundary',
-        'Content-Length': totalBytes.length.toString(),
-      },
-      body: totalBytes,
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.post(
+        Uri.parse('$_uploadUrl/files?uploadType=multipart'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'multipart/related; boundary=$boundary',
+          'Content-Length': totalBytes.length.toString(),
+        },
+        body: totalBytes,
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -361,21 +361,21 @@ class DriveService extends ChangeNotifier {
     }
 
     // Online: Create immediately
-    final accessToken = await _getAccessToken();
-
     final folderMetadata = {
       'name': name,
       'mimeType': 'application/vnd.google-apps.folder',
       'parents': [parentId],
     };
 
-    final response = await http.post(
-      Uri.parse('$_baseUrl/files'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(folderMetadata),
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.post(
+        Uri.parse('$_baseUrl/files'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(folderMetadata),
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -417,11 +417,11 @@ class DriveService extends ChangeNotifier {
     }
 
     // Online: Delete immediately
-    final accessToken = await _getAccessToken();
-
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/files/$fileId'),
-      headers: {'Authorization': 'Bearer $accessToken'},
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.delete(
+        Uri.parse('$_baseUrl/files/$fileId'),
+        headers: {'Authorization': 'Bearer $token'},
+      ),
     );
 
     if (response.statusCode != 200 && response.statusCode != 204) {
@@ -459,17 +459,17 @@ class DriveService extends ChangeNotifier {
     }
 
     // Online: Rename immediately
-    final accessToken = await _getAccessToken();
-
     final updateData = {'name': newName};
 
-    final response = await http.patch(
-      Uri.parse('$_baseUrl/files/$fileId'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(updateData),
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.patch(
+        Uri.parse('$_baseUrl/files/$fileId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(updateData),
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -522,12 +522,12 @@ class DriveService extends ChangeNotifier {
     }
 
     // Online: Move immediately
-    final accessToken = await _getAccessToken();
-
     // First get current parents
-    final getResponse = await http.get(
-      Uri.parse('$_baseUrl/files/$fileId?fields=parents'),
-      headers: {'Authorization': 'Bearer $accessToken'},
+    final getResponse = await _makeAuthenticatedRequest(
+      (token) => http.get(
+        Uri.parse('$_baseUrl/files/$fileId?fields=parents'),
+        headers: {'Authorization': 'Bearer $token'},
+      ),
     );
 
     if (getResponse.statusCode != 200) {
@@ -538,11 +538,13 @@ class DriveService extends ChangeNotifier {
     final currentParents = (currentData['parents'] as List).join(',');
 
     // Move file by removing old parents and adding new parent
-    final response = await http.patch(
-      Uri.parse(
-        '$_baseUrl/files/$fileId?addParents=$newParentId&removeParents=$currentParents',
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.patch(
+        Uri.parse(
+          '$_baseUrl/files/$fileId?addParents=$newParentId&removeParents=$currentParents',
+        ),
+        headers: {'Authorization': 'Bearer $token'},
       ),
-      headers: {'Authorization': 'Bearer $accessToken'},
     );
 
     if (response.statusCode == 200) {
@@ -606,11 +608,11 @@ class DriveService extends ChangeNotifier {
     }
 
     // Online: Download from Drive
-    final accessToken = await _getAccessToken();
-
-    final response = await http.get(
-      Uri.parse('$_baseUrl/files/$fileId?alt=media'),
-      headers: {'Authorization': 'Bearer $accessToken'},
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.get(
+        Uri.parse('$_baseUrl/files/$fileId?alt=media'),
+        headers: {'Authorization': 'Bearer $token'},
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -637,18 +639,18 @@ class DriveService extends ChangeNotifier {
   /// Get file metadata from Google Drive
   Future<DriveFile?> _getFileMetadata(String fileId) async {
     try {
-      final accessToken = await _getAccessToken();
-
       final fields =
           'id,name,mimeType,size,parents,modifiedTime,createdTime,thumbnailLink,shared';
       final url = '$_baseUrl/files/$fileId?fields=$fields';
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
+      final response = await _makeAuthenticatedRequest(
+        (token) => http.get(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -681,8 +683,6 @@ class DriveService extends ChangeNotifier {
   /// Share a file with another user
   /// Returns the permission ID for the created permission
   Future<String> shareFile(String fileId, String email, String role) async {
-    final accessToken = await _getAccessToken();
-
     // Map our role names to Google Drive roles
     final driveRole = role == 'editor' ? 'writer' : 'reader';
 
@@ -692,15 +692,17 @@ class DriveService extends ChangeNotifier {
       'emailAddress': email,
     };
 
-    final response = await http.post(
-      Uri.parse(
-        '$_baseUrl/files/$fileId/permissions?sendNotificationEmail=true',
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.post(
+        Uri.parse(
+          '$_baseUrl/files/$fileId/permissions?sendNotificationEmail=true',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(permissionData),
       ),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(permissionData),
     );
 
     if (response.statusCode == 200) {
@@ -715,16 +717,16 @@ class DriveService extends ChangeNotifier {
 
   /// List all permissions for a file
   Future<List<Map<String, dynamic>>> listFilePermissions(String fileId) async {
-    final accessToken = await _getAccessToken();
-
-    final response = await http.get(
-      Uri.parse(
-        '$_baseUrl/files/$fileId/permissions?fields=permissions(id,emailAddress,role,type,displayName,photoLink)',
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.get(
+        Uri.parse(
+          '$_baseUrl/files/$fileId/permissions?fields=permissions(id,emailAddress,role,type,displayName,photoLink)',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       ),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
     );
 
     if (response.statusCode == 200) {
@@ -739,11 +741,11 @@ class DriveService extends ChangeNotifier {
 
   /// Remove a permission from a file
   Future<void> removeFilePermission(String fileId, String permissionId) async {
-    final accessToken = await _getAccessToken();
-
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/files/$fileId/permissions/$permissionId'),
-      headers: {'Authorization': 'Bearer $accessToken'},
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.delete(
+        Uri.parse('$_baseUrl/files/$fileId/permissions/$permissionId'),
+        headers: {'Authorization': 'Bearer $token'},
+      ),
     );
 
     if (response.statusCode != 200 && response.statusCode != 204) {
@@ -755,17 +757,17 @@ class DriveService extends ChangeNotifier {
 
   /// Create a public link for a file
   Future<String> createPublicLink(String fileId) async {
-    final accessToken = await _getAccessToken();
-
     final permissionData = {'type': 'anyone', 'role': 'reader'};
 
-    final response = await http.post(
-      Uri.parse('$_baseUrl/files/$fileId/permissions'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(permissionData),
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.post(
+        Uri.parse('$_baseUrl/files/$fileId/permissions'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(permissionData),
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -784,8 +786,6 @@ class DriveService extends ChangeNotifier {
     String parentId, {
     void Function(double progress)? onProgress,
   }) async {
-    final accessToken = await _getAccessToken();
-
     // Determine MIME type based on file extension
     String mimeType = 'application/octet-stream';
     final extension = fileName.split('.').last.toLowerCase();
@@ -833,14 +833,16 @@ class DriveService extends ChangeNotifier {
       ...endBoundaryBytes,
     ]);
 
-    final response = await http.post(
-      Uri.parse('$_uploadUrl/files?uploadType=multipart'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'multipart/related; boundary=$boundary',
-        'Content-Length': totalBytes.length.toString(),
-      },
-      body: totalBytes,
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.post(
+        Uri.parse('$_uploadUrl/files?uploadType=multipart'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'multipart/related; boundary=$boundary',
+          'Content-Length': totalBytes.length.toString(),
+        },
+        body: totalBytes,
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -860,8 +862,6 @@ class DriveService extends ChangeNotifier {
     String fileName, {
     void Function(double progress)? onProgress,
   }) async {
-    final accessToken = await _getAccessToken();
-
     // Determine MIME type based on file extension
     String mimeType = 'application/octet-stream';
     final extension = fileName.split('.').last.toLowerCase();
@@ -879,14 +879,16 @@ class DriveService extends ChangeNotifier {
     }
 
     // Update file content using PATCH with uploadType=media
-    final response = await http.patch(
-      Uri.parse('$_uploadUrl/files/$fileId?uploadType=media'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': mimeType,
-        'Content-Length': fileBytes.length.toString(),
-      },
-      body: fileBytes,
+    final response = await _makeAuthenticatedRequest(
+      (token) => http.patch(
+        Uri.parse('$_uploadUrl/files/$fileId?uploadType=media'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': mimeType,
+          'Content-Length': fileBytes.length.toString(),
+        },
+        body: fileBytes,
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -956,8 +958,6 @@ class DriveService extends ChangeNotifier {
     }
 
     try {
-      final accessToken = await _getAccessToken();
-
       // Prepare the request body
       final boundary = 'boundary_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -986,13 +986,15 @@ class DriveService extends ChangeNotifier {
 
       final url = '$_uploadUrl/files/$fileId?uploadType=multipart';
 
-      final response = await http.patch(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'multipart/related; boundary=$boundary',
-        },
-        body: requestBody.toString(),
+      final response = await _makeAuthenticatedRequest(
+        (token) => http.patch(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'multipart/related; boundary=$boundary',
+          },
+          body: requestBody.toString(),
+        ),
       );
 
       if (response.statusCode == 200) {
