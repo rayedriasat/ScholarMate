@@ -43,15 +43,18 @@ class DriveService extends ChangeNotifier {
     var accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      debugPrint('No access token available, attempting silent sign-in...');
+      debugPrint('No access token available from AuthService, attempting silent sign-in...');
       
       // Try silent sign-in to restore session
       final user = await _authService.silentSignIn();
       accessToken = user?.accessToken;
 
       if (accessToken == null) {
+        debugPrint('Silent sign-in also failed to provide access token');
         throw Exception('No access token available. Please sign in again.');
       }
+      
+      debugPrint('Access token obtained from silent sign-in');
     }
 
     return accessToken;
@@ -68,15 +71,34 @@ class DriveService extends ChangeNotifier {
 
     // If unauthorized, try to refresh token and retry once
     if (response.statusCode == 401) {
-      debugPrint('Access token expired, attempting to refresh...');
+      debugPrint('Received 401 Unauthorized from Google Drive API, attempting to refresh token...');
 
-      // Try silent sign-in to get fresh token
-      final user = await _authService.silentSignIn();
-      if (user?.accessToken != null) {
-        response = await requestFunction(user!.accessToken!);
+      // Try to get a fresh token (this will trigger silent sign-in if needed)
+      final freshToken = await _authService.getAccessToken();
+      
+      if (freshToken != null && freshToken != accessToken) {
+        debugPrint('Got fresh token, retrying request...');
+        response = await requestFunction(freshToken);
       } else {
+        debugPrint('Unable to get fresh token, forcing silent sign-in...');
+        // Force a new silent sign-in
+        final user = await _authService.silentSignIn();
+        if (user?.accessToken != null) {
+          debugPrint('Silent sign-in successful, retrying request...');
+          response = await requestFunction(user!.accessToken!);
+        } else {
+          throw Exception(
+            'Unable to refresh access token. Please sign in again.',
+          );
+        }
+      }
+      
+      // Check if retry was successful
+      if (response.statusCode == 401) {
+        debugPrint('Request still failed after token refresh');
+        debugPrint('This indicates the OAuth session may be revoked or invalid');
         throw Exception(
-          'Unable to refresh access token. Please sign in again.',
+          'AUTHENTICATION_EXPIRED: Your session has expired. Please sign out and sign in again to continue.',
         );
       }
     }

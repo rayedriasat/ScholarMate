@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/drive_file.dart';
+import '../services/auth_service.dart';
 import '../services/drive_service.dart';
 import '../services/tag_service.dart';
 import '../services/sharing_service.dart';
@@ -155,10 +156,21 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _selectedFiles.clear();
       });
     } catch (e) {
+      final errorMsg = e.toString();
       setState(() {
-        _error = e.toString();
+        _error = errorMsg;
         _isLoading = false;
       });
+      
+      // Check if this is an authentication error that requires re-login
+      if (errorMsg.contains('AUTHENTICATION_EXPIRED') || 
+          errorMsg.contains('UNAUTHENTICATED') ||
+          errorMsg.contains('sign out and sign in again')) {
+        // Show a dialog prompting user to sign out and sign back in
+        if (mounted) {
+          _showAuthenticationExpiredDialog();
+        }
+      }
     }
   }
 
@@ -1557,6 +1569,55 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           Text(label),
           if (isSelected) const Spacer(),
           if (isSelected) const Icon(Icons.check, size: 20),
+        ],
+      ),
+    );
+  }
+
+  void _showAuthenticationExpiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Session Expired'),
+          ],
+        ),
+        content: const Text(
+          'Your Google authentication session has expired or been revoked. '
+          'Please sign out and sign back in to continue using ScholarMate.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final authService = context.read<AuthService>();
+              try {
+                await authService.signOut();
+                // Navigation to login screen will be handled automatically
+                // by the auth state listener in main.dart
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Sign out failed: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Sign Out'),
+          ),
         ],
       ),
     );
