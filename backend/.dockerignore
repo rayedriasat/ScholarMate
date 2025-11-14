@@ -1,30 +1,35 @@
-# Python
+# Python runtime
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+
+# Virtual environments
 .venv/
 venv/
 ENV/
 env/
 
-# Development and testing
+# Testing
 .pytest_cache/
 .coverage
 htmlcov/
 test_*.py
+**/test_*.py
 old_tests_chromadb/
 
-# Documentation
+# Documentation - ALL markdown files
 *.md
+**/*.md
 docs/
 
-# Database
+# Database files
 chroma_db/
 *.sqlite3
+*.db
 
-# Models (if already included, exclude local copies)
+# Downloaded models (will be downloaded in container)
 models/
 
 # Environment files
@@ -32,24 +37,30 @@ models/
 .env.*
 !.env.template
 
-# IDE
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Git
+# Version control
 .git/
 .gitignore
+.gitattributes
 
-# Lock files
+# Lock files (keep pyproject.toml)
 uv.lock
 *.lock
 
-# Migration scripts and utilities
+# Migration scripts
 migrations/
 supabase_migrations/
+migration_to_apply.sql
+apply_migration*.py
+apply_api_keys_migration.py
+
+# Utility scripts
 check_*.py
 cleanup_*.py
 debug_*.py
@@ -58,7 +69,13 @@ fix_*.py
 quick_reset.py
 reset_indexing.py
 run.py
-test_*.py
+main.py
+
+# Deployment scripts
+deploy-defang.ps1
+deploy-defang.sh
+start.sh
+render.yaml
 
 # Test data
 test_data/
@@ -67,7 +84,6 @@ test_data/
 *.pyc
 *.pyo
 *.pyd
-.Python
 build/
 develop-eggs/
 dist/
@@ -80,4 +96,7 @@ parts/
 sdist/
 var/
 wheels/
+
+# We only need: pyproject.toml, Dockerfile, compose.yaml, and app/ directory
+# Everything else is excluded above
 

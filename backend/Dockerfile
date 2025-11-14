@@ -12,12 +12,16 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first to leverage Docker cache
-COPY requirements.txt .
+# Install uv for faster dependency installation (10-100x faster than pip)
+RUN pip install --no-cache-dir uv
 
-# Install Python dependencies
-# Use --no-cache-dir to reduce image size
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy pyproject.toml first to leverage Docker cache
+COPY pyproject.toml .
+
+# Install Python dependencies using uv
+# --system: Install into the system Python (not a venv)
+# --no-cache: Don't cache downloads to reduce image size
+RUN uv pip install --system --no-cache .
 
 # Copy the application code
 COPY app/ ./app/

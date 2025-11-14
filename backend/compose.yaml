@@ -71,7 +71,7 @@ services:
     deploy:
       resources:
         reservations:
-          # Free tier typically offers 512MB-1GB
-          memory: 900M
-          cpus: "0.9"
+          # Using maximum Defang free tier: 1GB RAM
+          memory: 1024M
+          cpus: "1.0"
 
