@@ -322,17 +322,20 @@ class AuthService extends ChangeNotifier {
 
   /// Get current access token
   /// Returns null if user is not authenticated or token is not available
+  /// Automatically refreshes expired tokens using the refresh token
   Future<String?> getAccessToken() async {
     if (_currentUser?.accessToken == null) {
       debugPrint('No access token available');
       return null;
     }
 
-    // Check if token is expired
+    // Check if token is expired or will expire soon (within 5 minutes)
     final now = DateTime.now();
-    final isExpired = _currentUser!.tokenExpiry != null && now.isAfter(_currentUser!.tokenExpiry!);
+    final expiryThreshold = now.add(const Duration(minutes: 5));
+    final needsRefresh = _currentUser!.tokenExpiry != null && 
+                         expiryThreshold.isAfter(_currentUser!.tokenExpiry!);
     
-    if (isExpired) {
+    if (needsRefresh) {
       // Prevent refresh loop: Don't refresh if we just refreshed in the last 10 seconds
       if (_lastTokenRefresh != null && now.difference(_lastTokenRefresh!).inSeconds < 10) {
         debugPrint('Token was recently refreshed (${now.difference(_lastTokenRefresh!).inSeconds}s ago), using current token');
@@ -342,25 +345,30 @@ class AuthService extends ChangeNotifier {
       // Prevent concurrent refresh attempts
       if (_isRefreshing) {
         debugPrint('Token refresh already in progress, waiting...');
-        // Wait a bit and return current token
-        await Future.delayed(const Duration(milliseconds: 500));
+        // Wait for refresh to complete (up to 5 seconds)
+        var waitTime = 0;
+        while (_isRefreshing && waitTime < 5000) {
+          await Future.delayed(const Duration(milliseconds: 100));
+          waitTime += 100;
+        }
         return _currentUser?.accessToken;
       }
 
-      debugPrint('Access token expired (expiry: ${_currentUser!.tokenExpiry}), attempting refresh...');
+      debugPrint('Access token expired or expiring soon (expiry: ${_currentUser!.tokenExpiry}), attempting refresh...');
       
       _isRefreshing = true;
       try {
         // Token expired, try to refresh using silent sign-in
+        // This uses the refresh token internally to get a new access token
         final user = await silentSignIn();
         _lastTokenRefresh = DateTime.now();
         
         if (user != null) {
-          debugPrint('Token refresh successful, new expiry: ${user.tokenExpiry}');
+          debugPrint('Token refresh successful via refresh token, new expiry: ${user.tokenExpiry}');
           return user.accessToken;
         }
         
-        debugPrint('Token refresh failed: silentSignIn returned null');
+        debugPrint('Token refresh failed: silentSignIn returned null - refresh token may be invalid');
         return null;
       } finally {
         _isRefreshing = false;
