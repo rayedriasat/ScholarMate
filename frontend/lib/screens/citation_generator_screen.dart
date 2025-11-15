@@ -313,10 +313,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                 TextFormField(
                   controller: _identifierController,
                   decoration: InputDecoration(
-                    labelText: _identifierTypes
-                        .firstWhere((t) => t['value'] == _selectedType)['label'],
-                    hintText: _identifierTypes
-                        .firstWhere((t) => t['value'] == _selectedType)['hint'],
+                    labelText: '${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['label']} (${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['hint']})',
                     border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
@@ -627,7 +624,6 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
           }
           return null;
         },
-        maxLines: 2,
       ),
       const SizedBox(height: 16),
       TextFormField(
@@ -644,7 +640,6 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
           }
           return null;
         },
-        maxLines: 2,
       ),
       const SizedBox(height: 16),
       TextFormField(
