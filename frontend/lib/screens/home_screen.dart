@@ -8,8 +8,6 @@ import '../widgets/app_navigation.dart';
 import 'file_explorer_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'notes_screen.dart';
-import 'citation_generator_screen.dart';
-import '../services/metadata_service.dart';
 
 /// Home screen shown after successful authentication
 class HomeScreen extends StatefulWidget {
@@ -45,8 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<NavigationItem> get _navigationItems {
-    final metadataService = context.read<MetadataService>();
-    
     return [
       NavigationItem(
         id: 'files',
@@ -68,13 +64,6 @@ class _HomeScreenState extends State<HomeScreen> {
         activeIcon: Icons.note,
         label: 'Notes',
         screen: const NotesScreen(),
-      ),
-      NavigationItem(
-        id: 'citations',
-        icon: Icons.format_quote_outlined,
-        activeIcon: Icons.format_quote,
-        label: 'Citations',
-        screen: CitationGeneratorScreen(metadataService: metadataService),
       ),
     ];
   }

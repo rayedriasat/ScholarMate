@@ -6,6 +6,7 @@ import '../services/drive_service.dart';
 import '../services/tag_service.dart';
 import '../services/sharing_service.dart';
 import '../services/indexing_service.dart';
+import '../services/metadata_service.dart';
 import '../widgets/file_card.dart';
 import '../widgets/breadcrumb_navigation.dart';
 import '../widgets/file_upload_widget.dart';
@@ -21,6 +22,7 @@ import 'document_scanner_screen.dart';
 import 'tag_management_screen.dart';
 import 'shared_files_screen.dart';
 import 'ai_chat_screen.dart';
+import 'citation_generator_screen.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -161,9 +163,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _error = errorMsg;
         _isLoading = false;
       });
-      
+
       // Check if this is an authentication error that requires re-login
-      if (errorMsg.contains('AUTHENTICATION_EXPIRED') || 
+      if (errorMsg.contains('AUTHENTICATION_EXPIRED') ||
           errorMsg.contains('UNAUTHENTICATED') ||
           errorMsg.contains('sign out and sign in again')) {
         // Show a dialog prompting user to sign out and sign back in
@@ -727,6 +729,16 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       builder: (context) => const SharedFilesScreen(),
                     ),
                   );
+                } else if (value == 'citations') {
+                  final metadataService = context.read<MetadataService>();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CitationGeneratorScreen(
+                        metadataService: metadataService,
+                      ),
+                    ),
+                  );
                 }
               },
               itemBuilder: (context) => [
@@ -737,6 +749,17 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       Icon(Icons.folder_shared, size: 20),
                       SizedBox(width: 8),
                       Text('Shared with Me'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'citations',
+                  child: Row(
+                    children: [
+                      Icon(Icons.format_quote, size: 20),
+                      SizedBox(width: 8),
+                      Text('Citations'),
                     ],
                   ),
                 ),
