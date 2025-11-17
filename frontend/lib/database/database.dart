@@ -21,6 +21,11 @@ part 'database.g.dart';
     ChatSourcePreferences,
     ChatConversations,
     ChatMessages,
+    NotebookFolders,
+    NotebookFiles,
+    NotebookChats,
+    NotebookChatMessages,
+    NotebookAiOutputs,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -30,7 +35,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -61,6 +66,14 @@ class AppDatabase extends _$AppDatabase {
           // Migration from version 5 to 6: Add chat history tables
           await m.createTable(chatConversations);
           await m.createTable(chatMessages);
+        }
+        if (from < 7) {
+          // Migration from version 6 to 7: Add notebook studio tables
+          await m.createTable(notebookFolders);
+          await m.createTable(notebookFiles);
+          await m.createTable(notebookChats);
+          await m.createTable(notebookChatMessages);
+          await m.createTable(notebookAiOutputs);
         }
       },
     );
@@ -476,6 +489,196 @@ class AppDatabase extends _$AppDatabase {
       chatMessages,
     )..where((cm) => cm.conversationId.equals(conversationId))).go();
   }
+
+  // Notebook folder operations
+  Future<List<NotebookFolder>> getNotebookFolders(String userId) {
+    return (select(notebookFolders)
+          ..where((nf) => nf.userId.equals(userId))
+          ..orderBy([
+            (nf) =>
+                OrderingTerm(expression: nf.updatedAt, mode: OrderingMode.desc),
+          ]))
+        .get();
+  }
+
+  Future<NotebookFolder?> getNotebookFolder(String folderId) {
+    return (select(
+      notebookFolders,
+    )..where((nf) => nf.id.equals(folderId))).getSingleOrNull();
+  }
+
+  Future<int> insertNotebookFolder(NotebookFoldersCompanion folder) {
+    return into(
+      notebookFolders,
+    ).insert(folder, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> updateNotebookFolder(NotebookFoldersCompanion folder) {
+    return (update(
+      notebookFolders,
+    )..where((nf) => nf.id.equals(folder.id.value))).write(folder);
+  }
+
+  Future<int> deleteNotebookFolder(String folderId) async {
+    // Delete all related data
+    await (delete(
+      notebookFiles,
+    )..where((nf) => nf.folderId.equals(folderId))).go();
+    await (delete(
+      notebookChats,
+    )..where((nc) => nc.folderId.equals(folderId))).go();
+    await (delete(
+      notebookAiOutputs,
+    )..where((nao) => nao.folderId.equals(folderId))).go();
+
+    return (delete(
+      notebookFolders,
+    )..where((nf) => nf.id.equals(folderId))).go();
+  }
+
+  // Notebook file operations
+  Future<List<NotebookFile>> getNotebookFiles(String folderId) {
+    return (select(notebookFiles)
+          ..where((nf) => nf.folderId.equals(folderId))
+          ..orderBy([
+            (nf) =>
+                OrderingTerm(expression: nf.updatedAt, mode: OrderingMode.desc),
+          ]))
+        .get();
+  }
+
+  Future<NotebookFile?> getNotebookFile(String fileId) {
+    return (select(
+      notebookFiles,
+    )..where((nf) => nf.id.equals(fileId))).getSingleOrNull();
+  }
+
+  Future<int> insertNotebookFile(NotebookFilesCompanion file) {
+    return into(notebookFiles).insert(file, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> updateNotebookFile(NotebookFilesCompanion file) {
+    return (update(
+      notebookFiles,
+    )..where((nf) => nf.id.equals(file.id.value))).write(file);
+  }
+
+  Future<int> deleteNotebookFile(String fileId) {
+    return (delete(notebookFiles)..where((nf) => nf.id.equals(fileId))).go();
+  }
+
+  // Notebook chat operations
+  Future<List<NotebookChat>> getNotebookChats(String folderId) {
+    return (select(notebookChats)
+          ..where((nc) => nc.folderId.equals(folderId))
+          ..orderBy([
+            (nc) =>
+                OrderingTerm(expression: nc.updatedAt, mode: OrderingMode.desc),
+          ]))
+        .get();
+  }
+
+  Future<NotebookChat?> getNotebookChat(String chatId) {
+    return (select(
+      notebookChats,
+    )..where((nc) => nc.id.equals(chatId))).getSingleOrNull();
+  }
+
+  Future<int> insertNotebookChat(NotebookChatsCompanion chat) {
+    return into(notebookChats).insert(chat, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> updateNotebookChat(NotebookChatsCompanion chat) {
+    return (update(
+      notebookChats,
+    )..where((nc) => nc.id.equals(chat.id.value))).write(chat);
+  }
+
+  Future<int> deleteNotebookChat(String chatId) async {
+    // Delete all messages first
+    await (delete(
+      notebookChatMessages,
+    )..where((ncm) => ncm.chatId.equals(chatId))).go();
+
+    return (delete(notebookChats)..where((nc) => nc.id.equals(chatId))).go();
+  }
+
+  // Notebook chat message operations
+  Future<List<NotebookChatMessage>> getNotebookChatMessages(String chatId) {
+    return (select(notebookChatMessages)
+          ..where((ncm) => ncm.chatId.equals(chatId))
+          ..orderBy([
+            (ncm) =>
+                OrderingTerm(expression: ncm.timestamp, mode: OrderingMode.asc),
+          ]))
+        .get();
+  }
+
+  Future<int> insertNotebookChatMessage(NotebookChatMessagesCompanion message) {
+    return into(
+      notebookChatMessages,
+    ).insert(message, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> deleteNotebookChatMessage(String messageId) {
+    return (delete(
+      notebookChatMessages,
+    )..where((ncm) => ncm.id.equals(messageId))).go();
+  }
+
+  // Notebook AI output operations
+  Future<List<NotebookAiOutput>> getNotebookAiOutputs(
+    String folderId, {
+    String? toolType,
+  }) {
+    if (toolType != null) {
+      return (select(notebookAiOutputs)
+            ..where(
+              (nao) =>
+                  nao.folderId.equals(folderId) & nao.toolType.equals(toolType),
+            )
+            ..orderBy([
+              (nao) => OrderingTerm(
+                expression: nao.createdAt,
+                mode: OrderingMode.desc,
+              ),
+            ]))
+          .get();
+    }
+    return (select(notebookAiOutputs)
+          ..where((nao) => nao.folderId.equals(folderId))
+          ..orderBy([
+            (nao) => OrderingTerm(
+              expression: nao.createdAt,
+              mode: OrderingMode.desc,
+            ),
+          ]))
+        .get();
+  }
+
+  Future<NotebookAiOutput?> getNotebookAiOutput(String outputId) {
+    return (select(
+      notebookAiOutputs,
+    )..where((nao) => nao.id.equals(outputId))).getSingleOrNull();
+  }
+
+  Future<int> insertNotebookAiOutput(NotebookAiOutputsCompanion output) {
+    return into(
+      notebookAiOutputs,
+    ).insert(output, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> updateNotebookAiOutput(NotebookAiOutputsCompanion output) {
+    return (update(
+      notebookAiOutputs,
+    )..where((nao) => nao.id.equals(output.id.value))).write(output);
+  }
+
+  Future<int> deleteNotebookAiOutput(String outputId) {
+    return (delete(
+      notebookAiOutputs,
+    )..where((nao) => nao.id.equals(outputId))).go();
+  }
 }
 
 /// Open database connection with platform-specific implementation
@@ -497,13 +700,13 @@ QueryExecutor _openConnection() {
       native: DriftNativeOptions(
         databasePath: () async {
           print('🔵 Starting database path resolution...');
-          
+
           try {
             // Use ApplicationSupport directory instead of Documents
             // This avoids OneDrive sync issues on Windows
             final dbFolder = await getApplicationSupportDirectory();
             print('🔵 Got app support directory: ${dbFolder.path}');
-            
+
             // Ensure the directory exists
             final directory = io.Directory(dbFolder.path);
             if (!await directory.exists()) {
@@ -511,20 +714,20 @@ QueryExecutor _openConnection() {
               await directory.create(recursive: true);
               print('🔵 Directory created successfully');
             }
-            
+
             final dbPath = p.join(dbFolder.path, 'scholarmate_cache.db');
             print('🟢 Database path resolved: $dbPath');
-            
+
             return dbPath;
           } catch (e, stackTrace) {
             // If there's any error, fall back to temp directory
             print('🔴 Error getting app support directory: $e');
             print('🔴 Stack trace: $stackTrace');
-            
+
             final tempDir = io.Directory.systemTemp;
             final fallbackPath = p.join(tempDir.path, 'scholarmate_cache.db');
             print('🟡 Using fallback database path: $fallbackPath');
-            
+
             return fallbackPath;
           }
         },
@@ -532,3 +735,4 @@ QueryExecutor _openConnection() {
     );
   }
 }
+

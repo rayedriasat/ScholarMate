@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+export 'notebook_tables.dart';
+
 /// Files table - stores file/folder metadata
 class Files extends Table {
   TextColumn get id => text()();

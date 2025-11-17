@@ -487,4 +487,106 @@ class ApiService {
       throw ApiException('Failed to send chat message: $e');
     }
   }
+
+  // ==================== Notebook AI Studio ====================
+
+  /// Generate quiz questions from files
+  Future<Map<String, dynamic>> generateQuiz({
+    required String userId,
+    required List<String> fileIds,
+    int numQuestions = 5,
+    String difficulty = 'medium',
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/notebook-ai/generate-quiz'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          'file_ids': fileIds,
+          'num_questions': numQuestions,
+          'difficulty': difficulty,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw ApiException(
+          'Failed to generate quiz: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to generate quiz: $e');
+    }
+  }
+
+  /// Generate summary from files
+  Future<Map<String, dynamic>> generateSummary({
+    required String userId,
+    required List<String> fileIds,
+    String length = 'medium',
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/notebook-ai/generate-summary'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          'file_ids': fileIds,
+          'length': length,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw ApiException(
+          'Failed to generate summary: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to generate summary: $e');
+    }
+  }
+
+  /// Generate flashcards from files
+  Future<Map<String, dynamic>> generateFlashcards({
+    required String userId,
+    required List<String> fileIds,
+    int numCards = 10,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/notebook-ai/generate-flashcards'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          'file_ids': fileIds,
+          'num_cards': numCards,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw ApiException(
+          'Failed to generate flashcards: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to generate flashcards: $e');
+    }
+  }
 }
+
+
+  // ==================== Notebook AI Studio ====================
+
+  /// Generate quiz questions from files

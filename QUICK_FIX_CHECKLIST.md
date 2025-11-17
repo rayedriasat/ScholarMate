@@ -1,109 +1,102 @@
-# Quick Fix Checklist - Metadata Extraction
+# Quick Fix Checklist - AI Studio "No Content Found" Error
 
-## Immediate Actions
+## ✅ What's Working
+- [x] Provider error fixed
+- [x] Backend is running
+- [x] API calls working
+- [x] Files added to workspace
 
-### 1. Start the Backend (if not running)
-```bash
-cd backend
-uv run python run.py
+## ❌ What's Missing
+- [ ] **Files are not indexed**
+
+## 🔧 Fix in 5 Steps
+
+### 1. Go to Main Files Screen
+```
+Tap "Files" in bottom navigation (not Notebook Studio)
 ```
 
-Wait for: `INFO: Uvicorn running on http://0.0.0.0:8000`
+### 2. Check Your Files
+Look for your PDF files. Do they have a green "Indexed" badge?
+- ✅ Yes → Go to step 4
+- ❌ No → Go to step 3
 
-### 2. Verify Backend is Accessible
-Open in browser: http://localhost:8000/api/metadata/health
+### 3. Index Your Files
+For each file without "Indexed" badge:
+1. Tap the file
+2. Look for "Index" or "Start Indexing" button
+3. Tap it
+4. Wait 1-5 minutes
+5. Check for "Indexed" badge
 
-Expected response: `{"status":"ok","service":"metadata"}`
+### 4. Add Indexed Files to Workspace
+1. Go to Notebook Studio
+2. Open your workspace
+3. Files tab → "Add from Drive"
+4. Select files with "Indexed" badge
+5. Add them
 
-### 3. Check Frontend Configuration
-File: `frontend/dart_defines.json`
+### 5. Test AI Studio
+1. AI Studio tab
+2. Long press any tool
+3. Should work now! 🎉
 
-Ensure it has:
-```json
-{
-  "API_BASE_URL": "http://localhost:8000"
-}
+## 🧪 Quick Test
+
+### Test Chat First (Faster)
+```
+Workspace → Chat tab → Ask: "What are these documents about?"
+
+✅ If chat works → Files are indexed → AI Studio will work
+❌ If chat fails → Files not indexed → Need to index first
 ```
 
-### 4. Restart Frontend (if needed)
-```bash
-cd frontend
-flutter run -d chrome
+## 📋 Verification Checklist
+
+Before trying AI Studio again:
+- [ ] Files uploaded to main app
+- [ ] Files show "Indexed" badge
+- [ ] Files added to workspace from Drive
+- [ ] Chat works in workspace
+- [ ] Backend running
+
+If all checked ✅ → AI Studio will work!
+
+## 🎯 Expected Result
+
+After indexing files:
+```
+Long press Quiz Generator
+→ Wait 10-20 seconds
+→ "Content generated successfully!"
+→ Quiz appears in list
+→ Tap to view questions
 ```
 
-### 5. Test the Metadata Sidebar
+## 💡 Pro Tip
 
-1. Open any PDF in the app
-2. Click the info icon (ⓘ) in the toolbar
-3. The sidebar should now show:
-   - **If metadata exists:** Title, authors, year, etc.
-   - **If no metadata:** At least file name, size, and dates
-   - **If error:** Specific error message with retry button
+**Always test Chat first!**
+- Chat uses same indexed files
+- Faster than AI Studio tools
+- If chat works, AI Studio will work
+- If chat fails, fix indexing first
 
-### 6. Check Console Logs
+## 🆘 Still Not Working?
 
-**Browser Console (F12):**
-- Look for "Extracting metadata for file:"
-- Check for any error messages
-- Note the response status code
+If files are indexed but still getting error:
+1. Check backend logs for specific error
+2. Verify Pinecone credentials in backend/.env
+3. Try with a different file
+4. Check file actually has text content (not just images)
 
-**Backend Terminal:**
-- Look for "Extracting metadata for file:"
-- Check for "Successfully fetched X bytes"
-- Look for any Python errors
+## 📞 Need Help?
 
-## What Changed
+Provide:
+1. Screenshot of file with "Indexed" badge
+2. Backend logs when generating
+3. Which tool you're trying (quiz/summary/flashcards)
+4. File type and size
 
-### Better Error Handling
-- Frontend now shows specific error messages
-- Backend always returns at least minimal metadata
-- Added timeout handling (30 seconds)
+---
 
-### Improved Logging
-- Detailed logs in both frontend and backend
-- Stack traces for debugging
-- Request/response tracking
-
-### Fallback Display
-- Shows basic file info even if metadata extraction fails
-- No more blank "No metadata available" message
-
-## Common Issues & Solutions
-
-| Error Message | Solution |
-|--------------|----------|
-| "Cannot connect to backend" | Start backend: `cd backend && uv run python run.py` |
-| "Request timed out" | Check backend console for errors |
-| "Authentication error" | Sign out and sign in again |
-| "File not found" | Verify file exists in Google Drive |
-
-## Expected Results
-
-**Every PDF should now show at least:**
-- ✓ File name
-- ✓ File size
-- ✓ Created date
-- ✓ Modified date
-
-**PDFs with embedded metadata will also show:**
-- ✓ Title
-- ✓ Authors
-- ✓ Publication year
-- ✓ DOI, ISBN, or other identifiers
-- ✓ Abstract (if available)
-- ✓ Keywords (if available)
-
-## Still Not Working?
-
-1. **Check backend is running:** `curl http://localhost:8000/api/metadata/health`
-2. **Check console logs:** Look for specific error messages
-3. **Verify dependencies:** `cd backend && uv sync`
-4. **Test with different PDFs:** Some PDFs have more metadata than others
-5. **Check authentication:** Make sure you're signed in
-
-## Next Steps
-
-If you're still seeing "failed to extract metadata from pdf":
-1. Copy the exact error from the browser console
-2. Copy any errors from the backend terminal
-3. Share both for more specific debugging
+**Bottom line:** Index your files in the main app first, then AI Studio will work! 🚀

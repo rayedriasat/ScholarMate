@@ -19,6 +19,7 @@ import 'services/permission_service.dart';
 import 'services/indexing_service.dart';
 import 'services/metadata_service.dart';
 import 'services/simple_theme_service.dart';
+import 'services/notebook_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -188,7 +189,8 @@ class ScholarMateApp extends StatelessWidget {
         ProxyProvider<AuthService, MetadataService>(
           create: (context) => MetadataService(
             baseUrl: ConfigService().apiBaseUrl,
-            getToken: () => context.read<AuthService>().currentUser?.idToken ?? '',
+            getToken: () =>
+                context.read<AuthService>().currentUser?.idToken ?? '',
             getUserId: () => context.read<AuthService>().currentUser?.id ?? '',
           ),
           update: (context, auth, previous) =>
@@ -197,6 +199,24 @@ class ScholarMateApp extends StatelessWidget {
                 baseUrl: ConfigService().apiBaseUrl,
                 getToken: () => auth.currentUser?.idToken ?? '',
                 getUserId: () => auth.currentUser?.id ?? '',
+              ),
+        ),
+        ChangeNotifierProxyProvider2<
+          CacheService,
+          AuthService,
+          NotebookService
+        >(
+          create: (context) => NotebookService(
+            database: cacheService.database,
+            apiService: ApiService(),
+            authService: context.read<AuthService>(),
+          ),
+          update: (context, cache, auth, previous) =>
+              previous ??
+              NotebookService(
+                database: cache.database,
+                apiService: ApiService(),
+                authService: auth,
               ),
         ),
       ],

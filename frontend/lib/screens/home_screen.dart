@@ -8,6 +8,7 @@ import '../widgets/app_navigation.dart';
 import 'file_explorer_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'notes_screen.dart';
+import 'notebook_studio_screen.dart';
 
 /// Home screen shown after successful authentication
 class HomeScreen extends StatefulWidget {
@@ -64,6 +65,13 @@ class _HomeScreenState extends State<HomeScreen> {
         activeIcon: Icons.note,
         label: 'Notes',
         screen: const NotesScreen(),
+      ),
+      NavigationItem(
+        id: 'notebook',
+        icon: Icons.auto_stories_outlined,
+        activeIcon: Icons.auto_stories,
+        label: 'Notebook Studio',
+        screen: const NotebookStudioScreen(),
       ),
     ];
   }

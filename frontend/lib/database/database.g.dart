@@ -4328,6 +4328,2701 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
   }
 }
 
+class $NotebookFoldersTable extends NotebookFolders
+    with TableInfo<$NotebookFoldersTable, NotebookFolder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotebookFoldersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileCountMeta = const VerificationMeta(
+    'fileCount',
+  );
+  @override
+  late final GeneratedColumn<int> fileCount = GeneratedColumn<int>(
+    'file_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    name,
+    description,
+    createdAt,
+    updatedAt,
+    fileCount,
+    isSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notebook_folders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotebookFolder> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('file_count')) {
+      context.handle(
+        _fileCountMeta,
+        fileCount.isAcceptableOrUnknown(data['file_count']!, _fileCountMeta),
+      );
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotebookFolder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotebookFolder(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      fileCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_count'],
+      )!,
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $NotebookFoldersTable createAlias(String alias) {
+    return $NotebookFoldersTable(attachedDatabase, alias);
+  }
+}
+
+class NotebookFolder extends DataClass implements Insertable<NotebookFolder> {
+  final String id;
+  final String userId;
+  final String name;
+  final String? description;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int fileCount;
+  final bool isSynced;
+  const NotebookFolder({
+    required this.id,
+    required this.userId,
+    required this.name,
+    this.description,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.fileCount,
+    required this.isSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['file_count'] = Variable<int>(fileCount);
+    map['is_synced'] = Variable<bool>(isSynced);
+    return map;
+  }
+
+  NotebookFoldersCompanion toCompanion(bool nullToAbsent) {
+    return NotebookFoldersCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      fileCount: Value(fileCount),
+      isSynced: Value(isSynced),
+    );
+  }
+
+  factory NotebookFolder.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotebookFolder(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      fileCount: serializer.fromJson<int>(json['fileCount']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'fileCount': serializer.toJson<int>(fileCount),
+      'isSynced': serializer.toJson<bool>(isSynced),
+    };
+  }
+
+  NotebookFolder copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    Value<String?> description = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    int? fileCount,
+    bool? isSynced,
+  }) => NotebookFolder(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    name: name ?? this.name,
+    description: description.present ? description.value : this.description,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    fileCount: fileCount ?? this.fileCount,
+    isSynced: isSynced ?? this.isSynced,
+  );
+  NotebookFolder copyWithCompanion(NotebookFoldersCompanion data) {
+    return NotebookFolder(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      fileCount: data.fileCount.present ? data.fileCount.value : this.fileCount,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookFolder(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('fileCount: $fileCount, ')
+          ..write('isSynced: $isSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    name,
+    description,
+    createdAt,
+    updatedAt,
+    fileCount,
+    isSynced,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotebookFolder &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.fileCount == this.fileCount &&
+          other.isSynced == this.isSynced);
+}
+
+class NotebookFoldersCompanion extends UpdateCompanion<NotebookFolder> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> name;
+  final Value<String?> description;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> fileCount;
+  final Value<bool> isSynced;
+  final Value<int> rowid;
+  const NotebookFoldersCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.fileCount = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotebookFoldersCompanion.insert({
+    required String id,
+    required String userId,
+    required String name,
+    this.description = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.fileCount = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       name = Value(name),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<NotebookFolder> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? fileCount,
+    Expression<bool>? isSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (fileCount != null) 'file_count': fileCount,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotebookFoldersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? name,
+    Value<String?>? description,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? fileCount,
+    Value<bool>? isSynced,
+    Value<int>? rowid,
+  }) {
+    return NotebookFoldersCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      fileCount: fileCount ?? this.fileCount,
+      isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (fileCount.present) {
+      map['file_count'] = Variable<int>(fileCount.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookFoldersCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('fileCount: $fileCount, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NotebookFilesTable extends NotebookFiles
+    with TableInfo<$NotebookFilesTable, NotebookFile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotebookFilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _folderIdMeta = const VerificationMeta(
+    'folderId',
+  );
+  @override
+  late final GeneratedColumn<String> folderId = GeneratedColumn<String>(
+    'folder_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileTypeMeta = const VerificationMeta(
+    'fileType',
+  );
+  @override
+  late final GeneratedColumn<String> fileType = GeneratedColumn<String>(
+    'file_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _driveFileIdMeta = const VerificationMeta(
+    'driveFileId',
+  );
+  @override
+  late final GeneratedColumn<String> driveFileId = GeneratedColumn<String>(
+    'drive_file_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sizeMeta = const VerificationMeta('size');
+  @override
+  late final GeneratedColumn<int> size = GeneratedColumn<int>(
+    'size',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    folderId,
+    userId,
+    name,
+    fileType,
+    driveFileId,
+    content,
+    size,
+    createdAt,
+    updatedAt,
+    isSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notebook_files';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotebookFile> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('folder_id')) {
+      context.handle(
+        _folderIdMeta,
+        folderId.isAcceptableOrUnknown(data['folder_id']!, _folderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folderIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('file_type')) {
+      context.handle(
+        _fileTypeMeta,
+        fileType.isAcceptableOrUnknown(data['file_type']!, _fileTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileTypeMeta);
+    }
+    if (data.containsKey('drive_file_id')) {
+      context.handle(
+        _driveFileIdMeta,
+        driveFileId.isAcceptableOrUnknown(
+          data['drive_file_id']!,
+          _driveFileIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    }
+    if (data.containsKey('size')) {
+      context.handle(
+        _sizeMeta,
+        size.isAcceptableOrUnknown(data['size']!, _sizeMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotebookFile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotebookFile(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      folderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folder_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      fileType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_type'],
+      )!,
+      driveFileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}drive_file_id'],
+      ),
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      ),
+      size: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $NotebookFilesTable createAlias(String alias) {
+    return $NotebookFilesTable(attachedDatabase, alias);
+  }
+}
+
+class NotebookFile extends DataClass implements Insertable<NotebookFile> {
+  final String id;
+  final String folderId;
+  final String userId;
+  final String name;
+  final String fileType;
+  final String? driveFileId;
+  final String? content;
+  final int? size;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool isSynced;
+  const NotebookFile({
+    required this.id,
+    required this.folderId,
+    required this.userId,
+    required this.name,
+    required this.fileType,
+    this.driveFileId,
+    this.content,
+    this.size,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.isSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['folder_id'] = Variable<String>(folderId);
+    map['user_id'] = Variable<String>(userId);
+    map['name'] = Variable<String>(name);
+    map['file_type'] = Variable<String>(fileType);
+    if (!nullToAbsent || driveFileId != null) {
+      map['drive_file_id'] = Variable<String>(driveFileId);
+    }
+    if (!nullToAbsent || content != null) {
+      map['content'] = Variable<String>(content);
+    }
+    if (!nullToAbsent || size != null) {
+      map['size'] = Variable<int>(size);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['is_synced'] = Variable<bool>(isSynced);
+    return map;
+  }
+
+  NotebookFilesCompanion toCompanion(bool nullToAbsent) {
+    return NotebookFilesCompanion(
+      id: Value(id),
+      folderId: Value(folderId),
+      userId: Value(userId),
+      name: Value(name),
+      fileType: Value(fileType),
+      driveFileId: driveFileId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(driveFileId),
+      content: content == null && nullToAbsent
+          ? const Value.absent()
+          : Value(content),
+      size: size == null && nullToAbsent ? const Value.absent() : Value(size),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      isSynced: Value(isSynced),
+    );
+  }
+
+  factory NotebookFile.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotebookFile(
+      id: serializer.fromJson<String>(json['id']),
+      folderId: serializer.fromJson<String>(json['folderId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      name: serializer.fromJson<String>(json['name']),
+      fileType: serializer.fromJson<String>(json['fileType']),
+      driveFileId: serializer.fromJson<String?>(json['driveFileId']),
+      content: serializer.fromJson<String?>(json['content']),
+      size: serializer.fromJson<int?>(json['size']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'folderId': serializer.toJson<String>(folderId),
+      'userId': serializer.toJson<String>(userId),
+      'name': serializer.toJson<String>(name),
+      'fileType': serializer.toJson<String>(fileType),
+      'driveFileId': serializer.toJson<String?>(driveFileId),
+      'content': serializer.toJson<String?>(content),
+      'size': serializer.toJson<int?>(size),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'isSynced': serializer.toJson<bool>(isSynced),
+    };
+  }
+
+  NotebookFile copyWith({
+    String? id,
+    String? folderId,
+    String? userId,
+    String? name,
+    String? fileType,
+    Value<String?> driveFileId = const Value.absent(),
+    Value<String?> content = const Value.absent(),
+    Value<int?> size = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isSynced,
+  }) => NotebookFile(
+    id: id ?? this.id,
+    folderId: folderId ?? this.folderId,
+    userId: userId ?? this.userId,
+    name: name ?? this.name,
+    fileType: fileType ?? this.fileType,
+    driveFileId: driveFileId.present ? driveFileId.value : this.driveFileId,
+    content: content.present ? content.value : this.content,
+    size: size.present ? size.value : this.size,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    isSynced: isSynced ?? this.isSynced,
+  );
+  NotebookFile copyWithCompanion(NotebookFilesCompanion data) {
+    return NotebookFile(
+      id: data.id.present ? data.id.value : this.id,
+      folderId: data.folderId.present ? data.folderId.value : this.folderId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      name: data.name.present ? data.name.value : this.name,
+      fileType: data.fileType.present ? data.fileType.value : this.fileType,
+      driveFileId: data.driveFileId.present
+          ? data.driveFileId.value
+          : this.driveFileId,
+      content: data.content.present ? data.content.value : this.content,
+      size: data.size.present ? data.size.value : this.size,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookFile(')
+          ..write('id: $id, ')
+          ..write('folderId: $folderId, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('fileType: $fileType, ')
+          ..write('driveFileId: $driveFileId, ')
+          ..write('content: $content, ')
+          ..write('size: $size, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    folderId,
+    userId,
+    name,
+    fileType,
+    driveFileId,
+    content,
+    size,
+    createdAt,
+    updatedAt,
+    isSynced,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotebookFile &&
+          other.id == this.id &&
+          other.folderId == this.folderId &&
+          other.userId == this.userId &&
+          other.name == this.name &&
+          other.fileType == this.fileType &&
+          other.driveFileId == this.driveFileId &&
+          other.content == this.content &&
+          other.size == this.size &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.isSynced == this.isSynced);
+}
+
+class NotebookFilesCompanion extends UpdateCompanion<NotebookFile> {
+  final Value<String> id;
+  final Value<String> folderId;
+  final Value<String> userId;
+  final Value<String> name;
+  final Value<String> fileType;
+  final Value<String?> driveFileId;
+  final Value<String?> content;
+  final Value<int?> size;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<bool> isSynced;
+  final Value<int> rowid;
+  const NotebookFilesCompanion({
+    this.id = const Value.absent(),
+    this.folderId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.fileType = const Value.absent(),
+    this.driveFileId = const Value.absent(),
+    this.content = const Value.absent(),
+    this.size = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotebookFilesCompanion.insert({
+    required String id,
+    required String folderId,
+    required String userId,
+    required String name,
+    required String fileType,
+    this.driveFileId = const Value.absent(),
+    this.content = const Value.absent(),
+    this.size = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       folderId = Value(folderId),
+       userId = Value(userId),
+       name = Value(name),
+       fileType = Value(fileType),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<NotebookFile> custom({
+    Expression<String>? id,
+    Expression<String>? folderId,
+    Expression<String>? userId,
+    Expression<String>? name,
+    Expression<String>? fileType,
+    Expression<String>? driveFileId,
+    Expression<String>? content,
+    Expression<int>? size,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? isSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (folderId != null) 'folder_id': folderId,
+      if (userId != null) 'user_id': userId,
+      if (name != null) 'name': name,
+      if (fileType != null) 'file_type': fileType,
+      if (driveFileId != null) 'drive_file_id': driveFileId,
+      if (content != null) 'content': content,
+      if (size != null) 'size': size,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotebookFilesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? folderId,
+    Value<String>? userId,
+    Value<String>? name,
+    Value<String>? fileType,
+    Value<String?>? driveFileId,
+    Value<String?>? content,
+    Value<int?>? size,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool>? isSynced,
+    Value<int>? rowid,
+  }) {
+    return NotebookFilesCompanion(
+      id: id ?? this.id,
+      folderId: folderId ?? this.folderId,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      fileType: fileType ?? this.fileType,
+      driveFileId: driveFileId ?? this.driveFileId,
+      content: content ?? this.content,
+      size: size ?? this.size,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (folderId.present) {
+      map['folder_id'] = Variable<String>(folderId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (fileType.present) {
+      map['file_type'] = Variable<String>(fileType.value);
+    }
+    if (driveFileId.present) {
+      map['drive_file_id'] = Variable<String>(driveFileId.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (size.present) {
+      map['size'] = Variable<int>(size.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookFilesCompanion(')
+          ..write('id: $id, ')
+          ..write('folderId: $folderId, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('fileType: $fileType, ')
+          ..write('driveFileId: $driveFileId, ')
+          ..write('content: $content, ')
+          ..write('size: $size, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NotebookChatsTable extends NotebookChats
+    with TableInfo<$NotebookChatsTable, NotebookChat> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotebookChatsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _folderIdMeta = const VerificationMeta(
+    'folderId',
+  );
+  @override
+  late final GeneratedColumn<String> folderId = GeneratedColumn<String>(
+    'folder_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    folderId,
+    userId,
+    title,
+    createdAt,
+    updatedAt,
+    isSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notebook_chats';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotebookChat> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('folder_id')) {
+      context.handle(
+        _folderIdMeta,
+        folderId.isAcceptableOrUnknown(data['folder_id']!, _folderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folderIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotebookChat map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotebookChat(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      folderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folder_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $NotebookChatsTable createAlias(String alias) {
+    return $NotebookChatsTable(attachedDatabase, alias);
+  }
+}
+
+class NotebookChat extends DataClass implements Insertable<NotebookChat> {
+  final String id;
+  final String folderId;
+  final String userId;
+  final String title;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool isSynced;
+  const NotebookChat({
+    required this.id,
+    required this.folderId,
+    required this.userId,
+    required this.title,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.isSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['folder_id'] = Variable<String>(folderId);
+    map['user_id'] = Variable<String>(userId);
+    map['title'] = Variable<String>(title);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['is_synced'] = Variable<bool>(isSynced);
+    return map;
+  }
+
+  NotebookChatsCompanion toCompanion(bool nullToAbsent) {
+    return NotebookChatsCompanion(
+      id: Value(id),
+      folderId: Value(folderId),
+      userId: Value(userId),
+      title: Value(title),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      isSynced: Value(isSynced),
+    );
+  }
+
+  factory NotebookChat.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotebookChat(
+      id: serializer.fromJson<String>(json['id']),
+      folderId: serializer.fromJson<String>(json['folderId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      title: serializer.fromJson<String>(json['title']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'folderId': serializer.toJson<String>(folderId),
+      'userId': serializer.toJson<String>(userId),
+      'title': serializer.toJson<String>(title),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'isSynced': serializer.toJson<bool>(isSynced),
+    };
+  }
+
+  NotebookChat copyWith({
+    String? id,
+    String? folderId,
+    String? userId,
+    String? title,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isSynced,
+  }) => NotebookChat(
+    id: id ?? this.id,
+    folderId: folderId ?? this.folderId,
+    userId: userId ?? this.userId,
+    title: title ?? this.title,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    isSynced: isSynced ?? this.isSynced,
+  );
+  NotebookChat copyWithCompanion(NotebookChatsCompanion data) {
+    return NotebookChat(
+      id: data.id.present ? data.id.value : this.id,
+      folderId: data.folderId.present ? data.folderId.value : this.folderId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      title: data.title.present ? data.title.value : this.title,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookChat(')
+          ..write('id: $id, ')
+          ..write('folderId: $folderId, ')
+          ..write('userId: $userId, ')
+          ..write('title: $title, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, folderId, userId, title, createdAt, updatedAt, isSynced);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotebookChat &&
+          other.id == this.id &&
+          other.folderId == this.folderId &&
+          other.userId == this.userId &&
+          other.title == this.title &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.isSynced == this.isSynced);
+}
+
+class NotebookChatsCompanion extends UpdateCompanion<NotebookChat> {
+  final Value<String> id;
+  final Value<String> folderId;
+  final Value<String> userId;
+  final Value<String> title;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<bool> isSynced;
+  final Value<int> rowid;
+  const NotebookChatsCompanion({
+    this.id = const Value.absent(),
+    this.folderId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotebookChatsCompanion.insert({
+    required String id,
+    required String folderId,
+    required String userId,
+    required String title,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       folderId = Value(folderId),
+       userId = Value(userId),
+       title = Value(title),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<NotebookChat> custom({
+    Expression<String>? id,
+    Expression<String>? folderId,
+    Expression<String>? userId,
+    Expression<String>? title,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? isSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (folderId != null) 'folder_id': folderId,
+      if (userId != null) 'user_id': userId,
+      if (title != null) 'title': title,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotebookChatsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? folderId,
+    Value<String>? userId,
+    Value<String>? title,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool>? isSynced,
+    Value<int>? rowid,
+  }) {
+    return NotebookChatsCompanion(
+      id: id ?? this.id,
+      folderId: folderId ?? this.folderId,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (folderId.present) {
+      map['folder_id'] = Variable<String>(folderId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookChatsCompanion(')
+          ..write('id: $id, ')
+          ..write('folderId: $folderId, ')
+          ..write('userId: $userId, ')
+          ..write('title: $title, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NotebookChatMessagesTable extends NotebookChatMessages
+    with TableInfo<$NotebookChatMessagesTable, NotebookChatMessage> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotebookChatMessagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _chatIdMeta = const VerificationMeta('chatId');
+  @override
+  late final GeneratedColumn<String> chatId = GeneratedColumn<String>(
+    'chat_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isUserMeta = const VerificationMeta('isUser');
+  @override
+  late final GeneratedColumn<bool> isUser = GeneratedColumn<bool>(
+    'is_user',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_user" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _citationsMeta = const VerificationMeta(
+    'citations',
+  );
+  @override
+  late final GeneratedColumn<String> citations = GeneratedColumn<String>(
+    'citations',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    chatId,
+    userId,
+    content,
+    isUser,
+    timestamp,
+    citations,
+    isSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notebook_chat_messages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotebookChatMessage> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('chat_id')) {
+      context.handle(
+        _chatIdMeta,
+        chatId.isAcceptableOrUnknown(data['chat_id']!, _chatIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_chatIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('is_user')) {
+      context.handle(
+        _isUserMeta,
+        isUser.isAcceptableOrUnknown(data['is_user']!, _isUserMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_isUserMeta);
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timestampMeta);
+    }
+    if (data.containsKey('citations')) {
+      context.handle(
+        _citationsMeta,
+        citations.isAcceptableOrUnknown(data['citations']!, _citationsMeta),
+      );
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotebookChatMessage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotebookChatMessage(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      chatId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}chat_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      isUser: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_user'],
+      )!,
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}timestamp'],
+      )!,
+      citations: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}citations'],
+      ),
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $NotebookChatMessagesTable createAlias(String alias) {
+    return $NotebookChatMessagesTable(attachedDatabase, alias);
+  }
+}
+
+class NotebookChatMessage extends DataClass
+    implements Insertable<NotebookChatMessage> {
+  final String id;
+  final String chatId;
+  final String userId;
+  final String content;
+  final bool isUser;
+  final DateTime timestamp;
+  final String? citations;
+  final bool isSynced;
+  const NotebookChatMessage({
+    required this.id,
+    required this.chatId,
+    required this.userId,
+    required this.content,
+    required this.isUser,
+    required this.timestamp,
+    this.citations,
+    required this.isSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['chat_id'] = Variable<String>(chatId);
+    map['user_id'] = Variable<String>(userId);
+    map['content'] = Variable<String>(content);
+    map['is_user'] = Variable<bool>(isUser);
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    if (!nullToAbsent || citations != null) {
+      map['citations'] = Variable<String>(citations);
+    }
+    map['is_synced'] = Variable<bool>(isSynced);
+    return map;
+  }
+
+  NotebookChatMessagesCompanion toCompanion(bool nullToAbsent) {
+    return NotebookChatMessagesCompanion(
+      id: Value(id),
+      chatId: Value(chatId),
+      userId: Value(userId),
+      content: Value(content),
+      isUser: Value(isUser),
+      timestamp: Value(timestamp),
+      citations: citations == null && nullToAbsent
+          ? const Value.absent()
+          : Value(citations),
+      isSynced: Value(isSynced),
+    );
+  }
+
+  factory NotebookChatMessage.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotebookChatMessage(
+      id: serializer.fromJson<String>(json['id']),
+      chatId: serializer.fromJson<String>(json['chatId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      content: serializer.fromJson<String>(json['content']),
+      isUser: serializer.fromJson<bool>(json['isUser']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+      citations: serializer.fromJson<String?>(json['citations']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'chatId': serializer.toJson<String>(chatId),
+      'userId': serializer.toJson<String>(userId),
+      'content': serializer.toJson<String>(content),
+      'isUser': serializer.toJson<bool>(isUser),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+      'citations': serializer.toJson<String?>(citations),
+      'isSynced': serializer.toJson<bool>(isSynced),
+    };
+  }
+
+  NotebookChatMessage copyWith({
+    String? id,
+    String? chatId,
+    String? userId,
+    String? content,
+    bool? isUser,
+    DateTime? timestamp,
+    Value<String?> citations = const Value.absent(),
+    bool? isSynced,
+  }) => NotebookChatMessage(
+    id: id ?? this.id,
+    chatId: chatId ?? this.chatId,
+    userId: userId ?? this.userId,
+    content: content ?? this.content,
+    isUser: isUser ?? this.isUser,
+    timestamp: timestamp ?? this.timestamp,
+    citations: citations.present ? citations.value : this.citations,
+    isSynced: isSynced ?? this.isSynced,
+  );
+  NotebookChatMessage copyWithCompanion(NotebookChatMessagesCompanion data) {
+    return NotebookChatMessage(
+      id: data.id.present ? data.id.value : this.id,
+      chatId: data.chatId.present ? data.chatId.value : this.chatId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      content: data.content.present ? data.content.value : this.content,
+      isUser: data.isUser.present ? data.isUser.value : this.isUser,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      citations: data.citations.present ? data.citations.value : this.citations,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookChatMessage(')
+          ..write('id: $id, ')
+          ..write('chatId: $chatId, ')
+          ..write('userId: $userId, ')
+          ..write('content: $content, ')
+          ..write('isUser: $isUser, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('citations: $citations, ')
+          ..write('isSynced: $isSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    chatId,
+    userId,
+    content,
+    isUser,
+    timestamp,
+    citations,
+    isSynced,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotebookChatMessage &&
+          other.id == this.id &&
+          other.chatId == this.chatId &&
+          other.userId == this.userId &&
+          other.content == this.content &&
+          other.isUser == this.isUser &&
+          other.timestamp == this.timestamp &&
+          other.citations == this.citations &&
+          other.isSynced == this.isSynced);
+}
+
+class NotebookChatMessagesCompanion
+    extends UpdateCompanion<NotebookChatMessage> {
+  final Value<String> id;
+  final Value<String> chatId;
+  final Value<String> userId;
+  final Value<String> content;
+  final Value<bool> isUser;
+  final Value<DateTime> timestamp;
+  final Value<String?> citations;
+  final Value<bool> isSynced;
+  final Value<int> rowid;
+  const NotebookChatMessagesCompanion({
+    this.id = const Value.absent(),
+    this.chatId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.content = const Value.absent(),
+    this.isUser = const Value.absent(),
+    this.timestamp = const Value.absent(),
+    this.citations = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotebookChatMessagesCompanion.insert({
+    required String id,
+    required String chatId,
+    required String userId,
+    required String content,
+    required bool isUser,
+    required DateTime timestamp,
+    this.citations = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       chatId = Value(chatId),
+       userId = Value(userId),
+       content = Value(content),
+       isUser = Value(isUser),
+       timestamp = Value(timestamp);
+  static Insertable<NotebookChatMessage> custom({
+    Expression<String>? id,
+    Expression<String>? chatId,
+    Expression<String>? userId,
+    Expression<String>? content,
+    Expression<bool>? isUser,
+    Expression<DateTime>? timestamp,
+    Expression<String>? citations,
+    Expression<bool>? isSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (chatId != null) 'chat_id': chatId,
+      if (userId != null) 'user_id': userId,
+      if (content != null) 'content': content,
+      if (isUser != null) 'is_user': isUser,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (citations != null) 'citations': citations,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotebookChatMessagesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? chatId,
+    Value<String>? userId,
+    Value<String>? content,
+    Value<bool>? isUser,
+    Value<DateTime>? timestamp,
+    Value<String?>? citations,
+    Value<bool>? isSynced,
+    Value<int>? rowid,
+  }) {
+    return NotebookChatMessagesCompanion(
+      id: id ?? this.id,
+      chatId: chatId ?? this.chatId,
+      userId: userId ?? this.userId,
+      content: content ?? this.content,
+      isUser: isUser ?? this.isUser,
+      timestamp: timestamp ?? this.timestamp,
+      citations: citations ?? this.citations,
+      isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (chatId.present) {
+      map['chat_id'] = Variable<String>(chatId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (isUser.present) {
+      map['is_user'] = Variable<bool>(isUser.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    if (citations.present) {
+      map['citations'] = Variable<String>(citations.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookChatMessagesCompanion(')
+          ..write('id: $id, ')
+          ..write('chatId: $chatId, ')
+          ..write('userId: $userId, ')
+          ..write('content: $content, ')
+          ..write('isUser: $isUser, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('citations: $citations, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NotebookAiOutputsTable extends NotebookAiOutputs
+    with TableInfo<$NotebookAiOutputsTable, NotebookAiOutput> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotebookAiOutputsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _folderIdMeta = const VerificationMeta(
+    'folderId',
+  );
+  @override
+  late final GeneratedColumn<String> folderId = GeneratedColumn<String>(
+    'folder_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _toolTypeMeta = const VerificationMeta(
+    'toolType',
+  );
+  @override
+  late final GeneratedColumn<String> toolType = GeneratedColumn<String>(
+    'tool_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    folderId,
+    userId,
+    toolType,
+    title,
+    content,
+    createdAt,
+    updatedAt,
+    isSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notebook_ai_outputs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotebookAiOutput> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('folder_id')) {
+      context.handle(
+        _folderIdMeta,
+        folderId.isAcceptableOrUnknown(data['folder_id']!, _folderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folderIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('tool_type')) {
+      context.handle(
+        _toolTypeMeta,
+        toolType.isAcceptableOrUnknown(data['tool_type']!, _toolTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toolTypeMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotebookAiOutput map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotebookAiOutput(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      folderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folder_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      toolType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tool_type'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $NotebookAiOutputsTable createAlias(String alias) {
+    return $NotebookAiOutputsTable(attachedDatabase, alias);
+  }
+}
+
+class NotebookAiOutput extends DataClass
+    implements Insertable<NotebookAiOutput> {
+  final String id;
+  final String folderId;
+  final String userId;
+  final String toolType;
+  final String title;
+  final String content;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool isSynced;
+  const NotebookAiOutput({
+    required this.id,
+    required this.folderId,
+    required this.userId,
+    required this.toolType,
+    required this.title,
+    required this.content,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.isSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['folder_id'] = Variable<String>(folderId);
+    map['user_id'] = Variable<String>(userId);
+    map['tool_type'] = Variable<String>(toolType);
+    map['title'] = Variable<String>(title);
+    map['content'] = Variable<String>(content);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['is_synced'] = Variable<bool>(isSynced);
+    return map;
+  }
+
+  NotebookAiOutputsCompanion toCompanion(bool nullToAbsent) {
+    return NotebookAiOutputsCompanion(
+      id: Value(id),
+      folderId: Value(folderId),
+      userId: Value(userId),
+      toolType: Value(toolType),
+      title: Value(title),
+      content: Value(content),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      isSynced: Value(isSynced),
+    );
+  }
+
+  factory NotebookAiOutput.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotebookAiOutput(
+      id: serializer.fromJson<String>(json['id']),
+      folderId: serializer.fromJson<String>(json['folderId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      toolType: serializer.fromJson<String>(json['toolType']),
+      title: serializer.fromJson<String>(json['title']),
+      content: serializer.fromJson<String>(json['content']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'folderId': serializer.toJson<String>(folderId),
+      'userId': serializer.toJson<String>(userId),
+      'toolType': serializer.toJson<String>(toolType),
+      'title': serializer.toJson<String>(title),
+      'content': serializer.toJson<String>(content),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'isSynced': serializer.toJson<bool>(isSynced),
+    };
+  }
+
+  NotebookAiOutput copyWith({
+    String? id,
+    String? folderId,
+    String? userId,
+    String? toolType,
+    String? title,
+    String? content,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isSynced,
+  }) => NotebookAiOutput(
+    id: id ?? this.id,
+    folderId: folderId ?? this.folderId,
+    userId: userId ?? this.userId,
+    toolType: toolType ?? this.toolType,
+    title: title ?? this.title,
+    content: content ?? this.content,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    isSynced: isSynced ?? this.isSynced,
+  );
+  NotebookAiOutput copyWithCompanion(NotebookAiOutputsCompanion data) {
+    return NotebookAiOutput(
+      id: data.id.present ? data.id.value : this.id,
+      folderId: data.folderId.present ? data.folderId.value : this.folderId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      toolType: data.toolType.present ? data.toolType.value : this.toolType,
+      title: data.title.present ? data.title.value : this.title,
+      content: data.content.present ? data.content.value : this.content,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookAiOutput(')
+          ..write('id: $id, ')
+          ..write('folderId: $folderId, ')
+          ..write('userId: $userId, ')
+          ..write('toolType: $toolType, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    folderId,
+    userId,
+    toolType,
+    title,
+    content,
+    createdAt,
+    updatedAt,
+    isSynced,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotebookAiOutput &&
+          other.id == this.id &&
+          other.folderId == this.folderId &&
+          other.userId == this.userId &&
+          other.toolType == this.toolType &&
+          other.title == this.title &&
+          other.content == this.content &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.isSynced == this.isSynced);
+}
+
+class NotebookAiOutputsCompanion extends UpdateCompanion<NotebookAiOutput> {
+  final Value<String> id;
+  final Value<String> folderId;
+  final Value<String> userId;
+  final Value<String> toolType;
+  final Value<String> title;
+  final Value<String> content;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<bool> isSynced;
+  final Value<int> rowid;
+  const NotebookAiOutputsCompanion({
+    this.id = const Value.absent(),
+    this.folderId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.toolType = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotebookAiOutputsCompanion.insert({
+    required String id,
+    required String folderId,
+    required String userId,
+    required String toolType,
+    required String title,
+    required String content,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       folderId = Value(folderId),
+       userId = Value(userId),
+       toolType = Value(toolType),
+       title = Value(title),
+       content = Value(content),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<NotebookAiOutput> custom({
+    Expression<String>? id,
+    Expression<String>? folderId,
+    Expression<String>? userId,
+    Expression<String>? toolType,
+    Expression<String>? title,
+    Expression<String>? content,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? isSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (folderId != null) 'folder_id': folderId,
+      if (userId != null) 'user_id': userId,
+      if (toolType != null) 'tool_type': toolType,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotebookAiOutputsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? folderId,
+    Value<String>? userId,
+    Value<String>? toolType,
+    Value<String>? title,
+    Value<String>? content,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool>? isSynced,
+    Value<int>? rowid,
+  }) {
+    return NotebookAiOutputsCompanion(
+      id: id ?? this.id,
+      folderId: folderId ?? this.folderId,
+      userId: userId ?? this.userId,
+      toolType: toolType ?? this.toolType,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (folderId.present) {
+      map['folder_id'] = Variable<String>(folderId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (toolType.present) {
+      map['tool_type'] = Variable<String>(toolType.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotebookAiOutputsCompanion(')
+          ..write('id: $id, ')
+          ..write('folderId: $folderId, ')
+          ..write('userId: $userId, ')
+          ..write('toolType: $toolType, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4342,6 +7037,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ChatConversationsTable chatConversations =
       $ChatConversationsTable(this);
   late final $ChatMessagesTable chatMessages = $ChatMessagesTable(this);
+  late final $NotebookFoldersTable notebookFolders = $NotebookFoldersTable(
+    this,
+  );
+  late final $NotebookFilesTable notebookFiles = $NotebookFilesTable(this);
+  late final $NotebookChatsTable notebookChats = $NotebookChatsTable(this);
+  late final $NotebookChatMessagesTable notebookChatMessages =
+      $NotebookChatMessagesTable(this);
+  late final $NotebookAiOutputsTable notebookAiOutputs =
+      $NotebookAiOutputsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4356,6 +7060,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     chatSourcePreferences,
     chatConversations,
     chatMessages,
+    notebookFolders,
+    notebookFiles,
+    notebookChats,
+    notebookChatMessages,
+    notebookAiOutputs,
   ];
 }
 
@@ -6592,6 +9301,1387 @@ typedef $$ChatMessagesTableProcessedTableManager =
       ChatMessage,
       PrefetchHooks Function()
     >;
+typedef $$NotebookFoldersTableCreateCompanionBuilder =
+    NotebookFoldersCompanion Function({
+      required String id,
+      required String userId,
+      required String name,
+      Value<String?> description,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> fileCount,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+typedef $$NotebookFoldersTableUpdateCompanionBuilder =
+    NotebookFoldersCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> name,
+      Value<String?> description,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> fileCount,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+
+class $$NotebookFoldersTableFilterComposer
+    extends Composer<_$AppDatabase, $NotebookFoldersTable> {
+  $$NotebookFoldersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fileCount => $composableBuilder(
+    column: $table.fileCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotebookFoldersTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotebookFoldersTable> {
+  $$NotebookFoldersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fileCount => $composableBuilder(
+    column: $table.fileCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotebookFoldersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotebookFoldersTable> {
+  $$NotebookFoldersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get fileCount =>
+      $composableBuilder(column: $table.fileCount, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+}
+
+class $$NotebookFoldersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotebookFoldersTable,
+          NotebookFolder,
+          $$NotebookFoldersTableFilterComposer,
+          $$NotebookFoldersTableOrderingComposer,
+          $$NotebookFoldersTableAnnotationComposer,
+          $$NotebookFoldersTableCreateCompanionBuilder,
+          $$NotebookFoldersTableUpdateCompanionBuilder,
+          (
+            NotebookFolder,
+            BaseReferences<
+              _$AppDatabase,
+              $NotebookFoldersTable,
+              NotebookFolder
+            >,
+          ),
+          NotebookFolder,
+          PrefetchHooks Function()
+        > {
+  $$NotebookFoldersTableTableManager(
+    _$AppDatabase db,
+    $NotebookFoldersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotebookFoldersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotebookFoldersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotebookFoldersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> fileCount = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookFoldersCompanion(
+                id: id,
+                userId: userId,
+                name: name,
+                description: description,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                fileCount: fileCount,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String name,
+                Value<String?> description = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> fileCount = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookFoldersCompanion.insert(
+                id: id,
+                userId: userId,
+                name: name,
+                description: description,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                fileCount: fileCount,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotebookFoldersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotebookFoldersTable,
+      NotebookFolder,
+      $$NotebookFoldersTableFilterComposer,
+      $$NotebookFoldersTableOrderingComposer,
+      $$NotebookFoldersTableAnnotationComposer,
+      $$NotebookFoldersTableCreateCompanionBuilder,
+      $$NotebookFoldersTableUpdateCompanionBuilder,
+      (
+        NotebookFolder,
+        BaseReferences<_$AppDatabase, $NotebookFoldersTable, NotebookFolder>,
+      ),
+      NotebookFolder,
+      PrefetchHooks Function()
+    >;
+typedef $$NotebookFilesTableCreateCompanionBuilder =
+    NotebookFilesCompanion Function({
+      required String id,
+      required String folderId,
+      required String userId,
+      required String name,
+      required String fileType,
+      Value<String?> driveFileId,
+      Value<String?> content,
+      Value<int?> size,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+typedef $$NotebookFilesTableUpdateCompanionBuilder =
+    NotebookFilesCompanion Function({
+      Value<String> id,
+      Value<String> folderId,
+      Value<String> userId,
+      Value<String> name,
+      Value<String> fileType,
+      Value<String?> driveFileId,
+      Value<String?> content,
+      Value<int?> size,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+
+class $$NotebookFilesTableFilterComposer
+    extends Composer<_$AppDatabase, $NotebookFilesTable> {
+  $$NotebookFilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folderId => $composableBuilder(
+    column: $table.folderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileType => $composableBuilder(
+    column: $table.fileType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get driveFileId => $composableBuilder(
+    column: $table.driveFileId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotebookFilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotebookFilesTable> {
+  $$NotebookFilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folderId => $composableBuilder(
+    column: $table.folderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileType => $composableBuilder(
+    column: $table.fileType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get driveFileId => $composableBuilder(
+    column: $table.driveFileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotebookFilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotebookFilesTable> {
+  $$NotebookFilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get folderId =>
+      $composableBuilder(column: $table.folderId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get fileType =>
+      $composableBuilder(column: $table.fileType, builder: (column) => column);
+
+  GeneratedColumn<String> get driveFileId => $composableBuilder(
+    column: $table.driveFileId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<int> get size =>
+      $composableBuilder(column: $table.size, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+}
+
+class $$NotebookFilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotebookFilesTable,
+          NotebookFile,
+          $$NotebookFilesTableFilterComposer,
+          $$NotebookFilesTableOrderingComposer,
+          $$NotebookFilesTableAnnotationComposer,
+          $$NotebookFilesTableCreateCompanionBuilder,
+          $$NotebookFilesTableUpdateCompanionBuilder,
+          (
+            NotebookFile,
+            BaseReferences<_$AppDatabase, $NotebookFilesTable, NotebookFile>,
+          ),
+          NotebookFile,
+          PrefetchHooks Function()
+        > {
+  $$NotebookFilesTableTableManager(_$AppDatabase db, $NotebookFilesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotebookFilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotebookFilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotebookFilesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> folderId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> fileType = const Value.absent(),
+                Value<String?> driveFileId = const Value.absent(),
+                Value<String?> content = const Value.absent(),
+                Value<int?> size = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookFilesCompanion(
+                id: id,
+                folderId: folderId,
+                userId: userId,
+                name: name,
+                fileType: fileType,
+                driveFileId: driveFileId,
+                content: content,
+                size: size,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String folderId,
+                required String userId,
+                required String name,
+                required String fileType,
+                Value<String?> driveFileId = const Value.absent(),
+                Value<String?> content = const Value.absent(),
+                Value<int?> size = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookFilesCompanion.insert(
+                id: id,
+                folderId: folderId,
+                userId: userId,
+                name: name,
+                fileType: fileType,
+                driveFileId: driveFileId,
+                content: content,
+                size: size,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotebookFilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotebookFilesTable,
+      NotebookFile,
+      $$NotebookFilesTableFilterComposer,
+      $$NotebookFilesTableOrderingComposer,
+      $$NotebookFilesTableAnnotationComposer,
+      $$NotebookFilesTableCreateCompanionBuilder,
+      $$NotebookFilesTableUpdateCompanionBuilder,
+      (
+        NotebookFile,
+        BaseReferences<_$AppDatabase, $NotebookFilesTable, NotebookFile>,
+      ),
+      NotebookFile,
+      PrefetchHooks Function()
+    >;
+typedef $$NotebookChatsTableCreateCompanionBuilder =
+    NotebookChatsCompanion Function({
+      required String id,
+      required String folderId,
+      required String userId,
+      required String title,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+typedef $$NotebookChatsTableUpdateCompanionBuilder =
+    NotebookChatsCompanion Function({
+      Value<String> id,
+      Value<String> folderId,
+      Value<String> userId,
+      Value<String> title,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+
+class $$NotebookChatsTableFilterComposer
+    extends Composer<_$AppDatabase, $NotebookChatsTable> {
+  $$NotebookChatsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folderId => $composableBuilder(
+    column: $table.folderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotebookChatsTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotebookChatsTable> {
+  $$NotebookChatsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folderId => $composableBuilder(
+    column: $table.folderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotebookChatsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotebookChatsTable> {
+  $$NotebookChatsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get folderId =>
+      $composableBuilder(column: $table.folderId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+}
+
+class $$NotebookChatsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotebookChatsTable,
+          NotebookChat,
+          $$NotebookChatsTableFilterComposer,
+          $$NotebookChatsTableOrderingComposer,
+          $$NotebookChatsTableAnnotationComposer,
+          $$NotebookChatsTableCreateCompanionBuilder,
+          $$NotebookChatsTableUpdateCompanionBuilder,
+          (
+            NotebookChat,
+            BaseReferences<_$AppDatabase, $NotebookChatsTable, NotebookChat>,
+          ),
+          NotebookChat,
+          PrefetchHooks Function()
+        > {
+  $$NotebookChatsTableTableManager(_$AppDatabase db, $NotebookChatsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotebookChatsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotebookChatsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotebookChatsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> folderId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookChatsCompanion(
+                id: id,
+                folderId: folderId,
+                userId: userId,
+                title: title,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String folderId,
+                required String userId,
+                required String title,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookChatsCompanion.insert(
+                id: id,
+                folderId: folderId,
+                userId: userId,
+                title: title,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotebookChatsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotebookChatsTable,
+      NotebookChat,
+      $$NotebookChatsTableFilterComposer,
+      $$NotebookChatsTableOrderingComposer,
+      $$NotebookChatsTableAnnotationComposer,
+      $$NotebookChatsTableCreateCompanionBuilder,
+      $$NotebookChatsTableUpdateCompanionBuilder,
+      (
+        NotebookChat,
+        BaseReferences<_$AppDatabase, $NotebookChatsTable, NotebookChat>,
+      ),
+      NotebookChat,
+      PrefetchHooks Function()
+    >;
+typedef $$NotebookChatMessagesTableCreateCompanionBuilder =
+    NotebookChatMessagesCompanion Function({
+      required String id,
+      required String chatId,
+      required String userId,
+      required String content,
+      required bool isUser,
+      required DateTime timestamp,
+      Value<String?> citations,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+typedef $$NotebookChatMessagesTableUpdateCompanionBuilder =
+    NotebookChatMessagesCompanion Function({
+      Value<String> id,
+      Value<String> chatId,
+      Value<String> userId,
+      Value<String> content,
+      Value<bool> isUser,
+      Value<DateTime> timestamp,
+      Value<String?> citations,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+
+class $$NotebookChatMessagesTableFilterComposer
+    extends Composer<_$AppDatabase, $NotebookChatMessagesTable> {
+  $$NotebookChatMessagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get chatId => $composableBuilder(
+    column: $table.chatId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isUser => $composableBuilder(
+    column: $table.isUser,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get citations => $composableBuilder(
+    column: $table.citations,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotebookChatMessagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotebookChatMessagesTable> {
+  $$NotebookChatMessagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get chatId => $composableBuilder(
+    column: $table.chatId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isUser => $composableBuilder(
+    column: $table.isUser,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get citations => $composableBuilder(
+    column: $table.citations,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotebookChatMessagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotebookChatMessagesTable> {
+  $$NotebookChatMessagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get chatId =>
+      $composableBuilder(column: $table.chatId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<bool> get isUser =>
+      $composableBuilder(column: $table.isUser, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  GeneratedColumn<String> get citations =>
+      $composableBuilder(column: $table.citations, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+}
+
+class $$NotebookChatMessagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotebookChatMessagesTable,
+          NotebookChatMessage,
+          $$NotebookChatMessagesTableFilterComposer,
+          $$NotebookChatMessagesTableOrderingComposer,
+          $$NotebookChatMessagesTableAnnotationComposer,
+          $$NotebookChatMessagesTableCreateCompanionBuilder,
+          $$NotebookChatMessagesTableUpdateCompanionBuilder,
+          (
+            NotebookChatMessage,
+            BaseReferences<
+              _$AppDatabase,
+              $NotebookChatMessagesTable,
+              NotebookChatMessage
+            >,
+          ),
+          NotebookChatMessage,
+          PrefetchHooks Function()
+        > {
+  $$NotebookChatMessagesTableTableManager(
+    _$AppDatabase db,
+    $NotebookChatMessagesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotebookChatMessagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotebookChatMessagesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$NotebookChatMessagesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> chatId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<bool> isUser = const Value.absent(),
+                Value<DateTime> timestamp = const Value.absent(),
+                Value<String?> citations = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookChatMessagesCompanion(
+                id: id,
+                chatId: chatId,
+                userId: userId,
+                content: content,
+                isUser: isUser,
+                timestamp: timestamp,
+                citations: citations,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String chatId,
+                required String userId,
+                required String content,
+                required bool isUser,
+                required DateTime timestamp,
+                Value<String?> citations = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookChatMessagesCompanion.insert(
+                id: id,
+                chatId: chatId,
+                userId: userId,
+                content: content,
+                isUser: isUser,
+                timestamp: timestamp,
+                citations: citations,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotebookChatMessagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotebookChatMessagesTable,
+      NotebookChatMessage,
+      $$NotebookChatMessagesTableFilterComposer,
+      $$NotebookChatMessagesTableOrderingComposer,
+      $$NotebookChatMessagesTableAnnotationComposer,
+      $$NotebookChatMessagesTableCreateCompanionBuilder,
+      $$NotebookChatMessagesTableUpdateCompanionBuilder,
+      (
+        NotebookChatMessage,
+        BaseReferences<
+          _$AppDatabase,
+          $NotebookChatMessagesTable,
+          NotebookChatMessage
+        >,
+      ),
+      NotebookChatMessage,
+      PrefetchHooks Function()
+    >;
+typedef $$NotebookAiOutputsTableCreateCompanionBuilder =
+    NotebookAiOutputsCompanion Function({
+      required String id,
+      required String folderId,
+      required String userId,
+      required String toolType,
+      required String title,
+      required String content,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+typedef $$NotebookAiOutputsTableUpdateCompanionBuilder =
+    NotebookAiOutputsCompanion Function({
+      Value<String> id,
+      Value<String> folderId,
+      Value<String> userId,
+      Value<String> toolType,
+      Value<String> title,
+      Value<String> content,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+
+class $$NotebookAiOutputsTableFilterComposer
+    extends Composer<_$AppDatabase, $NotebookAiOutputsTable> {
+  $$NotebookAiOutputsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folderId => $composableBuilder(
+    column: $table.folderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get toolType => $composableBuilder(
+    column: $table.toolType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotebookAiOutputsTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotebookAiOutputsTable> {
+  $$NotebookAiOutputsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folderId => $composableBuilder(
+    column: $table.folderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get toolType => $composableBuilder(
+    column: $table.toolType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotebookAiOutputsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotebookAiOutputsTable> {
+  $$NotebookAiOutputsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get folderId =>
+      $composableBuilder(column: $table.folderId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get toolType =>
+      $composableBuilder(column: $table.toolType, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+}
+
+class $$NotebookAiOutputsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotebookAiOutputsTable,
+          NotebookAiOutput,
+          $$NotebookAiOutputsTableFilterComposer,
+          $$NotebookAiOutputsTableOrderingComposer,
+          $$NotebookAiOutputsTableAnnotationComposer,
+          $$NotebookAiOutputsTableCreateCompanionBuilder,
+          $$NotebookAiOutputsTableUpdateCompanionBuilder,
+          (
+            NotebookAiOutput,
+            BaseReferences<
+              _$AppDatabase,
+              $NotebookAiOutputsTable,
+              NotebookAiOutput
+            >,
+          ),
+          NotebookAiOutput,
+          PrefetchHooks Function()
+        > {
+  $$NotebookAiOutputsTableTableManager(
+    _$AppDatabase db,
+    $NotebookAiOutputsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotebookAiOutputsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotebookAiOutputsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotebookAiOutputsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> folderId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> toolType = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookAiOutputsCompanion(
+                id: id,
+                folderId: folderId,
+                userId: userId,
+                toolType: toolType,
+                title: title,
+                content: content,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String folderId,
+                required String userId,
+                required String toolType,
+                required String title,
+                required String content,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotebookAiOutputsCompanion.insert(
+                id: id,
+                folderId: folderId,
+                userId: userId,
+                toolType: toolType,
+                title: title,
+                content: content,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotebookAiOutputsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotebookAiOutputsTable,
+      NotebookAiOutput,
+      $$NotebookAiOutputsTableFilterComposer,
+      $$NotebookAiOutputsTableOrderingComposer,
+      $$NotebookAiOutputsTableAnnotationComposer,
+      $$NotebookAiOutputsTableCreateCompanionBuilder,
+      $$NotebookAiOutputsTableUpdateCompanionBuilder,
+      (
+        NotebookAiOutput,
+        BaseReferences<
+          _$AppDatabase,
+          $NotebookAiOutputsTable,
+          NotebookAiOutput
+        >,
+      ),
+      NotebookAiOutput,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6613,4 +10703,14 @@ class $AppDatabaseManager {
       $$ChatConversationsTableTableManager(_db, _db.chatConversations);
   $$ChatMessagesTableTableManager get chatMessages =>
       $$ChatMessagesTableTableManager(_db, _db.chatMessages);
+  $$NotebookFoldersTableTableManager get notebookFolders =>
+      $$NotebookFoldersTableTableManager(_db, _db.notebookFolders);
+  $$NotebookFilesTableTableManager get notebookFiles =>
+      $$NotebookFilesTableTableManager(_db, _db.notebookFiles);
+  $$NotebookChatsTableTableManager get notebookChats =>
+      $$NotebookChatsTableTableManager(_db, _db.notebookChats);
+  $$NotebookChatMessagesTableTableManager get notebookChatMessages =>
+      $$NotebookChatMessagesTableTableManager(_db, _db.notebookChatMessages);
+  $$NotebookAiOutputsTableTableManager get notebookAiOutputs =>
+      $$NotebookAiOutputsTableTableManager(_db, _db.notebookAiOutputs);
 }
