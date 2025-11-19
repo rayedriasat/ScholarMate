@@ -11,12 +11,12 @@ from datetime import datetime
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
 
 from .pinecone_service import get_pinecone_service
 from .groq_service import get_groq_service
 from .supabase_service import get_supabase_service
 from .api_key_service import get_api_key_service
+from .embedding_service import get_embedding_service, EmbeddingStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -109,9 +109,8 @@ class RAGQueryService:
             temperature=0.7
         )
         
-        # Lazy-load embeddings to avoid blocking startup
-        self._embeddings = None
-        self._embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+        # Initialize hybrid embedding service (prioritizes API for queries)
+        self.embedding_service = get_embedding_service(strategy=EmbeddingStrategy.AUTO)
         
         # Define prompt template for RAG
         self.prompt_template = PromptTemplate(
@@ -132,38 +131,7 @@ Answer:""",
             input_variables=["context", "question"]
         )
         
-        logger.info("RAG Query Service initialized (embeddings will load on first use)")
-    
-    @property
-    def embeddings(self):
-        """Lazy-load embeddings model on first access."""
-        if self._embeddings is None:
-            logger.info(f"Loading embedding model: {self._embedding_model}")
-            
-            # Check for HuggingFace token and authenticate
-            hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
-            if hf_token:
-                logger.info("Authenticating with HuggingFace Hub")
-                try:
-                    from huggingface_hub import login
-                    login(token=hf_token)
-                    logger.info("Successfully authenticated with HuggingFace Hub")
-                except Exception as e:
-                    logger.warning(f"Failed to login to HuggingFace Hub: {e}")
-            else:
-                logger.warning("No HUGGINGFACEHUB_API_TOKEN found - you may hit rate limits. Get token from: https://huggingface.co/settings/tokens")
-            
-            # Prepare model kwargs
-            model_kwargs = {'device': 'cpu'}
-            
-            # Initialize embeddings
-            self._embeddings = HuggingFaceEmbeddings(
-                model_name=self._embedding_model,
-                model_kwargs=model_kwargs,
-                encode_kwargs={'normalize_embeddings': True}
-            )
-            logger.info("Embedding model loaded successfully")
-        return self._embeddings
+        logger.info("RAG Query Service initialized with hybrid embedding service")
     
     async def query(
         self,
@@ -258,8 +226,8 @@ Answer:""",
         try:
             logger.info(f"Retrieving context for user {user_id}, top_k={top_k}")
             
-            # Generate query embedding
-            query_embedding = self.embeddings.embed_query(question)
+            # Generate query embedding using hybrid service (prioritizes API)
+            query_embedding = await self.embedding_service.generate_query_embedding(question)
             
             # Build metadata filter for selected files
             filter_dict = None
