@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../database/database.dart';
 import '../services/notebook_service.dart';
 import '../services/drive_service.dart';
+import '../models/drive_file.dart';
 
 class NotebookFilesTab extends StatefulWidget {
   final String folderId;
