@@ -15,11 +15,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_groq import ChatGroq
-from langchain_huggingface import HuggingFaceEmbeddings
 
 from .pinecone_service import get_pinecone_service
 from .drive_service import get_drive_service
 from .supabase_service import get_supabase_service
+from .embedding_service import get_embedding_service, EmbeddingStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -90,53 +90,12 @@ class RAGIndexer:
             logger.error(f"Failed to initialize GROQ: {str(e)}")
             raise
         
-        # Lazy-load embeddings to avoid blocking startup
-        self._embeddings = None
-        local_model_path = os.path.join(os.path.dirname(__file__), "..", "..", "models", "all-MiniLM-L6-v2")
+        # Initialize hybrid embedding service
+        self.embedding_service = get_embedding_service(strategy=EmbeddingStrategy.AUTO)
         
-        # Check if local model exists, otherwise fall back to downloading
-        if os.path.exists(local_model_path):
-            self._embedding_model = local_model_path
-            logger.info(f"Will use local embedding model from: {local_model_path}")
-        else:
-            self._embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-            logger.info(f"Will download embedding model on first use: {self._embedding_model}")
-        
-        logger.info("RAG Indexer initialized with chunk_size=1000, chunk_overlap=200 (embeddings will load on first use)")
+        logger.info("RAG Indexer initialized with hybrid embedding service (API + local fallback)")
     
-    @property
-    def embeddings(self):
-        """Lazy-load embeddings model on first access."""
-        if self._embeddings is None:
-            logger.info(f"Loading embedding model: {self._embedding_model}")
-            try:
-                # Check for HuggingFace token and authenticate
-                hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
-                if hf_token:
-                    logger.info("Authenticating with HuggingFace Hub")
-                    try:
-                        from huggingface_hub import login
-                        login(token=hf_token)
-                        logger.info("Successfully authenticated with HuggingFace Hub")
-                    except Exception as e:
-                        logger.warning(f"Failed to login to HuggingFace Hub: {e}")
-                else:
-                    logger.warning("No HUGGINGFACEHUB_API_TOKEN found - you may hit rate limits. Get token from: https://huggingface.co/settings/tokens")
-                
-                # Prepare model kwargs
-                model_kwargs = {'device': 'cpu'}
-                
-                # Initialize embeddings
-                self._embeddings = HuggingFaceEmbeddings(
-                    model_name=self._embedding_model,
-                    model_kwargs=model_kwargs,
-                    encode_kwargs={'normalize_embeddings': True}
-                )
-                logger.info("HuggingFace embeddings loaded successfully")
-            except Exception as e:
-                logger.error(f"Failed to load HuggingFace embeddings: {str(e)}")
-                raise
-        return self._embeddings
+
     
     async def index_file(
         self,
@@ -368,8 +327,8 @@ class RAGIndexer:
         batch_size: int = None
     ) -> List[List[float]]:
         """
-        Generate embeddings using HuggingFace sentence-transformers.
-        ULTRA memory-optimized: processes in tiny batches with aggressive cleanup.
+        Generate embeddings using hybrid embedding service.
+        Tries API first, falls back to local model.
         
         Args:
             documents: List of LangChain Document objects
@@ -387,32 +346,16 @@ class RAGIndexer:
             # Extract text from documents
             texts = [doc.page_content for doc in documents]
             
-            logger.info(f"Generating embeddings for {len(documents)} documents in batches of {batch_size}")
+            logger.info(f"Generating embeddings for {len(documents)} documents")
             
-            # Process in TINY batches to avoid memory spikes
-            all_embeddings = []
-            for i in range(0, len(texts), batch_size):
-                batch_texts = texts[i:i+batch_size]
-                
-                # Generate embeddings for this batch
-                batch_embeddings = self.embeddings.embed_documents(batch_texts)
-                all_embeddings.extend(batch_embeddings)
-                
-                # Aggressive memory cleanup
-                del batch_texts
-                del batch_embeddings
-                gc.collect()
-                
-                logger.debug(f"Generated embeddings for batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
-                
-                # Longer delay to allow complete garbage collection
-                await asyncio.sleep(0.2)
+            # Use hybrid embedding service
+            all_embeddings = await self.embedding_service.generate_embeddings(texts)
             
-            # Final cleanup
+            # Cleanup
             del texts
             gc.collect()
             
-            logger.info(f"Generated {len(all_embeddings)} embeddings (ultra memory-optimized)")
+            logger.info(f"Generated {len(all_embeddings)} embeddings")
             return all_embeddings
             
         except Exception as e:
