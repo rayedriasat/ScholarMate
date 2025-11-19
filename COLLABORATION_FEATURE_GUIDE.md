@@ -74,8 +74,14 @@ MultiProvider(
 
 ### Create Collaboration Session
 
+**From PDF Viewer:**
+1. Open any PDF in the app
+2. Click the **purple "People" icon** in the toolbar (desktop) or overflow menu (Android)
+3. Session is created automatically
+4. Share link appears in the collaboration panel
+
+**Programmatically:**
 ```dart
-// User A opens PDF and starts collaboration
 Navigator.push(
   context,
   MaterialPageRoute(
@@ -90,8 +96,20 @@ Navigator.push(
 
 ### Join Session via Link
 
+**Option 1: Join Screen**
 ```dart
-// User B opens shared link
+Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => JoinCollaborationScreen(
+      sessionId: 'session-id-from-link', // Optional pre-fill
+    ),
+  ),
+);
+```
+
+**Option 2: Direct Join**
+```dart
 Navigator.push(
   context,
   MaterialPageRoute(

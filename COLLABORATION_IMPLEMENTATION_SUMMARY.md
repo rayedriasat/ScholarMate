@@ -17,15 +17,22 @@ backend/
     └── 004_collaboration_tables.sql         # Database schema
 ```
 
-### Frontend (5 files)
+### Frontend (6 files)
 ```
 frontend/lib/
 ├── models/collaboration.dart                # Data models
 ├── services/collaboration_service.dart      # API client + Realtime
-├── screens/collaborative_pdf_viewer_screen.dart  # Main screen
+├── screens/
+│   ├── collaborative_pdf_viewer_screen.dart # Main collaboration screen
+│   └── join_collaboration_screen.dart       # Join via link screen
 └── widgets/
     ├── collaboration_panel.dart             # Participant list
     └── collaboration_cursor.dart            # Cursor indicators
+```
+
+### Modified Files (1 file)
+```
+frontend/lib/screens/pdf_viewer_screen.dart  # Added collaboration button
 ```
 
 ### Documentation (2 files)
@@ -129,8 +136,19 @@ MultiProvider(
 )
 ```
 
-### 6. Navigate to Collaborative Viewer
+### 6. Use the Feature
 
+**Start Collaboration:**
+1. Open any PDF in the app
+2. Click the purple "People" icon (🟣) in the toolbar
+3. Share the link from the collaboration panel
+
+**Join Collaboration:**
+1. Navigate to `JoinCollaborationScreen`
+2. Enter session ID
+3. Click "Join Session"
+
+**Programmatic Access:**
 ```dart
 // From file explorer or PDF viewer
 Navigator.push(

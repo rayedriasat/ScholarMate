@@ -16,6 +16,7 @@ import '../widgets/tts_controls.dart';
 import '../widgets/file_metadata_sidebar.dart';
 import '../widgets/connectivity_indicator.dart';
 import 'ai_chat_screen.dart';
+import 'collaborative_pdf_viewer_screen.dart';
 
 /// Full-screen PDF viewer with navigation controls and annotations
 class PdfViewerScreen extends StatefulWidget {
@@ -804,6 +805,32 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     });
   }
 
+  void _startCollaboration() {
+    final fileId = widget.file?.id ?? widget.fileId;
+    final fileName = widget.file?.name ?? widget.fileName;
+
+    if (fileId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot start collaboration: file information not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to collaborative PDF viewer
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CollaborativePdfViewerScreen(
+          fileId: fileId,
+          fileName: fileName ?? 'document.pdf',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAndroid = Theme.of(context).platform == TargetPlatform.android;
@@ -912,9 +939,24 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                   case 'metadata':
                     _toggleMetadataSidebar();
                     break;
+                  case 'collaborate':
+                    _startCollaboration();
+                    break;
                 }
               },
               itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'collaborate',
+                  enabled: context.read<ConnectivityService>().isOnline,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.people, size: 20, color: Colors.purple),
+                      SizedBox(width: 12),
+                      Text('Start Collaboration'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 PopupMenuItem(
                   value: 'refresh',
                   enabled: context.read<ConnectivityService>().isOnline,
@@ -1018,6 +1060,17 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
             )
           else ...[
             // Desktop/non-Android: Show all buttons in toolbar
+            Consumer<ConnectivityService>(
+              builder: (context, connectivity, child) {
+                return IconButton(
+                  icon: const Icon(Icons.people, color: Colors.purple),
+                  onPressed: connectivity.isOnline ? _startCollaboration : null,
+                  tooltip: connectivity.isOnline
+                      ? 'Start Collaboration'
+                      : 'Offline - Cannot collaborate',
+                );
+              },
+            ),
             Consumer<ConnectivityService>(
               builder: (context, connectivity, child) {
                 return IconButton(
