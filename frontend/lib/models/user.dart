@@ -9,6 +9,9 @@ class User {
   final String? idToken;
   final DateTime? tokenExpiry;
 
+  /// Alias for displayName (for backward compatibility)
+  String? get name => displayName;
+
   User({
     required this.id,
     required this.email,

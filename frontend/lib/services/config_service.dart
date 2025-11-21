@@ -90,6 +90,9 @@ class ConfigService {
     );
   }
 
+  /// Alias for apiBaseUrl (for backward compatibility)
+  String get backendUrl => apiBaseUrl;
+
   /// Get Supabase URL
   String get supabaseUrl {
     return _getConfigValue('SUPABASE_URL');

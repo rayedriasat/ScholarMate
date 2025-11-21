@@ -17,6 +17,7 @@ import '../widgets/file_metadata_sidebar.dart';
 import '../widgets/connectivity_indicator.dart';
 import 'ai_chat_screen.dart';
 import 'collaborative_pdf_viewer_screen.dart';
+import 'split_pdf_viewer_screen.dart';
 
 /// Full-screen PDF viewer with navigation controls and annotations
 class PdfViewerScreen extends StatefulWidget {
@@ -363,13 +364,15 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                 // Metadata content
                 Expanded(
                   child: FileMetadataSidebar(
-                    file: widget.file ?? DriveFile(
-                      id: widget.fileId ?? '',
-                      name: widget.fileName ?? '',
-                      mimeType: 'application/pdf',
-                      modifiedTime: DateTime.now(),
-                      size: 0,
-                    ),
+                    file:
+                        widget.file ??
+                        DriveFile(
+                          id: widget.fileId ?? '',
+                          name: widget.fileName ?? '',
+                          mimeType: 'application/pdf',
+                          modifiedTime: DateTime.now(),
+                          size: 0,
+                        ),
                     metadataService: context.read<MetadataService>(),
                     onClose: () => Navigator.pop(context),
                   ),
@@ -812,7 +815,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     if (fileId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cannot start collaboration: file information not available'),
+          content: Text(
+            'Cannot start collaboration: file information not available',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -826,6 +831,46 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
         builder: (context) => CollaborativePdfViewerScreen(
           fileId: fileId,
           fileName: fileName ?? 'document.pdf',
+        ),
+      ),
+    );
+  }
+
+  void _openSplitView() {
+    // Only available on web
+    if (!kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Split view is only available on web'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final fileId = widget.file?.id ?? widget.fileId;
+    final fileName = widget.file?.name ?? widget.fileName;
+
+    if (fileId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot open split view: file information not available',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to split PDF viewer
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SplitPdfViewerScreen(
+          leftFile: widget.file,
+          leftFileId: fileId,
+          leftFileName: fileName,
         ),
       ),
     );
@@ -942,9 +987,23 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                   case 'collaborate':
                     _startCollaboration();
                     break;
+                  case 'splitview':
+                    _openSplitView();
+                    break;
                 }
               },
               itemBuilder: (context) => [
+                if (kIsWeb)
+                  const PopupMenuItem(
+                    value: 'splitview',
+                    child: Row(
+                      children: [
+                        Icon(Icons.view_column, size: 20, color: Colors.blue),
+                        SizedBox(width: 12),
+                        Text('Split View'),
+                      ],
+                    ),
+                  ),
                 PopupMenuItem(
                   value: 'collaborate',
                   enabled: context.read<ConnectivityService>().isOnline,
@@ -1060,6 +1119,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
             )
           else ...[
             // Desktop/non-Android: Show all buttons in toolbar
+            if (kIsWeb)
+              IconButton(
+                icon: const Icon(Icons.view_column, color: Colors.blue),
+                onPressed: _openSplitView,
+                tooltip: 'Split View',
+              ),
             Consumer<ConnectivityService>(
               builder: (context, connectivity, child) {
                 return IconButton(
@@ -1359,13 +1424,15 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                       SizedBox(
                         width: 350,
                         child: FileMetadataSidebar(
-                          file: widget.file ?? DriveFile(
-                            id: widget.fileId ?? '',
-                            name: widget.fileName ?? '',
-                            mimeType: 'application/pdf',
-                            modifiedTime: DateTime.now(),
-                            size: 0,
-                          ),
+                          file:
+                              widget.file ??
+                              DriveFile(
+                                id: widget.fileId ?? '',
+                                name: widget.fileName ?? '',
+                                mimeType: 'application/pdf',
+                                modifiedTime: DateTime.now(),
+                                size: 0,
+                              ),
                           metadataService: context.read<MetadataService>(),
                           onClose: () {
                             setState(() {
