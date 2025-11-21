@@ -6,7 +6,8 @@ from ..models.collaboration import (
     CollaborationSessionCreate,
     CollaborationSessionResponse,
     JoinSessionRequest,
-    CursorUpdateMessage
+    CursorUpdateMessage,
+    AnnotationUpdateMessage
 )
 from ..services.collaboration_service import get_collaboration_service
 from ..utils.logging_config import get_logger
@@ -169,3 +170,87 @@ async def update_cursor(
         logger.error(f"Error updating cursor: {e}")
         # Don't raise exception for cursor updates (too frequent)
         return {"status": "error", "message": str(e)}
+
+
+@router.post("/sessions/{session_id}/annotations", status_code=status.HTTP_201_CREATED)
+async def add_annotation(
+    session_id: str,
+    request: AnnotationUpdateMessage
+):
+    """
+    Add annotation to collaboration session
+    
+    Args:
+        session_id: Session ID
+        request: Annotation data
+    """
+    try:
+        service = get_collaboration_service()
+        await service.add_annotation(
+            session_id=session_id,
+            annotation=request.annotation.dict()
+        )
+        
+        return {"status": "success"}
+        
+    except Exception as e:
+        logger.error(f"Error adding annotation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add annotation: {str(e)}"
+        )
+
+
+@router.get("/sessions/{session_id}/annotations")
+async def get_annotations(session_id: str):
+    """
+    Get all annotations for a session
+    
+    Args:
+        session_id: Session ID
+        
+    Returns:
+        List of annotations
+    """
+    try:
+        service = get_collaboration_service()
+        annotations = await service.get_annotations(session_id)
+        
+        return {"annotations": annotations}
+        
+    except Exception as e:
+        logger.error(f"Error getting annotations: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get annotations: {str(e)}"
+        )
+
+
+@router.delete("/sessions/{session_id}/annotations/{annotation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_annotation(
+    session_id: str,
+    annotation_id: str,
+    user_id: str = Query(..., description="User ID")
+):
+    """
+    Delete annotation from session
+    
+    Args:
+        session_id: Session ID
+        annotation_id: Annotation ID
+        user_id: User ID (must be annotation owner)
+    """
+    try:
+        service = get_collaboration_service()
+        await service.delete_annotation(
+            session_id=session_id,
+            annotation_id=annotation_id,
+            user_id=user_id
+        )
+        
+    except Exception as e:
+        logger.error(f"Error deleting annotation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete annotation: {str(e)}"
+        )

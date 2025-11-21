@@ -30,7 +30,7 @@ class CollaborationService:
     
     async def create_session(
         self,
-        file_id: UUID,
+        file_id: str,
         file_name: str,
         owner_id: str,
         owner_name: str,
@@ -41,7 +41,7 @@ class CollaborationService:
         Create new collaboration session
         
         Args:
-            file_id: PDF file UUID
+            file_id: Google Drive file ID
             file_name: PDF file name
             owner_id: Session owner user ID
             owner_name: Owner display name
@@ -58,7 +58,7 @@ class CollaborationService:
             # Create session in database
             session_data = {
                 "session_id": session_id,
-                "file_id": str(file_id),
+                "file_id": file_id,
                 "file_name": file_name,
                 "owner_id": owner_id,
                 "default_role": default_role,
@@ -131,7 +131,8 @@ class CollaborationService:
             # Check if session expired
             if session.get("expires_at"):
                 expires_at = datetime.fromisoformat(session["expires_at"].replace("Z", "+00:00"))
-                if expires_at < datetime.utcnow():
+                now = datetime.now(expires_at.tzinfo)  # Use same timezone
+                if expires_at < now:
                     raise ValueError("Session has expired")
             
             # Get existing participants
@@ -172,11 +173,15 @@ class CollaborationService:
             # Get updated participants
             participants_response = self.supabase.client.table("session_participants").select("*").eq("session_id", session_id).execute()
             
+            # Generate share link
+            share_link = f"{self.backend_url}/collaborate/{session_id}"
+            
             return {
                 "session_id": session_id,
                 "file_id": session["file_id"],
                 "file_name": session["file_name"],
                 "owner_id": session["owner_id"],
+                "share_link": share_link,
                 "participants": participants_response.data,
                 "created_at": session["created_at"],
                 "expires_at": session.get("expires_at")
@@ -208,8 +213,12 @@ class CollaborationService:
             # Get participants
             participants_response = self.supabase.client.table("session_participants").select("*").eq("session_id", session_id).execute()
             
+            # Generate share link
+            share_link = f"{self.backend_url}/collaborate/{session_id}"
+            
             return {
                 **session,
+                "share_link": share_link,
                 "participants": participants_response.data or []
             }
         except Exception as e:
@@ -246,3 +255,55 @@ def get_collaboration_service() -> CollaborationService:
     if _collaboration_service is None:
         _collaboration_service = CollaborationService()
     return _collaboration_service
+
+
+    async def add_annotation(
+        self,
+        session_id: str,
+        annotation: Dict[str, Any]
+    ) -> None:
+        """Add annotation to session"""
+        try:
+            annotation_data = {
+                "session_id": session_id,
+                "annotation_id": annotation.get("id"),
+                "user_id": annotation.get("user_id"),
+                "user_name": annotation.get("user_name"),
+                "user_color": annotation.get("user_color"),
+                "annotation_type": annotation.get("annotation_type"),
+                "page_number": annotation.get("page_number"),
+                "bounds": annotation.get("position_data"),
+                "color": annotation.get("color"),
+                "opacity": annotation.get("opacity", 1.0),
+                "text_content": annotation.get("content"),
+            }
+            
+            self.supabase.client.table("collaboration_annotations").insert(annotation_data).execute()
+            logger.info(f"Added annotation {annotation.get('id')} to session {session_id}")
+            
+        except Exception as e:
+            logger.error(f"Error adding annotation: {e}")
+            raise
+    
+    async def get_annotations(self, session_id: str) -> List[Dict[str, Any]]:
+        """Get all annotations for a session"""
+        try:
+            response = self.supabase.client.table("collaboration_annotations").select("*").eq("session_id", session_id).execute()
+            return response.data or []
+        except Exception as e:
+            logger.error(f"Error getting annotations: {e}")
+            raise
+    
+    async def delete_annotation(
+        self,
+        session_id: str,
+        annotation_id: str,
+        user_id: str
+    ) -> None:
+        """Delete annotation from session"""
+        try:
+            self.supabase.client.table("collaboration_annotations").delete().eq("session_id", session_id).eq("annotation_id", annotation_id).eq("user_id", user_id).execute()
+            logger.info(f"Deleted annotation {annotation_id} from session {session_id}")
+        except Exception as e:
+            logger.error(f"Error deleting annotation: {e}")
+            raise

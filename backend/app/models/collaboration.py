@@ -47,7 +47,7 @@ class SessionParticipant(BaseModel):
 
 class CollaborationSessionCreate(BaseModel):
     """Create collaboration session request"""
-    file_id: UUID
+    file_id: str  # Google Drive file ID
     file_name: str
     owner_id: str
     owner_name: str
