@@ -72,6 +72,7 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   screenshot: ^3.0.0
   pdf: ^3.11.3
+  supabase_flutter: ^2.10.3
 
 dev_dependencies:
   flutter_test:

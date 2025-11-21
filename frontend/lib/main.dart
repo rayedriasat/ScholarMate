@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'database/database.dart';
 import 'services/auth_service.dart';
 import 'services/config_service.dart';
@@ -20,6 +21,7 @@ import 'services/indexing_service.dart';
 import 'services/metadata_service.dart';
 import 'services/simple_theme_service.dart';
 import 'services/notebook_service.dart';
+import 'services/collaboration_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -30,6 +32,12 @@ void main() async {
   // Initialize configuration
   final configService = ConfigService();
   await configService.initialize();
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: configService.supabaseUrl,
+    anonKey: configService.supabaseAnonKey,
+  );
 
   // Initialize cache service
   final cacheService = CacheService();
@@ -218,6 +226,12 @@ class ScholarMateApp extends StatelessWidget {
                 apiService: ApiService(),
                 authService: auth,
               ),
+        ),
+        Provider<CollaborationService>(
+          create: (context) => CollaborationService(
+            ConfigService(),
+            Supabase.instance.client,
+          ),
         ),
       ],
       child: Consumer<SimpleThemeService>(
