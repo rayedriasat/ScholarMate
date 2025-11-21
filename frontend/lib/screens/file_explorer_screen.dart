@@ -23,6 +23,7 @@ import 'tag_management_screen.dart';
 import 'shared_files_screen.dart';
 import 'ai_chat_screen.dart';
 import 'citation_generator_screen.dart';
+import 'analytics_screen.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -739,6 +740,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       ),
                     ),
                   );
+                } else if (value == 'analytics') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AnalyticsScreen(),
+                    ),
+                  );
                 }
               },
               itemBuilder: (context) => [
@@ -749,6 +757,17 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       Icon(Icons.folder_shared, size: 20),
                       SizedBox(width: 8),
                       Text('Shared with Me'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'analytics',
+                  child: Row(
+                    children: [
+                      Icon(Icons.insights, size: 20),
+                      SizedBox(width: 8),
+                      Text('Analytics & Insights'),
                     ],
                   ),
                 ),

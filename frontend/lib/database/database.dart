@@ -26,6 +26,8 @@ part 'database.g.dart';
     NotebookChats,
     NotebookChatMessages,
     NotebookAiOutputs,
+    ReadingSessions,
+    PageReadHistory,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -35,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -74,6 +76,11 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(notebookChats);
           await m.createTable(notebookChatMessages);
           await m.createTable(notebookAiOutputs);
+        }
+        if (from < 8) {
+          // Migration from version 7 to 8: Add analytics tables
+          await m.createTable(readingSessions);
+          await m.createTable(pageReadHistory);
         }
       },
     );
@@ -735,4 +742,3 @@ QueryExecutor _openConnection() {
     );
   }
 }
-

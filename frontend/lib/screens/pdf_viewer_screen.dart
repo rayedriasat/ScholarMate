@@ -10,6 +10,8 @@ import '../services/drive_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/tts_service.dart';
 import '../services/metadata_service.dart';
+import '../services/analytics_service.dart';
+import '../database/database.dart' hide Annotation;
 import '../widgets/annotation_toolbar.dart';
 import '../widgets/annotation_list_panel.dart';
 import '../widgets/tts_controls.dart';
@@ -68,12 +70,16 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
   // Zoom state
   double _zoomLevel = 1.0;
 
+  // Analytics tracking
+  AnalyticsService? _analyticsService;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadPdf();
     _initializeAnnotationSettings();
+    _initializeAnalytics();
 
     // Navigate to initial page if specified (from citation)
     if (widget.initialPage != null) {
@@ -145,6 +151,24 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
         _selectedAnnotationColor;
   }
 
+  Future<void> _initializeAnalytics() async {
+    final authService = context.read<AuthService>();
+    final user = authService.currentUser;
+    if (user == null) return;
+
+    final database = context.read<AppDatabase>();
+    _analyticsService = AnalyticsService(database, user.id);
+
+    // Start reading session
+    final fileId = widget.file?.id ?? widget.fileId!;
+    final fileName = widget.file?.name ?? widget.fileName!;
+    await _analyticsService?.startSession(
+      fileId,
+      fileName,
+      _totalPages > 0 ? _totalPages : null,
+    );
+  }
+
   Future<void> _loadPdf({bool forceRefresh = false}) async {
     final pdfManager = context.read<PdfViewerManager>();
 
@@ -205,6 +229,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
 
     // Stop TTS when closing PDF viewer (always stop, regardless of controls visibility)
     _ttsService?.stop();
+
+    // End analytics session
+    _analyticsService?.endSession();
 
     // Save to Drive when closing PDF if there are annotations and we have a file ID
     final fileId = widget.file?.id ?? widget.fileId;
@@ -1835,6 +1862,8 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                           setState(() {
                             _currentPage = details.newPageNumber;
                           });
+                          // Track page read
+                          _analyticsService?.updateCurrentPage(_currentPage);
                         },
                         onAnnotationAdded: (Annotation annotation) {
                           _onAnnotationAdded(annotation);

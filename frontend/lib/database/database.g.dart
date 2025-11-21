@@ -7023,6 +7023,1136 @@ class NotebookAiOutputsCompanion extends UpdateCompanion<NotebookAiOutput> {
   }
 }
 
+class $ReadingSessionsTable extends ReadingSessions
+    with TableInfo<$ReadingSessionsTable, ReadingSession> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadingSessionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileIdMeta = const VerificationMeta('fileId');
+  @override
+  late final GeneratedColumn<String> fileId = GeneratedColumn<String>(
+    'file_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startTimeMeta = const VerificationMeta(
+    'startTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startTime = GeneratedColumn<DateTime>(
+    'start_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endTimeMeta = const VerificationMeta(
+    'endTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endTime = GeneratedColumn<DateTime>(
+    'end_time',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _durationSecondsMeta = const VerificationMeta(
+    'durationSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+    'duration_seconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _pagesReadMeta = const VerificationMeta(
+    'pagesRead',
+  );
+  @override
+  late final GeneratedColumn<int> pagesRead = GeneratedColumn<int>(
+    'pages_read',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _totalPagesMeta = const VerificationMeta(
+    'totalPages',
+  );
+  @override
+  late final GeneratedColumn<int> totalPages = GeneratedColumn<int>(
+    'total_pages',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    fileId,
+    fileName,
+    startTime,
+    endTime,
+    durationSeconds,
+    pagesRead,
+    totalPages,
+    isSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reading_sessions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReadingSession> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('file_id')) {
+      context.handle(
+        _fileIdMeta,
+        fileId.isAcceptableOrUnknown(data['file_id']!, _fileIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileIdMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('start_time')) {
+      context.handle(
+        _startTimeMeta,
+        startTime.isAcceptableOrUnknown(data['start_time']!, _startTimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startTimeMeta);
+    }
+    if (data.containsKey('end_time')) {
+      context.handle(
+        _endTimeMeta,
+        endTime.isAcceptableOrUnknown(data['end_time']!, _endTimeMeta),
+      );
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+        _durationSecondsMeta,
+        durationSeconds.isAcceptableOrUnknown(
+          data['duration_seconds']!,
+          _durationSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pages_read')) {
+      context.handle(
+        _pagesReadMeta,
+        pagesRead.isAcceptableOrUnknown(data['pages_read']!, _pagesReadMeta),
+      );
+    }
+    if (data.containsKey('total_pages')) {
+      context.handle(
+        _totalPagesMeta,
+        totalPages.isAcceptableOrUnknown(data['total_pages']!, _totalPagesMeta),
+      );
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReadingSession map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReadingSession(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      fileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_id'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
+      startTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_time'],
+      )!,
+      endTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_time'],
+      ),
+      durationSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_seconds'],
+      )!,
+      pagesRead: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pages_read'],
+      )!,
+      totalPages: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_pages'],
+      ),
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadingSessionsTable createAlias(String alias) {
+    return $ReadingSessionsTable(attachedDatabase, alias);
+  }
+}
+
+class ReadingSession extends DataClass implements Insertable<ReadingSession> {
+  final String id;
+  final String userId;
+  final String fileId;
+  final String fileName;
+  final DateTime startTime;
+  final DateTime? endTime;
+  final int durationSeconds;
+  final int pagesRead;
+  final int? totalPages;
+  final bool isSynced;
+  const ReadingSession({
+    required this.id,
+    required this.userId,
+    required this.fileId,
+    required this.fileName,
+    required this.startTime,
+    this.endTime,
+    required this.durationSeconds,
+    required this.pagesRead,
+    this.totalPages,
+    required this.isSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['file_id'] = Variable<String>(fileId);
+    map['file_name'] = Variable<String>(fileName);
+    map['start_time'] = Variable<DateTime>(startTime);
+    if (!nullToAbsent || endTime != null) {
+      map['end_time'] = Variable<DateTime>(endTime);
+    }
+    map['duration_seconds'] = Variable<int>(durationSeconds);
+    map['pages_read'] = Variable<int>(pagesRead);
+    if (!nullToAbsent || totalPages != null) {
+      map['total_pages'] = Variable<int>(totalPages);
+    }
+    map['is_synced'] = Variable<bool>(isSynced);
+    return map;
+  }
+
+  ReadingSessionsCompanion toCompanion(bool nullToAbsent) {
+    return ReadingSessionsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      fileId: Value(fileId),
+      fileName: Value(fileName),
+      startTime: Value(startTime),
+      endTime: endTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endTime),
+      durationSeconds: Value(durationSeconds),
+      pagesRead: Value(pagesRead),
+      totalPages: totalPages == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalPages),
+      isSynced: Value(isSynced),
+    );
+  }
+
+  factory ReadingSession.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReadingSession(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      fileId: serializer.fromJson<String>(json['fileId']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      startTime: serializer.fromJson<DateTime>(json['startTime']),
+      endTime: serializer.fromJson<DateTime?>(json['endTime']),
+      durationSeconds: serializer.fromJson<int>(json['durationSeconds']),
+      pagesRead: serializer.fromJson<int>(json['pagesRead']),
+      totalPages: serializer.fromJson<int?>(json['totalPages']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'fileId': serializer.toJson<String>(fileId),
+      'fileName': serializer.toJson<String>(fileName),
+      'startTime': serializer.toJson<DateTime>(startTime),
+      'endTime': serializer.toJson<DateTime?>(endTime),
+      'durationSeconds': serializer.toJson<int>(durationSeconds),
+      'pagesRead': serializer.toJson<int>(pagesRead),
+      'totalPages': serializer.toJson<int?>(totalPages),
+      'isSynced': serializer.toJson<bool>(isSynced),
+    };
+  }
+
+  ReadingSession copyWith({
+    String? id,
+    String? userId,
+    String? fileId,
+    String? fileName,
+    DateTime? startTime,
+    Value<DateTime?> endTime = const Value.absent(),
+    int? durationSeconds,
+    int? pagesRead,
+    Value<int?> totalPages = const Value.absent(),
+    bool? isSynced,
+  }) => ReadingSession(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    fileId: fileId ?? this.fileId,
+    fileName: fileName ?? this.fileName,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime.present ? endTime.value : this.endTime,
+    durationSeconds: durationSeconds ?? this.durationSeconds,
+    pagesRead: pagesRead ?? this.pagesRead,
+    totalPages: totalPages.present ? totalPages.value : this.totalPages,
+    isSynced: isSynced ?? this.isSynced,
+  );
+  ReadingSession copyWithCompanion(ReadingSessionsCompanion data) {
+    return ReadingSession(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      fileId: data.fileId.present ? data.fileId.value : this.fileId,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      startTime: data.startTime.present ? data.startTime.value : this.startTime,
+      endTime: data.endTime.present ? data.endTime.value : this.endTime,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      pagesRead: data.pagesRead.present ? data.pagesRead.value : this.pagesRead,
+      totalPages: data.totalPages.present
+          ? data.totalPages.value
+          : this.totalPages,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingSession(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('fileId: $fileId, ')
+          ..write('fileName: $fileName, ')
+          ..write('startTime: $startTime, ')
+          ..write('endTime: $endTime, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('pagesRead: $pagesRead, ')
+          ..write('totalPages: $totalPages, ')
+          ..write('isSynced: $isSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    fileId,
+    fileName,
+    startTime,
+    endTime,
+    durationSeconds,
+    pagesRead,
+    totalPages,
+    isSynced,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReadingSession &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.fileId == this.fileId &&
+          other.fileName == this.fileName &&
+          other.startTime == this.startTime &&
+          other.endTime == this.endTime &&
+          other.durationSeconds == this.durationSeconds &&
+          other.pagesRead == this.pagesRead &&
+          other.totalPages == this.totalPages &&
+          other.isSynced == this.isSynced);
+}
+
+class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> fileId;
+  final Value<String> fileName;
+  final Value<DateTime> startTime;
+  final Value<DateTime?> endTime;
+  final Value<int> durationSeconds;
+  final Value<int> pagesRead;
+  final Value<int?> totalPages;
+  final Value<bool> isSynced;
+  final Value<int> rowid;
+  const ReadingSessionsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.fileId = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.startTime = const Value.absent(),
+    this.endTime = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.pagesRead = const Value.absent(),
+    this.totalPages = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ReadingSessionsCompanion.insert({
+    required String id,
+    required String userId,
+    required String fileId,
+    required String fileName,
+    required DateTime startTime,
+    this.endTime = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.pagesRead = const Value.absent(),
+    this.totalPages = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       fileId = Value(fileId),
+       fileName = Value(fileName),
+       startTime = Value(startTime);
+  static Insertable<ReadingSession> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? fileId,
+    Expression<String>? fileName,
+    Expression<DateTime>? startTime,
+    Expression<DateTime>? endTime,
+    Expression<int>? durationSeconds,
+    Expression<int>? pagesRead,
+    Expression<int>? totalPages,
+    Expression<bool>? isSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (fileId != null) 'file_id': fileId,
+      if (fileName != null) 'file_name': fileName,
+      if (startTime != null) 'start_time': startTime,
+      if (endTime != null) 'end_time': endTime,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (pagesRead != null) 'pages_read': pagesRead,
+      if (totalPages != null) 'total_pages': totalPages,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ReadingSessionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? fileId,
+    Value<String>? fileName,
+    Value<DateTime>? startTime,
+    Value<DateTime?>? endTime,
+    Value<int>? durationSeconds,
+    Value<int>? pagesRead,
+    Value<int?>? totalPages,
+    Value<bool>? isSynced,
+    Value<int>? rowid,
+  }) {
+    return ReadingSessionsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      fileId: fileId ?? this.fileId,
+      fileName: fileName ?? this.fileName,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      pagesRead: pagesRead ?? this.pagesRead,
+      totalPages: totalPages ?? this.totalPages,
+      isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (fileId.present) {
+      map['file_id'] = Variable<String>(fileId.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (startTime.present) {
+      map['start_time'] = Variable<DateTime>(startTime.value);
+    }
+    if (endTime.present) {
+      map['end_time'] = Variable<DateTime>(endTime.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
+    }
+    if (pagesRead.present) {
+      map['pages_read'] = Variable<int>(pagesRead.value);
+    }
+    if (totalPages.present) {
+      map['total_pages'] = Variable<int>(totalPages.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingSessionsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('fileId: $fileId, ')
+          ..write('fileName: $fileName, ')
+          ..write('startTime: $startTime, ')
+          ..write('endTime: $endTime, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('pagesRead: $pagesRead, ')
+          ..write('totalPages: $totalPages, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PageReadHistoryTable extends PageReadHistory
+    with TableInfo<$PageReadHistoryTable, PageReadHistoryData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PageReadHistoryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileIdMeta = const VerificationMeta('fileId');
+  @override
+  late final GeneratedColumn<String> fileId = GeneratedColumn<String>(
+    'file_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pageNumberMeta = const VerificationMeta(
+    'pageNumber',
+  );
+  @override
+  late final GeneratedColumn<int> pageNumber = GeneratedColumn<int>(
+    'page_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _firstReadAtMeta = const VerificationMeta(
+    'firstReadAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> firstReadAt = GeneratedColumn<DateTime>(
+    'first_read_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastReadAtMeta = const VerificationMeta(
+    'lastReadAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastReadAt = GeneratedColumn<DateTime>(
+    'last_read_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _readCountMeta = const VerificationMeta(
+    'readCount',
+  );
+  @override
+  late final GeneratedColumn<int> readCount = GeneratedColumn<int>(
+    'read_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    fileId,
+    pageNumber,
+    firstReadAt,
+    lastReadAt,
+    readCount,
+    isSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'page_read_history';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PageReadHistoryData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('file_id')) {
+      context.handle(
+        _fileIdMeta,
+        fileId.isAcceptableOrUnknown(data['file_id']!, _fileIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileIdMeta);
+    }
+    if (data.containsKey('page_number')) {
+      context.handle(
+        _pageNumberMeta,
+        pageNumber.isAcceptableOrUnknown(data['page_number']!, _pageNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pageNumberMeta);
+    }
+    if (data.containsKey('first_read_at')) {
+      context.handle(
+        _firstReadAtMeta,
+        firstReadAt.isAcceptableOrUnknown(
+          data['first_read_at']!,
+          _firstReadAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_firstReadAtMeta);
+    }
+    if (data.containsKey('last_read_at')) {
+      context.handle(
+        _lastReadAtMeta,
+        lastReadAt.isAcceptableOrUnknown(
+          data['last_read_at']!,
+          _lastReadAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastReadAtMeta);
+    }
+    if (data.containsKey('read_count')) {
+      context.handle(
+        _readCountMeta,
+        readCount.isAcceptableOrUnknown(data['read_count']!, _readCountMeta),
+      );
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PageReadHistoryData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PageReadHistoryData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      fileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_id'],
+      )!,
+      pageNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_number'],
+      )!,
+      firstReadAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}first_read_at'],
+      )!,
+      lastReadAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_read_at'],
+      )!,
+      readCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}read_count'],
+      )!,
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $PageReadHistoryTable createAlias(String alias) {
+    return $PageReadHistoryTable(attachedDatabase, alias);
+  }
+}
+
+class PageReadHistoryData extends DataClass
+    implements Insertable<PageReadHistoryData> {
+  final String id;
+  final String userId;
+  final String fileId;
+  final int pageNumber;
+  final DateTime firstReadAt;
+  final DateTime lastReadAt;
+  final int readCount;
+  final bool isSynced;
+  const PageReadHistoryData({
+    required this.id,
+    required this.userId,
+    required this.fileId,
+    required this.pageNumber,
+    required this.firstReadAt,
+    required this.lastReadAt,
+    required this.readCount,
+    required this.isSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['file_id'] = Variable<String>(fileId);
+    map['page_number'] = Variable<int>(pageNumber);
+    map['first_read_at'] = Variable<DateTime>(firstReadAt);
+    map['last_read_at'] = Variable<DateTime>(lastReadAt);
+    map['read_count'] = Variable<int>(readCount);
+    map['is_synced'] = Variable<bool>(isSynced);
+    return map;
+  }
+
+  PageReadHistoryCompanion toCompanion(bool nullToAbsent) {
+    return PageReadHistoryCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      fileId: Value(fileId),
+      pageNumber: Value(pageNumber),
+      firstReadAt: Value(firstReadAt),
+      lastReadAt: Value(lastReadAt),
+      readCount: Value(readCount),
+      isSynced: Value(isSynced),
+    );
+  }
+
+  factory PageReadHistoryData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PageReadHistoryData(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      fileId: serializer.fromJson<String>(json['fileId']),
+      pageNumber: serializer.fromJson<int>(json['pageNumber']),
+      firstReadAt: serializer.fromJson<DateTime>(json['firstReadAt']),
+      lastReadAt: serializer.fromJson<DateTime>(json['lastReadAt']),
+      readCount: serializer.fromJson<int>(json['readCount']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'fileId': serializer.toJson<String>(fileId),
+      'pageNumber': serializer.toJson<int>(pageNumber),
+      'firstReadAt': serializer.toJson<DateTime>(firstReadAt),
+      'lastReadAt': serializer.toJson<DateTime>(lastReadAt),
+      'readCount': serializer.toJson<int>(readCount),
+      'isSynced': serializer.toJson<bool>(isSynced),
+    };
+  }
+
+  PageReadHistoryData copyWith({
+    String? id,
+    String? userId,
+    String? fileId,
+    int? pageNumber,
+    DateTime? firstReadAt,
+    DateTime? lastReadAt,
+    int? readCount,
+    bool? isSynced,
+  }) => PageReadHistoryData(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    fileId: fileId ?? this.fileId,
+    pageNumber: pageNumber ?? this.pageNumber,
+    firstReadAt: firstReadAt ?? this.firstReadAt,
+    lastReadAt: lastReadAt ?? this.lastReadAt,
+    readCount: readCount ?? this.readCount,
+    isSynced: isSynced ?? this.isSynced,
+  );
+  PageReadHistoryData copyWithCompanion(PageReadHistoryCompanion data) {
+    return PageReadHistoryData(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      fileId: data.fileId.present ? data.fileId.value : this.fileId,
+      pageNumber: data.pageNumber.present
+          ? data.pageNumber.value
+          : this.pageNumber,
+      firstReadAt: data.firstReadAt.present
+          ? data.firstReadAt.value
+          : this.firstReadAt,
+      lastReadAt: data.lastReadAt.present
+          ? data.lastReadAt.value
+          : this.lastReadAt,
+      readCount: data.readCount.present ? data.readCount.value : this.readCount,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PageReadHistoryData(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('fileId: $fileId, ')
+          ..write('pageNumber: $pageNumber, ')
+          ..write('firstReadAt: $firstReadAt, ')
+          ..write('lastReadAt: $lastReadAt, ')
+          ..write('readCount: $readCount, ')
+          ..write('isSynced: $isSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    fileId,
+    pageNumber,
+    firstReadAt,
+    lastReadAt,
+    readCount,
+    isSynced,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PageReadHistoryData &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.fileId == this.fileId &&
+          other.pageNumber == this.pageNumber &&
+          other.firstReadAt == this.firstReadAt &&
+          other.lastReadAt == this.lastReadAt &&
+          other.readCount == this.readCount &&
+          other.isSynced == this.isSynced);
+}
+
+class PageReadHistoryCompanion extends UpdateCompanion<PageReadHistoryData> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> fileId;
+  final Value<int> pageNumber;
+  final Value<DateTime> firstReadAt;
+  final Value<DateTime> lastReadAt;
+  final Value<int> readCount;
+  final Value<bool> isSynced;
+  final Value<int> rowid;
+  const PageReadHistoryCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.fileId = const Value.absent(),
+    this.pageNumber = const Value.absent(),
+    this.firstReadAt = const Value.absent(),
+    this.lastReadAt = const Value.absent(),
+    this.readCount = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PageReadHistoryCompanion.insert({
+    required String id,
+    required String userId,
+    required String fileId,
+    required int pageNumber,
+    required DateTime firstReadAt,
+    required DateTime lastReadAt,
+    this.readCount = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       fileId = Value(fileId),
+       pageNumber = Value(pageNumber),
+       firstReadAt = Value(firstReadAt),
+       lastReadAt = Value(lastReadAt);
+  static Insertable<PageReadHistoryData> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? fileId,
+    Expression<int>? pageNumber,
+    Expression<DateTime>? firstReadAt,
+    Expression<DateTime>? lastReadAt,
+    Expression<int>? readCount,
+    Expression<bool>? isSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (fileId != null) 'file_id': fileId,
+      if (pageNumber != null) 'page_number': pageNumber,
+      if (firstReadAt != null) 'first_read_at': firstReadAt,
+      if (lastReadAt != null) 'last_read_at': lastReadAt,
+      if (readCount != null) 'read_count': readCount,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PageReadHistoryCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? fileId,
+    Value<int>? pageNumber,
+    Value<DateTime>? firstReadAt,
+    Value<DateTime>? lastReadAt,
+    Value<int>? readCount,
+    Value<bool>? isSynced,
+    Value<int>? rowid,
+  }) {
+    return PageReadHistoryCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      fileId: fileId ?? this.fileId,
+      pageNumber: pageNumber ?? this.pageNumber,
+      firstReadAt: firstReadAt ?? this.firstReadAt,
+      lastReadAt: lastReadAt ?? this.lastReadAt,
+      readCount: readCount ?? this.readCount,
+      isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (fileId.present) {
+      map['file_id'] = Variable<String>(fileId.value);
+    }
+    if (pageNumber.present) {
+      map['page_number'] = Variable<int>(pageNumber.value);
+    }
+    if (firstReadAt.present) {
+      map['first_read_at'] = Variable<DateTime>(firstReadAt.value);
+    }
+    if (lastReadAt.present) {
+      map['last_read_at'] = Variable<DateTime>(lastReadAt.value);
+    }
+    if (readCount.present) {
+      map['read_count'] = Variable<int>(readCount.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PageReadHistoryCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('fileId: $fileId, ')
+          ..write('pageNumber: $pageNumber, ')
+          ..write('firstReadAt: $firstReadAt, ')
+          ..write('lastReadAt: $lastReadAt, ')
+          ..write('readCount: $readCount, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7046,6 +8176,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $NotebookChatMessagesTable(this);
   late final $NotebookAiOutputsTable notebookAiOutputs =
       $NotebookAiOutputsTable(this);
+  late final $ReadingSessionsTable readingSessions = $ReadingSessionsTable(
+    this,
+  );
+  late final $PageReadHistoryTable pageReadHistory = $PageReadHistoryTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7065,6 +8201,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     notebookChats,
     notebookChatMessages,
     notebookAiOutputs,
+    readingSessions,
+    pageReadHistory,
   ];
 }
 
@@ -10682,6 +11820,584 @@ typedef $$NotebookAiOutputsTableProcessedTableManager =
       NotebookAiOutput,
       PrefetchHooks Function()
     >;
+typedef $$ReadingSessionsTableCreateCompanionBuilder =
+    ReadingSessionsCompanion Function({
+      required String id,
+      required String userId,
+      required String fileId,
+      required String fileName,
+      required DateTime startTime,
+      Value<DateTime?> endTime,
+      Value<int> durationSeconds,
+      Value<int> pagesRead,
+      Value<int?> totalPages,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+typedef $$ReadingSessionsTableUpdateCompanionBuilder =
+    ReadingSessionsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> fileId,
+      Value<String> fileName,
+      Value<DateTime> startTime,
+      Value<DateTime?> endTime,
+      Value<int> durationSeconds,
+      Value<int> pagesRead,
+      Value<int?> totalPages,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+
+class $$ReadingSessionsTableFilterComposer
+    extends Composer<_$AppDatabase, $ReadingSessionsTable> {
+  $$ReadingSessionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startTime => $composableBuilder(
+    column: $table.startTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endTime => $composableBuilder(
+    column: $table.endTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pagesRead => $composableBuilder(
+    column: $table.pagesRead,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalPages => $composableBuilder(
+    column: $table.totalPages,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ReadingSessionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReadingSessionsTable> {
+  $$ReadingSessionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startTime => $composableBuilder(
+    column: $table.startTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endTime => $composableBuilder(
+    column: $table.endTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pagesRead => $composableBuilder(
+    column: $table.pagesRead,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalPages => $composableBuilder(
+    column: $table.totalPages,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ReadingSessionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReadingSessionsTable> {
+  $$ReadingSessionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get fileId =>
+      $composableBuilder(column: $table.fileId, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startTime =>
+      $composableBuilder(column: $table.startTime, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endTime =>
+      $composableBuilder(column: $table.endTime, builder: (column) => column);
+
+  GeneratedColumn<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get pagesRead =>
+      $composableBuilder(column: $table.pagesRead, builder: (column) => column);
+
+  GeneratedColumn<int> get totalPages => $composableBuilder(
+    column: $table.totalPages,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+}
+
+class $$ReadingSessionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReadingSessionsTable,
+          ReadingSession,
+          $$ReadingSessionsTableFilterComposer,
+          $$ReadingSessionsTableOrderingComposer,
+          $$ReadingSessionsTableAnnotationComposer,
+          $$ReadingSessionsTableCreateCompanionBuilder,
+          $$ReadingSessionsTableUpdateCompanionBuilder,
+          (
+            ReadingSession,
+            BaseReferences<
+              _$AppDatabase,
+              $ReadingSessionsTable,
+              ReadingSession
+            >,
+          ),
+          ReadingSession,
+          PrefetchHooks Function()
+        > {
+  $$ReadingSessionsTableTableManager(
+    _$AppDatabase db,
+    $ReadingSessionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReadingSessionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReadingSessionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReadingSessionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> fileId = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<DateTime> startTime = const Value.absent(),
+                Value<DateTime?> endTime = const Value.absent(),
+                Value<int> durationSeconds = const Value.absent(),
+                Value<int> pagesRead = const Value.absent(),
+                Value<int?> totalPages = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReadingSessionsCompanion(
+                id: id,
+                userId: userId,
+                fileId: fileId,
+                fileName: fileName,
+                startTime: startTime,
+                endTime: endTime,
+                durationSeconds: durationSeconds,
+                pagesRead: pagesRead,
+                totalPages: totalPages,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String fileId,
+                required String fileName,
+                required DateTime startTime,
+                Value<DateTime?> endTime = const Value.absent(),
+                Value<int> durationSeconds = const Value.absent(),
+                Value<int> pagesRead = const Value.absent(),
+                Value<int?> totalPages = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReadingSessionsCompanion.insert(
+                id: id,
+                userId: userId,
+                fileId: fileId,
+                fileName: fileName,
+                startTime: startTime,
+                endTime: endTime,
+                durationSeconds: durationSeconds,
+                pagesRead: pagesRead,
+                totalPages: totalPages,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ReadingSessionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReadingSessionsTable,
+      ReadingSession,
+      $$ReadingSessionsTableFilterComposer,
+      $$ReadingSessionsTableOrderingComposer,
+      $$ReadingSessionsTableAnnotationComposer,
+      $$ReadingSessionsTableCreateCompanionBuilder,
+      $$ReadingSessionsTableUpdateCompanionBuilder,
+      (
+        ReadingSession,
+        BaseReferences<_$AppDatabase, $ReadingSessionsTable, ReadingSession>,
+      ),
+      ReadingSession,
+      PrefetchHooks Function()
+    >;
+typedef $$PageReadHistoryTableCreateCompanionBuilder =
+    PageReadHistoryCompanion Function({
+      required String id,
+      required String userId,
+      required String fileId,
+      required int pageNumber,
+      required DateTime firstReadAt,
+      required DateTime lastReadAt,
+      Value<int> readCount,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+typedef $$PageReadHistoryTableUpdateCompanionBuilder =
+    PageReadHistoryCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> fileId,
+      Value<int> pageNumber,
+      Value<DateTime> firstReadAt,
+      Value<DateTime> lastReadAt,
+      Value<int> readCount,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+
+class $$PageReadHistoryTableFilterComposer
+    extends Composer<_$AppDatabase, $PageReadHistoryTable> {
+  $$PageReadHistoryTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get firstReadAt => $composableBuilder(
+    column: $table.firstReadAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastReadAt => $composableBuilder(
+    column: $table.lastReadAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get readCount => $composableBuilder(
+    column: $table.readCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PageReadHistoryTableOrderingComposer
+    extends Composer<_$AppDatabase, $PageReadHistoryTable> {
+  $$PageReadHistoryTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get firstReadAt => $composableBuilder(
+    column: $table.firstReadAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastReadAt => $composableBuilder(
+    column: $table.lastReadAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get readCount => $composableBuilder(
+    column: $table.readCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PageReadHistoryTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PageReadHistoryTable> {
+  $$PageReadHistoryTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get fileId =>
+      $composableBuilder(column: $table.fileId, builder: (column) => column);
+
+  GeneratedColumn<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get firstReadAt => $composableBuilder(
+    column: $table.firstReadAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastReadAt => $composableBuilder(
+    column: $table.lastReadAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get readCount =>
+      $composableBuilder(column: $table.readCount, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+}
+
+class $$PageReadHistoryTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PageReadHistoryTable,
+          PageReadHistoryData,
+          $$PageReadHistoryTableFilterComposer,
+          $$PageReadHistoryTableOrderingComposer,
+          $$PageReadHistoryTableAnnotationComposer,
+          $$PageReadHistoryTableCreateCompanionBuilder,
+          $$PageReadHistoryTableUpdateCompanionBuilder,
+          (
+            PageReadHistoryData,
+            BaseReferences<
+              _$AppDatabase,
+              $PageReadHistoryTable,
+              PageReadHistoryData
+            >,
+          ),
+          PageReadHistoryData,
+          PrefetchHooks Function()
+        > {
+  $$PageReadHistoryTableTableManager(
+    _$AppDatabase db,
+    $PageReadHistoryTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PageReadHistoryTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PageReadHistoryTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PageReadHistoryTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> fileId = const Value.absent(),
+                Value<int> pageNumber = const Value.absent(),
+                Value<DateTime> firstReadAt = const Value.absent(),
+                Value<DateTime> lastReadAt = const Value.absent(),
+                Value<int> readCount = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PageReadHistoryCompanion(
+                id: id,
+                userId: userId,
+                fileId: fileId,
+                pageNumber: pageNumber,
+                firstReadAt: firstReadAt,
+                lastReadAt: lastReadAt,
+                readCount: readCount,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String fileId,
+                required int pageNumber,
+                required DateTime firstReadAt,
+                required DateTime lastReadAt,
+                Value<int> readCount = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PageReadHistoryCompanion.insert(
+                id: id,
+                userId: userId,
+                fileId: fileId,
+                pageNumber: pageNumber,
+                firstReadAt: firstReadAt,
+                lastReadAt: lastReadAt,
+                readCount: readCount,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PageReadHistoryTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PageReadHistoryTable,
+      PageReadHistoryData,
+      $$PageReadHistoryTableFilterComposer,
+      $$PageReadHistoryTableOrderingComposer,
+      $$PageReadHistoryTableAnnotationComposer,
+      $$PageReadHistoryTableCreateCompanionBuilder,
+      $$PageReadHistoryTableUpdateCompanionBuilder,
+      (
+        PageReadHistoryData,
+        BaseReferences<
+          _$AppDatabase,
+          $PageReadHistoryTable,
+          PageReadHistoryData
+        >,
+      ),
+      PageReadHistoryData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10713,4 +12429,8 @@ class $AppDatabaseManager {
       $$NotebookChatMessagesTableTableManager(_db, _db.notebookChatMessages);
   $$NotebookAiOutputsTableTableManager get notebookAiOutputs =>
       $$NotebookAiOutputsTableTableManager(_db, _db.notebookAiOutputs);
+  $$ReadingSessionsTableTableManager get readingSessions =>
+      $$ReadingSessionsTableTableManager(_db, _db.readingSessions);
+  $$PageReadHistoryTableTableManager get pageReadHistory =>
+      $$PageReadHistoryTableTableManager(_db, _db.pageReadHistory);
 }

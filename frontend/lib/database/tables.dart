@@ -127,3 +127,35 @@ class ChatMessages extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Reading sessions table - tracks time spent reading files
+class ReadingSessions extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get fileId => text()();
+  TextColumn get fileName => text()();
+  DateTimeColumn get startTime => dateTime()();
+  DateTimeColumn get endTime => dateTime().nullable()();
+  IntColumn get durationSeconds => integer().withDefault(const Constant(0))();
+  IntColumn get pagesRead => integer().withDefault(const Constant(0))();
+  IntColumn get totalPages => integer().nullable()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Page read tracking - tracks which pages have been read
+class PageReadHistory extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get fileId => text()();
+  IntColumn get pageNumber => integer()();
+  DateTimeColumn get firstReadAt => dateTime()();
+  DateTimeColumn get lastReadAt => dateTime()();
+  IntColumn get readCount => integer().withDefault(const Constant(1))();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
