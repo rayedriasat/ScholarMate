@@ -27,6 +27,7 @@ import 'services/annotation_sync_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/advanced_search_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -230,10 +231,8 @@ class ScholarMateApp extends StatelessWidget {
               ),
         ),
         Provider<CollaborationService>(
-          create: (context) => CollaborationService(
-            ConfigService(),
-            Supabase.instance.client,
-          ),
+          create: (context) =>
+              CollaborationService(ConfigService(), Supabase.instance.client),
         ),
         // Realtime service for annotation sync
         Provider<RealtimeService>(
@@ -272,6 +271,7 @@ class ScholarMateApp extends StatelessWidget {
             darkTheme: SimpleThemeService.darkTheme,
             themeMode: themeService.themeMode,
             home: const AppInitializer(),
+            routes: {'/search': (context) => const AdvancedSearchScreen()},
           );
         },
       ),

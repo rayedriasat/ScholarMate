@@ -665,6 +665,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             ),
           ] else ...[
             IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                Navigator.pushNamed(context, '/search');
+              },
+              tooltip: 'Search',
+            ),
+            IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _refresh,
               tooltip: 'Refresh',

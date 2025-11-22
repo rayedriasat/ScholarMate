@@ -27,6 +27,7 @@ class PdfViewerScreen extends StatefulWidget {
   final String? fileId;
   final String? fileName;
   final int? initialPage;
+  final String? searchQuery;
 
   const PdfViewerScreen({
     super.key,
@@ -34,6 +35,7 @@ class PdfViewerScreen extends StatefulWidget {
     this.fileId,
     this.fileName,
     this.initialPage,
+    this.searchQuery,
   }) : assert(
          file != null || (fileId != null && fileName != null),
          'Either file or both fileId and fileName must be provided',
@@ -81,34 +83,63 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     _initializeAnnotationSettings();
     _initializeAnalytics();
 
-    // Navigate to initial page if specified (from citation)
-    if (widget.initialPage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _pdfViewerController.jumpToPage(widget.initialPage!);
-
-        // Show a snackbar indicating navigation from citation
+    // Navigate to initial page and/or trigger search
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // First, jump to the initial page if specified
+      if (widget.initialPage != null && widget.initialPage! > 0) {
+        // Wait a bit for PDF to load
+        await Future.delayed(const Duration(milliseconds: 300));
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.bookmark, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Navigated to page ${widget.initialPage} from citation',
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.blue,
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          _pdfViewerController.jumpToPage(widget.initialPage!);
         }
-      });
-    }
+      }
+
+      // Show notification
+      if (mounted &&
+          (widget.initialPage != null || widget.searchQuery != null)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  widget.searchQuery != null ? Icons.search : Icons.bookmark,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.searchQuery != null
+                        ? 'Searching for "${widget.searchQuery}"${widget.initialPage != null ? " on page ${widget.initialPage}" : ""}'
+                        : 'Navigated to page ${widget.initialPage} from citation',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      // Then trigger search if searchQuery is provided
+      if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
+        // Wait for page jump to complete
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (mounted) {
+          setState(() {
+            _isSearching = true;
+            _searchController.text = widget.searchQuery!;
+          });
+          // Wait a bit more before searching
+          await Future.delayed(const Duration(milliseconds: 300));
+          if (mounted) {
+            _performSearch();
+          }
+        }
+      }
+    });
   }
 
   @override
