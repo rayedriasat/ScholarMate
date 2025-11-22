@@ -254,3 +254,95 @@ async def delete_annotation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete annotation: {str(e)}"
         )
+
+
+@router.get("/sessions/{session_id}/pdf")
+async def get_session_pdf(
+    session_id: str,
+    user_id: str = Query(..., description="User ID")
+):
+    """
+    Get PDF for collaboration session
+    Proxies the PDF from owner's Drive so all participants can access it
+    
+    Args:
+        session_id: Session ID
+        user_id: User ID (must be session participant)
+        
+    Returns:
+        PDF file bytes
+    """
+    from fastapi.responses import Response
+    from ..services.encryption_service import get_encryption_service
+    from ..services.supabase_service import get_supabase_service
+    import httpx
+    
+    try:
+        service = get_collaboration_service()
+        session = await service.get_session(session_id)
+        
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found"
+            )
+        
+        # Verify user is participant
+        is_participant = any(p["user_id"] == user_id for p in session["participants"])
+        if not is_participant:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not a session participant"
+            )
+        
+        # Get owner's access token
+        owner_id = session["owner_id"]
+        encryption_service = get_encryption_service()
+        supabase_service = get_supabase_service()
+        
+        encrypted_token = await supabase_service.get_encrypted_token(
+            user_id=owner_id,
+            token_type="access_token"
+        )
+        
+        if not encrypted_token:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Owner access token not found"
+            )
+        
+        access_token = encryption_service.decrypt(encrypted_token)
+        
+        # Download PDF from owner's Drive
+        file_id = session["file_id"]
+        drive_url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                drive_url,
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=60.0
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to download PDF: {response.status_code}"
+                )
+            
+            return Response(
+                content=response.content,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f'inline; filename="{session["file_name"]}"'
+                }
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting session PDF: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get PDF: {str(e)}"
+        )

@@ -55,6 +55,14 @@ class CollaborationService:
             # Generate unique session ID
             session_id = secrets.token_urlsafe(16)
             
+            # Make file publicly readable via link (anyone with link can view)
+            # This allows User B to access the file without explicit sharing
+            try:
+                await self._make_file_shareable(file_id, owner_id)
+            except Exception as e:
+                logger.warning(f"Could not make file shareable: {e}")
+                # Continue anyway - file might already be shared
+            
             # Create session in database
             session_data = {
                 "session_id": session_id,
@@ -98,6 +106,44 @@ class CollaborationService:
             
         except Exception as e:
             logger.error(f"Error creating collaboration session: {e}")
+            raise
+    
+    async def _make_file_shareable(self, file_id: str, owner_id: str) -> None:
+        """Make file accessible via link by adding 'anyone with link' permission"""
+        from ..services.encryption_service import get_encryption_service
+        import httpx
+        
+        try:
+            # Get owner's access token
+            encryption_service = get_encryption_service()
+            encrypted_token = await self.supabase.client.table("encrypted_tokens").select("encrypted_token").eq("user_id", owner_id).eq("token_type", "access_token").execute()
+            
+            if not encrypted_token.data:
+                raise Exception("Owner token not found")
+            
+            access_token = encryption_service.decrypt(encrypted_token.data[0]["encrypted_token"])
+            
+            # Add 'anyone with link' permission to file
+            permission_data = {
+                "type": "anyone",
+                "role": "reader"
+            }
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"https://www.googleapis.com/drive/v3/files/{file_id}/permissions",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    json=permission_data,
+                    timeout=10.0
+                )
+                
+                if response.status_code not in [200, 201]:
+                    raise Exception(f"Failed to share file: {response.status_code}")
+                
+            logger.info(f"Made file {file_id} shareable via link")
+            
+        except Exception as e:
+            logger.error(f"Error making file shareable: {e}")
             raise
     
     async def join_session(
@@ -243,20 +289,7 @@ class CollaborationService:
         except Exception as e:
             logger.error(f"Error updating cursor: {e}")
             raise
-
-
-# Singleton
-_collaboration_service: Optional[CollaborationService] = None
-
-
-def get_collaboration_service() -> CollaborationService:
-    """Get collaboration service singleton"""
-    global _collaboration_service
-    if _collaboration_service is None:
-        _collaboration_service = CollaborationService()
-    return _collaboration_service
-
-
+    
     async def add_annotation(
         self,
         session_id: str,
@@ -307,3 +340,15 @@ def get_collaboration_service() -> CollaborationService:
         except Exception as e:
             logger.error(f"Error deleting annotation: {e}")
             raise
+
+
+# Singleton
+_collaboration_service: Optional[CollaborationService] = None
+
+
+def get_collaboration_service() -> CollaborationService:
+    """Get collaboration service singleton"""
+    global _collaboration_service
+    if _collaboration_service is None:
+        _collaboration_service = CollaborationService()
+    return _collaboration_service

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from typing import List
 from datetime import datetime, timedelta
 from ..models.analytics import (
@@ -8,14 +8,13 @@ from ..models.analytics import (
     AnalyticsStats,
 )
 from ..utils.supabase_client import get_supabase_client
-from ..utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
 @router.post("/sync")
 async def sync_analytics(
     sync_data: AnalyticsSyncRequest,
-    user_id: str = Depends(get_current_user),
+    user_id: str = Query(..., description="User ID (Google sub claim)"),
 ):
     """Sync analytics data from client to server"""
     supabase = get_supabase_client()
@@ -62,8 +61,8 @@ async def sync_analytics(
 
 @router.get("/sessions", response_model=List[ReadingSessionResponse])
 async def get_reading_sessions(
+    user_id: str = Query(..., description="User ID (Google sub claim)"),
     limit: int = 50,
-    user_id: str = Depends(get_current_user),
 ):
     """Get user's reading sessions"""
     supabase = get_supabase_client()
@@ -85,7 +84,7 @@ async def get_reading_sessions(
 
 @router.get("/stats", response_model=AnalyticsStats)
 async def get_analytics_stats(
-    user_id: str = Depends(get_current_user),
+    user_id: str = Query(..., description="User ID (Google sub claim)"),
 ):
     """Get aggregated analytics statistics"""
     supabase = get_supabase_client()

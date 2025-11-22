@@ -24,6 +24,7 @@ import 'shared_files_screen.dart';
 import 'ai_chat_screen.dart';
 import 'citation_generator_screen.dart';
 import 'analytics_screen.dart';
+import 'join_collaboration_screen.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -716,7 +717,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             // Settings menu
             PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == 'manage_tags') {
+                if (value == 'join_collaboration') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const JoinCollaborationScreen(),
+                    ),
+                  );
+                } else if (value == 'manage_tags') {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -750,6 +758,17 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 }
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'join_collaboration',
+                  child: Row(
+                    children: [
+                      Icon(Icons.people, size: 20, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Text('Join Collaboration'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 const PopupMenuItem(
                   value: 'shared_with_me',
                   child: Row(

@@ -151,7 +151,80 @@ class CollaborationService {
         ); // Ignore errors for cursor updates
   }
 
+  /// Add annotation to session
+  Future<void> addAnnotation(CollaborationAnnotation annotation) async {
+    if (_currentSession == null) return;
+
+    final url = Uri.parse(
+      '${_config.backendUrl}/api/collaboration/sessions/${_currentSession!.sessionId}/annotations',
+    );
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'session_id': _currentSession!.sessionId,
+          'annotation': annotation.toJson(),
+          'action': 'create', // Required by backend
+        }),
+      );
+
+      if (response.statusCode != 201) {
+        throw Exception('Failed to add annotation: ${response.body}');
+      }
+    } catch (e) {
+      print('Error adding annotation: $e');
+      rethrow;
+    }
+  }
+
+  /// Get all annotations for current session
+  Future<List<CollaborationAnnotation>> getAnnotations() async {
+    if (_currentSession == null) return [];
+
+    final url = Uri.parse(
+      '${_config.backendUrl}/api/collaboration/sessions/${_currentSession!.sessionId}/annotations',
+    );
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get annotations: ${response.body}');
+      }
+
+      final data = jsonDecode(response.body);
+      final annotations = (data['annotations'] as List)
+          .map((a) => CollaborationAnnotation.fromJson(a))
+          .toList();
+
+      return annotations;
+    } catch (e) {
+      print('Error getting annotations: $e');
+      return [];
+    }
+  }
+
+  /// Delete annotation
+  Future<void> deleteAnnotation(String annotationId, String userId) async {
+    if (_currentSession == null) return;
+
+    final url = Uri.parse(
+      '${_config.backendUrl}/api/collaboration/sessions/${_currentSession!.sessionId}/annotations/$annotationId?user_id=$userId',
+    );
+
+    try {
+      await http.delete(url);
+    } catch (e) {
+      print('Error deleting annotation: $e');
+      rethrow;
+    }
+  }
+
   /// Subscribe to Supabase Realtime for session updates
+  StreamSubscription? _annotationSubscription;
+
   Future<void> _subscribeToSession(String sessionId) async {
     // Subscribe to participant changes
     _participantSubscription = _supabase
@@ -175,6 +248,18 @@ class CollaborationService {
             _participantUpdatesController.add(participant);
           }
         });
+
+    // Subscribe to annotation changes
+    _annotationSubscription = _supabase
+        .from('collaboration_annotations')
+        .stream(primaryKey: ['id'])
+        .eq('session_id', sessionId)
+        .listen((data) {
+          for (final annotationData in data) {
+            final annotation = CollaborationAnnotation.fromJson(annotationData);
+            _annotationUpdatesController.add(annotation);
+          }
+        });
   }
 
   /// Get session by ID
@@ -194,6 +279,7 @@ class CollaborationService {
 
   void dispose() {
     _participantSubscription?.cancel();
+    _annotationSubscription?.cancel();
     _participantUpdatesController.close();
     _annotationUpdatesController.close();
     _cursorThrottle?.cancel();

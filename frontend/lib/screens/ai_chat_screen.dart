@@ -15,7 +15,6 @@ import '../database/database.dart';
 import '../widgets/chat_message_bubble.dart';
 import '../widgets/source_selection_panel.dart';
 import '../widgets/conversation_list_sidebar.dart';
-import '../widgets/typing_indicator.dart';
 import 'pdf_viewer_screen.dart';
 
 /// AI Chat screen with RAG and source selection
@@ -787,7 +786,21 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           itemCount: _messages.length + (_isLoading ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index == _messages.length) {
-                              return const TypingIndicator();
+                              // Simple loading indicator for AI response
+                              return const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text('AI is thinking...'),
+                                  ],
+                                ),
+                              );
                             }
                             final message = _messages[index];
                             return ChatMessageBubble(

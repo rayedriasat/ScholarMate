@@ -877,12 +877,15 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     }
 
     // Navigate to collaborative PDF viewer
+    // Pass the already-loaded PDF bytes to avoid re-downloading
+    final pdfManager = context.read<PdfViewerManager>();
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CollaborativePdfViewerScreen(
           fileId: fileId,
           fileName: fileName ?? 'document.pdf',
+          pdfBytes: pdfManager.currentPdfBytes, // Pass existing bytes
         ),
       ),
     );

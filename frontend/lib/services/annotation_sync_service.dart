@@ -5,12 +5,14 @@ import 'package:drift/drift.dart';
 import '../models/annotation.dart';
 import '../database/database.dart';
 import 'auth_service.dart';
+import 'realtime_service.dart';
 
 /// Service for syncing annotations with backend
 class AnnotationSyncService extends ChangeNotifier {
   final AppDatabase _database;
   final AuthService _authService;
   final String _baseUrl;
+  final RealtimeService? _realtimeService;
 
   bool _isSyncing = false;
   DateTime? _lastSyncTime;
@@ -20,9 +22,11 @@ class AnnotationSyncService extends ChangeNotifier {
     required AppDatabase database,
     required AuthService authService,
     required String baseUrl,
+    RealtimeService? realtimeService,
   }) : _database = database,
        _authService = authService,
-       _baseUrl = baseUrl;
+       _baseUrl = baseUrl,
+       _realtimeService = realtimeService;
 
   bool get isSyncing => _isSyncing;
   DateTime? get lastSyncTime => _lastSyncTime;
@@ -151,6 +155,15 @@ class AnnotationSyncService extends ChangeNotifier {
           await _database.markAnnotationSynced(annotation.id);
         }
 
+        // Check for conflicts
+        final conflicts = result['conflicts'] as List?;
+        if (conflicts != null && conflicts.isNotEmpty) {
+          // Store conflicts for UI to display
+          result['has_conflicts'] = true;
+          result['conflict_details'] = conflicts;
+          debugPrint('Sync completed with ${conflicts.length} conflicts');
+        }
+
         _lastSyncTime = DateTime.now();
         _lastSyncError = null;
         _isSyncing = false;
@@ -230,6 +243,15 @@ class AnnotationSyncService extends ChangeNotifier {
           ),
         );
 
+        // Broadcast annotation event (Supabase Realtime will handle this automatically)
+        // This is just for explicit error handling
+        try {
+          await _realtimeService?.broadcastAnnotation(annotation, 'create');
+        } catch (e) {
+          debugPrint('Error broadcasting annotation: $e');
+          // Don't fail the operation if broadcast fails
+        }
+
         notifyListeners();
         return annotation;
       } else {
@@ -293,6 +315,14 @@ class AnnotationSyncService extends ChangeNotifier {
           ),
         );
 
+        // Broadcast annotation update event
+        try {
+          await _realtimeService?.broadcastAnnotation(annotation, 'update');
+        } catch (e) {
+          debugPrint('Error broadcasting annotation update: $e');
+          // Don't fail the operation if broadcast fails
+        }
+
         notifyListeners();
         return true;
       } else {
@@ -320,6 +350,17 @@ class AnnotationSyncService extends ChangeNotifier {
       if (response.statusCode == 204) {
         // Delete from local cache
         await _database.deleteAnnotation(annotationId);
+
+        // Broadcast annotation delete event
+        // Note: We can't pass the full annotation object since it's deleted
+        // The realtime service will handle this through Postgres changes
+        try {
+          // The Supabase Realtime will automatically broadcast the delete event
+          // when the annotation is deleted from the database
+        } catch (e) {
+          debugPrint('Error broadcasting annotation delete: $e');
+          // Don't fail the operation if broadcast fails
+        }
 
         notifyListeners();
         return true;

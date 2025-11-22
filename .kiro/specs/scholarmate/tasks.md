@@ -670,8 +670,14 @@
 
 ## Phase 15: Realtime Annotations (Testable Checkpoint)
 
-- [ ] 17. Implement realtime annotation collaboration
-  - [ ] 17.1 Create RealtimeService in Flutter
+- [x] 17. Implement realtime annotation collaboration
+
+
+
+
+  - [x] 17.1 Create RealtimeService in Flutter
+
+
     - Add supabase_flutter dependency to pubspec.yaml
     - Integrate Supabase Realtime client
     - Implement connect() and channel subscription methods
@@ -679,26 +685,34 @@
     - Create eventStream for reactive updates
     - _Requirements: 17.1_
   
-  - [ ] 17.2 Implement annotation broadcasting
+  - [x] 17.2 Implement annotation broadcasting
+
+
     - Broadcast annotation events when user creates/updates/deletes annotations
     - Include annotation metadata and author info in events
     - Handle broadcast errors gracefully
     - _Requirements: 17.2_
   
-  - [ ] 17.3 Implement realtime annotation updates in PDF viewer
+  - [x] 17.3 Implement realtime annotation updates in PDF viewer
+
+
     - Subscribe to file channel when opening shared PDF
     - Listen for annotation events from collaborators
     - Update PDF viewer with new annotations in realtime
     - Show author name and avatar on annotations
     - _Requirements: 17.2, 17.3, 17.4_
   
-  - [ ] 17.4 Implement conflict resolution for concurrent edits
+  - [x] 17.4 Implement conflict resolution for concurrent edits
+
+
     - Apply last-write-wins using timestamps
     - Preserve version history in database
     - Show conflict notification to users
     - _Requirements: 17.5_
   
-  - [ ] 17.5 Add typing indicators for comments
+  - [x] 17.5 Add typing indicators for comments
+
+
     - Broadcast typing events when user is composing comment
     - Display "User is typing..." indicator in annotation panel
     - Clear indicator after timeout or message sent

@@ -22,6 +22,8 @@ import 'services/metadata_service.dart';
 import 'services/simple_theme_service.dart';
 import 'services/notebook_service.dart';
 import 'services/collaboration_service.dart';
+import 'services/realtime_service.dart';
+import 'services/annotation_sync_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -232,6 +234,33 @@ class ScholarMateApp extends StatelessWidget {
             ConfigService(),
             Supabase.instance.client,
           ),
+        ),
+        // Realtime service for annotation sync
+        Provider<RealtimeService>(
+          create: (_) => RealtimeService(Supabase.instance.client),
+          dispose: (_, service) => service.dispose(),
+        ),
+        // Annotation sync service with realtime support
+        ChangeNotifierProxyProvider3<
+          AppDatabase,
+          AuthService,
+          RealtimeService,
+          AnnotationSyncService
+        >(
+          create: (context) => AnnotationSyncService(
+            database: context.read<AppDatabase>(),
+            authService: context.read<AuthService>(),
+            baseUrl: ConfigService().apiBaseUrl,
+            realtimeService: context.read<RealtimeService>(),
+          ),
+          update: (context, database, auth, realtime, previous) =>
+              previous ??
+              AnnotationSyncService(
+                database: database,
+                authService: auth,
+                baseUrl: ConfigService().apiBaseUrl,
+                realtimeService: realtime,
+              ),
         ),
       ],
       child: Consumer<SimpleThemeService>(
