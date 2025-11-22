@@ -73,6 +73,8 @@ dependencies:
   screenshot: ^3.0.0
   pdf: ^3.11.3
   supabase_flutter: ^2.10.3
+  flutter_onnxruntime: ^1.6.0
+  llama_cpp_dart: ^0.1.2+1
 
 dev_dependencies:
   flutter_test:

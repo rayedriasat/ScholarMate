@@ -8153,6 +8153,2084 @@ class PageReadHistoryCompanion extends UpdateCompanion<PageReadHistoryData> {
   }
 }
 
+class $CachedEmbeddingsTable extends CachedEmbeddings
+    with TableInfo<$CachedEmbeddingsTable, CachedEmbedding> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedEmbeddingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileIdMeta = const VerificationMeta('fileId');
+  @override
+  late final GeneratedColumn<String> fileId = GeneratedColumn<String>(
+    'file_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _chunkIndexMeta = const VerificationMeta(
+    'chunkIndex',
+  );
+  @override
+  late final GeneratedColumn<int> chunkIndex = GeneratedColumn<int>(
+    'chunk_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pageNumberMeta = const VerificationMeta(
+    'pageNumber',
+  );
+  @override
+  late final GeneratedColumn<int> pageNumber = GeneratedColumn<int>(
+    'page_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _embeddingMeta = const VerificationMeta(
+    'embedding',
+  );
+  @override
+  late final GeneratedColumn<String> embedding = GeneratedColumn<String>(
+    'embedding',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncedMeta = const VerificationMeta('synced');
+  @override
+  late final GeneratedColumn<bool> synced = GeneratedColumn<bool>(
+    'synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncedAtMeta = const VerificationMeta(
+    'syncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
+    'synced_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    fileId,
+    chunkIndex,
+    pageNumber,
+    content,
+    embedding,
+    synced,
+    createdAt,
+    syncedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_embeddings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CachedEmbedding> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('file_id')) {
+      context.handle(
+        _fileIdMeta,
+        fileId.isAcceptableOrUnknown(data['file_id']!, _fileIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileIdMeta);
+    }
+    if (data.containsKey('chunk_index')) {
+      context.handle(
+        _chunkIndexMeta,
+        chunkIndex.isAcceptableOrUnknown(data['chunk_index']!, _chunkIndexMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_chunkIndexMeta);
+    }
+    if (data.containsKey('page_number')) {
+      context.handle(
+        _pageNumberMeta,
+        pageNumber.isAcceptableOrUnknown(data['page_number']!, _pageNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pageNumberMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('embedding')) {
+      context.handle(
+        _embeddingMeta,
+        embedding.isAcceptableOrUnknown(data['embedding']!, _embeddingMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_embeddingMeta);
+    }
+    if (data.containsKey('synced')) {
+      context.handle(
+        _syncedMeta,
+        synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('synced_at')) {
+      context.handle(
+        _syncedAtMeta,
+        syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CachedEmbedding map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedEmbedding(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      fileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_id'],
+      )!,
+      chunkIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}chunk_index'],
+      )!,
+      pageNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_number'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      embedding: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}embedding'],
+      )!,
+      synced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}synced'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      syncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}synced_at'],
+      ),
+    );
+  }
+
+  @override
+  $CachedEmbeddingsTable createAlias(String alias) {
+    return $CachedEmbeddingsTable(attachedDatabase, alias);
+  }
+}
+
+class CachedEmbedding extends DataClass implements Insertable<CachedEmbedding> {
+  final String id;
+  final String fileId;
+  final int chunkIndex;
+  final int pageNumber;
+  final String content;
+  final String embedding;
+  final bool synced;
+  final DateTime createdAt;
+  final DateTime? syncedAt;
+  const CachedEmbedding({
+    required this.id,
+    required this.fileId,
+    required this.chunkIndex,
+    required this.pageNumber,
+    required this.content,
+    required this.embedding,
+    required this.synced,
+    required this.createdAt,
+    this.syncedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['file_id'] = Variable<String>(fileId);
+    map['chunk_index'] = Variable<int>(chunkIndex);
+    map['page_number'] = Variable<int>(pageNumber);
+    map['content'] = Variable<String>(content);
+    map['embedding'] = Variable<String>(embedding);
+    map['synced'] = Variable<bool>(synced);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || syncedAt != null) {
+      map['synced_at'] = Variable<DateTime>(syncedAt);
+    }
+    return map;
+  }
+
+  CachedEmbeddingsCompanion toCompanion(bool nullToAbsent) {
+    return CachedEmbeddingsCompanion(
+      id: Value(id),
+      fileId: Value(fileId),
+      chunkIndex: Value(chunkIndex),
+      pageNumber: Value(pageNumber),
+      content: Value(content),
+      embedding: Value(embedding),
+      synced: Value(synced),
+      createdAt: Value(createdAt),
+      syncedAt: syncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncedAt),
+    );
+  }
+
+  factory CachedEmbedding.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedEmbedding(
+      id: serializer.fromJson<String>(json['id']),
+      fileId: serializer.fromJson<String>(json['fileId']),
+      chunkIndex: serializer.fromJson<int>(json['chunkIndex']),
+      pageNumber: serializer.fromJson<int>(json['pageNumber']),
+      content: serializer.fromJson<String>(json['content']),
+      embedding: serializer.fromJson<String>(json['embedding']),
+      synced: serializer.fromJson<bool>(json['synced']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'fileId': serializer.toJson<String>(fileId),
+      'chunkIndex': serializer.toJson<int>(chunkIndex),
+      'pageNumber': serializer.toJson<int>(pageNumber),
+      'content': serializer.toJson<String>(content),
+      'embedding': serializer.toJson<String>(embedding),
+      'synced': serializer.toJson<bool>(synced),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+    };
+  }
+
+  CachedEmbedding copyWith({
+    String? id,
+    String? fileId,
+    int? chunkIndex,
+    int? pageNumber,
+    String? content,
+    String? embedding,
+    bool? synced,
+    DateTime? createdAt,
+    Value<DateTime?> syncedAt = const Value.absent(),
+  }) => CachedEmbedding(
+    id: id ?? this.id,
+    fileId: fileId ?? this.fileId,
+    chunkIndex: chunkIndex ?? this.chunkIndex,
+    pageNumber: pageNumber ?? this.pageNumber,
+    content: content ?? this.content,
+    embedding: embedding ?? this.embedding,
+    synced: synced ?? this.synced,
+    createdAt: createdAt ?? this.createdAt,
+    syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+  );
+  CachedEmbedding copyWithCompanion(CachedEmbeddingsCompanion data) {
+    return CachedEmbedding(
+      id: data.id.present ? data.id.value : this.id,
+      fileId: data.fileId.present ? data.fileId.value : this.fileId,
+      chunkIndex: data.chunkIndex.present
+          ? data.chunkIndex.value
+          : this.chunkIndex,
+      pageNumber: data.pageNumber.present
+          ? data.pageNumber.value
+          : this.pageNumber,
+      content: data.content.present ? data.content.value : this.content,
+      embedding: data.embedding.present ? data.embedding.value : this.embedding,
+      synced: data.synced.present ? data.synced.value : this.synced,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedEmbedding(')
+          ..write('id: $id, ')
+          ..write('fileId: $fileId, ')
+          ..write('chunkIndex: $chunkIndex, ')
+          ..write('pageNumber: $pageNumber, ')
+          ..write('content: $content, ')
+          ..write('embedding: $embedding, ')
+          ..write('synced: $synced, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('syncedAt: $syncedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    fileId,
+    chunkIndex,
+    pageNumber,
+    content,
+    embedding,
+    synced,
+    createdAt,
+    syncedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedEmbedding &&
+          other.id == this.id &&
+          other.fileId == this.fileId &&
+          other.chunkIndex == this.chunkIndex &&
+          other.pageNumber == this.pageNumber &&
+          other.content == this.content &&
+          other.embedding == this.embedding &&
+          other.synced == this.synced &&
+          other.createdAt == this.createdAt &&
+          other.syncedAt == this.syncedAt);
+}
+
+class CachedEmbeddingsCompanion extends UpdateCompanion<CachedEmbedding> {
+  final Value<String> id;
+  final Value<String> fileId;
+  final Value<int> chunkIndex;
+  final Value<int> pageNumber;
+  final Value<String> content;
+  final Value<String> embedding;
+  final Value<bool> synced;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> syncedAt;
+  final Value<int> rowid;
+  const CachedEmbeddingsCompanion({
+    this.id = const Value.absent(),
+    this.fileId = const Value.absent(),
+    this.chunkIndex = const Value.absent(),
+    this.pageNumber = const Value.absent(),
+    this.content = const Value.absent(),
+    this.embedding = const Value.absent(),
+    this.synced = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.syncedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CachedEmbeddingsCompanion.insert({
+    required String id,
+    required String fileId,
+    required int chunkIndex,
+    required int pageNumber,
+    required String content,
+    required String embedding,
+    this.synced = const Value.absent(),
+    required DateTime createdAt,
+    this.syncedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       fileId = Value(fileId),
+       chunkIndex = Value(chunkIndex),
+       pageNumber = Value(pageNumber),
+       content = Value(content),
+       embedding = Value(embedding),
+       createdAt = Value(createdAt);
+  static Insertable<CachedEmbedding> custom({
+    Expression<String>? id,
+    Expression<String>? fileId,
+    Expression<int>? chunkIndex,
+    Expression<int>? pageNumber,
+    Expression<String>? content,
+    Expression<String>? embedding,
+    Expression<bool>? synced,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? syncedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fileId != null) 'file_id': fileId,
+      if (chunkIndex != null) 'chunk_index': chunkIndex,
+      if (pageNumber != null) 'page_number': pageNumber,
+      if (content != null) 'content': content,
+      if (embedding != null) 'embedding': embedding,
+      if (synced != null) 'synced': synced,
+      if (createdAt != null) 'created_at': createdAt,
+      if (syncedAt != null) 'synced_at': syncedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CachedEmbeddingsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? fileId,
+    Value<int>? chunkIndex,
+    Value<int>? pageNumber,
+    Value<String>? content,
+    Value<String>? embedding,
+    Value<bool>? synced,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? syncedAt,
+    Value<int>? rowid,
+  }) {
+    return CachedEmbeddingsCompanion(
+      id: id ?? this.id,
+      fileId: fileId ?? this.fileId,
+      chunkIndex: chunkIndex ?? this.chunkIndex,
+      pageNumber: pageNumber ?? this.pageNumber,
+      content: content ?? this.content,
+      embedding: embedding ?? this.embedding,
+      synced: synced ?? this.synced,
+      createdAt: createdAt ?? this.createdAt,
+      syncedAt: syncedAt ?? this.syncedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (fileId.present) {
+      map['file_id'] = Variable<String>(fileId.value);
+    }
+    if (chunkIndex.present) {
+      map['chunk_index'] = Variable<int>(chunkIndex.value);
+    }
+    if (pageNumber.present) {
+      map['page_number'] = Variable<int>(pageNumber.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (embedding.present) {
+      map['embedding'] = Variable<String>(embedding.value);
+    }
+    if (synced.present) {
+      map['synced'] = Variable<bool>(synced.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (syncedAt.present) {
+      map['synced_at'] = Variable<DateTime>(syncedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedEmbeddingsCompanion(')
+          ..write('id: $id, ')
+          ..write('fileId: $fileId, ')
+          ..write('chunkIndex: $chunkIndex, ')
+          ..write('pageNumber: $pageNumber, ')
+          ..write('content: $content, ')
+          ..write('embedding: $embedding, ')
+          ..write('synced: $synced, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalChatMessagesTable extends LocalChatMessages
+    with TableInfo<$LocalChatMessagesTable, LocalChatMessage> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalChatMessagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+    'role',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _citationsMeta = const VerificationMeta(
+    'citations',
+  );
+  @override
+  late final GeneratedColumn<String> citations = GeneratedColumn<String>(
+    'citations',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _generatedLocallyMeta = const VerificationMeta(
+    'generatedLocally',
+  );
+  @override
+  late final GeneratedColumn<bool> generatedLocally = GeneratedColumn<bool>(
+    'generated_locally',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("generated_locally" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _syncedMeta = const VerificationMeta('synced');
+  @override
+  late final GeneratedColumn<bool> synced = GeneratedColumn<bool>(
+    'synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncedAtMeta = const VerificationMeta(
+    'syncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
+    'synced_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    conversationId,
+    role,
+    content,
+    citations,
+    generatedLocally,
+    synced,
+    createdAt,
+    syncedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_chat_messages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalChatMessage> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conversationIdMeta);
+    }
+    if (data.containsKey('role')) {
+      context.handle(
+        _roleMeta,
+        role.isAcceptableOrUnknown(data['role']!, _roleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roleMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('citations')) {
+      context.handle(
+        _citationsMeta,
+        citations.isAcceptableOrUnknown(data['citations']!, _citationsMeta),
+      );
+    }
+    if (data.containsKey('generated_locally')) {
+      context.handle(
+        _generatedLocallyMeta,
+        generatedLocally.isAcceptableOrUnknown(
+          data['generated_locally']!,
+          _generatedLocallyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('synced')) {
+      context.handle(
+        _syncedMeta,
+        synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('synced_at')) {
+      context.handle(
+        _syncedAtMeta,
+        syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalChatMessage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalChatMessage(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      )!,
+      role: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}role'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      citations: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}citations'],
+      ),
+      generatedLocally: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}generated_locally'],
+      )!,
+      synced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}synced'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      syncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}synced_at'],
+      ),
+    );
+  }
+
+  @override
+  $LocalChatMessagesTable createAlias(String alias) {
+    return $LocalChatMessagesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalChatMessage extends DataClass
+    implements Insertable<LocalChatMessage> {
+  final String id;
+  final String conversationId;
+  final String role;
+  final String content;
+  final String? citations;
+  final bool generatedLocally;
+  final bool synced;
+  final DateTime createdAt;
+  final DateTime? syncedAt;
+  const LocalChatMessage({
+    required this.id,
+    required this.conversationId,
+    required this.role,
+    required this.content,
+    this.citations,
+    required this.generatedLocally,
+    required this.synced,
+    required this.createdAt,
+    this.syncedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['conversation_id'] = Variable<String>(conversationId);
+    map['role'] = Variable<String>(role);
+    map['content'] = Variable<String>(content);
+    if (!nullToAbsent || citations != null) {
+      map['citations'] = Variable<String>(citations);
+    }
+    map['generated_locally'] = Variable<bool>(generatedLocally);
+    map['synced'] = Variable<bool>(synced);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || syncedAt != null) {
+      map['synced_at'] = Variable<DateTime>(syncedAt);
+    }
+    return map;
+  }
+
+  LocalChatMessagesCompanion toCompanion(bool nullToAbsent) {
+    return LocalChatMessagesCompanion(
+      id: Value(id),
+      conversationId: Value(conversationId),
+      role: Value(role),
+      content: Value(content),
+      citations: citations == null && nullToAbsent
+          ? const Value.absent()
+          : Value(citations),
+      generatedLocally: Value(generatedLocally),
+      synced: Value(synced),
+      createdAt: Value(createdAt),
+      syncedAt: syncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncedAt),
+    );
+  }
+
+  factory LocalChatMessage.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalChatMessage(
+      id: serializer.fromJson<String>(json['id']),
+      conversationId: serializer.fromJson<String>(json['conversationId']),
+      role: serializer.fromJson<String>(json['role']),
+      content: serializer.fromJson<String>(json['content']),
+      citations: serializer.fromJson<String?>(json['citations']),
+      generatedLocally: serializer.fromJson<bool>(json['generatedLocally']),
+      synced: serializer.fromJson<bool>(json['synced']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'conversationId': serializer.toJson<String>(conversationId),
+      'role': serializer.toJson<String>(role),
+      'content': serializer.toJson<String>(content),
+      'citations': serializer.toJson<String?>(citations),
+      'generatedLocally': serializer.toJson<bool>(generatedLocally),
+      'synced': serializer.toJson<bool>(synced),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+    };
+  }
+
+  LocalChatMessage copyWith({
+    String? id,
+    String? conversationId,
+    String? role,
+    String? content,
+    Value<String?> citations = const Value.absent(),
+    bool? generatedLocally,
+    bool? synced,
+    DateTime? createdAt,
+    Value<DateTime?> syncedAt = const Value.absent(),
+  }) => LocalChatMessage(
+    id: id ?? this.id,
+    conversationId: conversationId ?? this.conversationId,
+    role: role ?? this.role,
+    content: content ?? this.content,
+    citations: citations.present ? citations.value : this.citations,
+    generatedLocally: generatedLocally ?? this.generatedLocally,
+    synced: synced ?? this.synced,
+    createdAt: createdAt ?? this.createdAt,
+    syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+  );
+  LocalChatMessage copyWithCompanion(LocalChatMessagesCompanion data) {
+    return LocalChatMessage(
+      id: data.id.present ? data.id.value : this.id,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      role: data.role.present ? data.role.value : this.role,
+      content: data.content.present ? data.content.value : this.content,
+      citations: data.citations.present ? data.citations.value : this.citations,
+      generatedLocally: data.generatedLocally.present
+          ? data.generatedLocally.value
+          : this.generatedLocally,
+      synced: data.synced.present ? data.synced.value : this.synced,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalChatMessage(')
+          ..write('id: $id, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('role: $role, ')
+          ..write('content: $content, ')
+          ..write('citations: $citations, ')
+          ..write('generatedLocally: $generatedLocally, ')
+          ..write('synced: $synced, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('syncedAt: $syncedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    conversationId,
+    role,
+    content,
+    citations,
+    generatedLocally,
+    synced,
+    createdAt,
+    syncedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalChatMessage &&
+          other.id == this.id &&
+          other.conversationId == this.conversationId &&
+          other.role == this.role &&
+          other.content == this.content &&
+          other.citations == this.citations &&
+          other.generatedLocally == this.generatedLocally &&
+          other.synced == this.synced &&
+          other.createdAt == this.createdAt &&
+          other.syncedAt == this.syncedAt);
+}
+
+class LocalChatMessagesCompanion extends UpdateCompanion<LocalChatMessage> {
+  final Value<String> id;
+  final Value<String> conversationId;
+  final Value<String> role;
+  final Value<String> content;
+  final Value<String?> citations;
+  final Value<bool> generatedLocally;
+  final Value<bool> synced;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> syncedAt;
+  final Value<int> rowid;
+  const LocalChatMessagesCompanion({
+    this.id = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.role = const Value.absent(),
+    this.content = const Value.absent(),
+    this.citations = const Value.absent(),
+    this.generatedLocally = const Value.absent(),
+    this.synced = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.syncedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalChatMessagesCompanion.insert({
+    required String id,
+    required String conversationId,
+    required String role,
+    required String content,
+    this.citations = const Value.absent(),
+    this.generatedLocally = const Value.absent(),
+    this.synced = const Value.absent(),
+    required DateTime createdAt,
+    this.syncedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       conversationId = Value(conversationId),
+       role = Value(role),
+       content = Value(content),
+       createdAt = Value(createdAt);
+  static Insertable<LocalChatMessage> custom({
+    Expression<String>? id,
+    Expression<String>? conversationId,
+    Expression<String>? role,
+    Expression<String>? content,
+    Expression<String>? citations,
+    Expression<bool>? generatedLocally,
+    Expression<bool>? synced,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? syncedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (role != null) 'role': role,
+      if (content != null) 'content': content,
+      if (citations != null) 'citations': citations,
+      if (generatedLocally != null) 'generated_locally': generatedLocally,
+      if (synced != null) 'synced': synced,
+      if (createdAt != null) 'created_at': createdAt,
+      if (syncedAt != null) 'synced_at': syncedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalChatMessagesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? conversationId,
+    Value<String>? role,
+    Value<String>? content,
+    Value<String?>? citations,
+    Value<bool>? generatedLocally,
+    Value<bool>? synced,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? syncedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalChatMessagesCompanion(
+      id: id ?? this.id,
+      conversationId: conversationId ?? this.conversationId,
+      role: role ?? this.role,
+      content: content ?? this.content,
+      citations: citations ?? this.citations,
+      generatedLocally: generatedLocally ?? this.generatedLocally,
+      synced: synced ?? this.synced,
+      createdAt: createdAt ?? this.createdAt,
+      syncedAt: syncedAt ?? this.syncedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (citations.present) {
+      map['citations'] = Variable<String>(citations.value);
+    }
+    if (generatedLocally.present) {
+      map['generated_locally'] = Variable<bool>(generatedLocally.value);
+    }
+    if (synced.present) {
+      map['synced'] = Variable<bool>(synced.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (syncedAt.present) {
+      map['synced_at'] = Variable<DateTime>(syncedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalChatMessagesCompanion(')
+          ..write('id: $id, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('role: $role, ')
+          ..write('content: $content, ')
+          ..write('citations: $citations, ')
+          ..write('generatedLocally: $generatedLocally, ')
+          ..write('synced: $synced, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ModelMetadataTable extends ModelMetadata
+    with TableInfo<$ModelMetadataTable, ModelMetadataData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ModelMetadataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sizeBytesMeta = const VerificationMeta(
+    'sizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+    'size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parameterCountMeta = const VerificationMeta(
+    'parameterCount',
+  );
+  @override
+  late final GeneratedColumn<int> parameterCount = GeneratedColumn<int>(
+    'parameter_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _quantizationMeta = const VerificationMeta(
+    'quantization',
+  );
+  @override
+  late final GeneratedColumn<String> quantization = GeneratedColumn<String>(
+    'quantization',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _installedAtMeta = const VerificationMeta(
+    'installedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> installedAt = GeneratedColumn<DateTime>(
+    'installed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    type,
+    sizeBytes,
+    parameterCount,
+    quantization,
+    localPath,
+    installedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'model_metadata';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ModelMetadataData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(
+        _sizeBytesMeta,
+        sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sizeBytesMeta);
+    }
+    if (data.containsKey('parameter_count')) {
+      context.handle(
+        _parameterCountMeta,
+        parameterCount.isAcceptableOrUnknown(
+          data['parameter_count']!,
+          _parameterCountMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_parameterCountMeta);
+    }
+    if (data.containsKey('quantization')) {
+      context.handle(
+        _quantizationMeta,
+        quantization.isAcceptableOrUnknown(
+          data['quantization']!,
+          _quantizationMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantizationMeta);
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localPathMeta);
+    }
+    if (data.containsKey('installed_at')) {
+      context.handle(
+        _installedAtMeta,
+        installedAt.isAcceptableOrUnknown(
+          data['installed_at']!,
+          _installedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_installedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ModelMetadataData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ModelMetadataData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      sizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size_bytes'],
+      )!,
+      parameterCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}parameter_count'],
+      )!,
+      quantization: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quantization'],
+      )!,
+      localPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_path'],
+      )!,
+      installedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}installed_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ModelMetadataTable createAlias(String alias) {
+    return $ModelMetadataTable(attachedDatabase, alias);
+  }
+}
+
+class ModelMetadataData extends DataClass
+    implements Insertable<ModelMetadataData> {
+  final String id;
+  final String name;
+  final String type;
+  final int sizeBytes;
+  final int parameterCount;
+  final String quantization;
+  final String localPath;
+  final DateTime installedAt;
+  const ModelMetadataData({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.sizeBytes,
+    required this.parameterCount,
+    required this.quantization,
+    required this.localPath,
+    required this.installedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['type'] = Variable<String>(type);
+    map['size_bytes'] = Variable<int>(sizeBytes);
+    map['parameter_count'] = Variable<int>(parameterCount);
+    map['quantization'] = Variable<String>(quantization);
+    map['local_path'] = Variable<String>(localPath);
+    map['installed_at'] = Variable<DateTime>(installedAt);
+    return map;
+  }
+
+  ModelMetadataCompanion toCompanion(bool nullToAbsent) {
+    return ModelMetadataCompanion(
+      id: Value(id),
+      name: Value(name),
+      type: Value(type),
+      sizeBytes: Value(sizeBytes),
+      parameterCount: Value(parameterCount),
+      quantization: Value(quantization),
+      localPath: Value(localPath),
+      installedAt: Value(installedAt),
+    );
+  }
+
+  factory ModelMetadataData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ModelMetadataData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      type: serializer.fromJson<String>(json['type']),
+      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
+      parameterCount: serializer.fromJson<int>(json['parameterCount']),
+      quantization: serializer.fromJson<String>(json['quantization']),
+      localPath: serializer.fromJson<String>(json['localPath']),
+      installedAt: serializer.fromJson<DateTime>(json['installedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'type': serializer.toJson<String>(type),
+      'sizeBytes': serializer.toJson<int>(sizeBytes),
+      'parameterCount': serializer.toJson<int>(parameterCount),
+      'quantization': serializer.toJson<String>(quantization),
+      'localPath': serializer.toJson<String>(localPath),
+      'installedAt': serializer.toJson<DateTime>(installedAt),
+    };
+  }
+
+  ModelMetadataData copyWith({
+    String? id,
+    String? name,
+    String? type,
+    int? sizeBytes,
+    int? parameterCount,
+    String? quantization,
+    String? localPath,
+    DateTime? installedAt,
+  }) => ModelMetadataData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    type: type ?? this.type,
+    sizeBytes: sizeBytes ?? this.sizeBytes,
+    parameterCount: parameterCount ?? this.parameterCount,
+    quantization: quantization ?? this.quantization,
+    localPath: localPath ?? this.localPath,
+    installedAt: installedAt ?? this.installedAt,
+  );
+  ModelMetadataData copyWithCompanion(ModelMetadataCompanion data) {
+    return ModelMetadataData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      type: data.type.present ? data.type.value : this.type,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      parameterCount: data.parameterCount.present
+          ? data.parameterCount.value
+          : this.parameterCount,
+      quantization: data.quantization.present
+          ? data.quantization.value
+          : this.quantization,
+      localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      installedAt: data.installedAt.present
+          ? data.installedAt.value
+          : this.installedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ModelMetadataData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('type: $type, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('parameterCount: $parameterCount, ')
+          ..write('quantization: $quantization, ')
+          ..write('localPath: $localPath, ')
+          ..write('installedAt: $installedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    type,
+    sizeBytes,
+    parameterCount,
+    quantization,
+    localPath,
+    installedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ModelMetadataData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.type == this.type &&
+          other.sizeBytes == this.sizeBytes &&
+          other.parameterCount == this.parameterCount &&
+          other.quantization == this.quantization &&
+          other.localPath == this.localPath &&
+          other.installedAt == this.installedAt);
+}
+
+class ModelMetadataCompanion extends UpdateCompanion<ModelMetadataData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> type;
+  final Value<int> sizeBytes;
+  final Value<int> parameterCount;
+  final Value<String> quantization;
+  final Value<String> localPath;
+  final Value<DateTime> installedAt;
+  final Value<int> rowid;
+  const ModelMetadataCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.type = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.parameterCount = const Value.absent(),
+    this.quantization = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.installedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ModelMetadataCompanion.insert({
+    required String id,
+    required String name,
+    required String type,
+    required int sizeBytes,
+    required int parameterCount,
+    required String quantization,
+    required String localPath,
+    required DateTime installedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       type = Value(type),
+       sizeBytes = Value(sizeBytes),
+       parameterCount = Value(parameterCount),
+       quantization = Value(quantization),
+       localPath = Value(localPath),
+       installedAt = Value(installedAt);
+  static Insertable<ModelMetadataData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? type,
+    Expression<int>? sizeBytes,
+    Expression<int>? parameterCount,
+    Expression<String>? quantization,
+    Expression<String>? localPath,
+    Expression<DateTime>? installedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (type != null) 'type': type,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (parameterCount != null) 'parameter_count': parameterCount,
+      if (quantization != null) 'quantization': quantization,
+      if (localPath != null) 'local_path': localPath,
+      if (installedAt != null) 'installed_at': installedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ModelMetadataCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? type,
+    Value<int>? sizeBytes,
+    Value<int>? parameterCount,
+    Value<String>? quantization,
+    Value<String>? localPath,
+    Value<DateTime>? installedAt,
+    Value<int>? rowid,
+  }) {
+    return ModelMetadataCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      parameterCount: parameterCount ?? this.parameterCount,
+      quantization: quantization ?? this.quantization,
+      localPath: localPath ?? this.localPath,
+      installedAt: installedAt ?? this.installedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (parameterCount.present) {
+      map['parameter_count'] = Variable<int>(parameterCount.value);
+    }
+    if (quantization.present) {
+      map['quantization'] = Variable<String>(quantization.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (installedAt.present) {
+      map['installed_at'] = Variable<DateTime>(installedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ModelMetadataCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('type: $type, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('parameterCount: $parameterCount, ')
+          ..write('quantization: $quantization, ')
+          ..write('localPath: $localPath, ')
+          ..write('installedAt: $installedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $OfflineAiSyncQueueTable extends OfflineAiSyncQueue
+    with TableInfo<$OfflineAiSyncQueueTable, OfflineAiSyncQueueData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OfflineAiSyncQueueTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operationTypeMeta = const VerificationMeta(
+    'operationType',
+  );
+  @override
+  late final GeneratedColumn<String> operationType = GeneratedColumn<String>(
+    'operation_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<String> data = GeneratedColumn<String>(
+    'data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _retryCountMeta = const VerificationMeta(
+    'retryCount',
+  );
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+    'retry_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastAttemptMeta = const VerificationMeta(
+    'lastAttempt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAttempt = GeneratedColumn<DateTime>(
+    'last_attempt',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    operationType,
+    data,
+    retryCount,
+    lastAttempt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'offline_ai_sync_queue';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OfflineAiSyncQueueData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('operation_type')) {
+      context.handle(
+        _operationTypeMeta,
+        operationType.isAcceptableOrUnknown(
+          data['operation_type']!,
+          _operationTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_operationTypeMeta);
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+        _retryCountMeta,
+        retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
+      );
+    }
+    if (data.containsKey('last_attempt')) {
+      context.handle(
+        _lastAttemptMeta,
+        lastAttempt.isAcceptableOrUnknown(
+          data['last_attempt']!,
+          _lastAttemptMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OfflineAiSyncQueueData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OfflineAiSyncQueueData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      operationType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation_type'],
+      )!,
+      data: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data'],
+      )!,
+      retryCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retry_count'],
+      )!,
+      lastAttempt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_attempt'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $OfflineAiSyncQueueTable createAlias(String alias) {
+    return $OfflineAiSyncQueueTable(attachedDatabase, alias);
+  }
+}
+
+class OfflineAiSyncQueueData extends DataClass
+    implements Insertable<OfflineAiSyncQueueData> {
+  final String id;
+  final String operationType;
+  final String data;
+  final int retryCount;
+  final DateTime? lastAttempt;
+  final DateTime createdAt;
+  const OfflineAiSyncQueueData({
+    required this.id,
+    required this.operationType,
+    required this.data,
+    required this.retryCount,
+    this.lastAttempt,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['operation_type'] = Variable<String>(operationType);
+    map['data'] = Variable<String>(data);
+    map['retry_count'] = Variable<int>(retryCount);
+    if (!nullToAbsent || lastAttempt != null) {
+      map['last_attempt'] = Variable<DateTime>(lastAttempt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  OfflineAiSyncQueueCompanion toCompanion(bool nullToAbsent) {
+    return OfflineAiSyncQueueCompanion(
+      id: Value(id),
+      operationType: Value(operationType),
+      data: Value(data),
+      retryCount: Value(retryCount),
+      lastAttempt: lastAttempt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAttempt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory OfflineAiSyncQueueData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OfflineAiSyncQueueData(
+      id: serializer.fromJson<String>(json['id']),
+      operationType: serializer.fromJson<String>(json['operationType']),
+      data: serializer.fromJson<String>(json['data']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+      lastAttempt: serializer.fromJson<DateTime?>(json['lastAttempt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'operationType': serializer.toJson<String>(operationType),
+      'data': serializer.toJson<String>(data),
+      'retryCount': serializer.toJson<int>(retryCount),
+      'lastAttempt': serializer.toJson<DateTime?>(lastAttempt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  OfflineAiSyncQueueData copyWith({
+    String? id,
+    String? operationType,
+    String? data,
+    int? retryCount,
+    Value<DateTime?> lastAttempt = const Value.absent(),
+    DateTime? createdAt,
+  }) => OfflineAiSyncQueueData(
+    id: id ?? this.id,
+    operationType: operationType ?? this.operationType,
+    data: data ?? this.data,
+    retryCount: retryCount ?? this.retryCount,
+    lastAttempt: lastAttempt.present ? lastAttempt.value : this.lastAttempt,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  OfflineAiSyncQueueData copyWithCompanion(OfflineAiSyncQueueCompanion data) {
+    return OfflineAiSyncQueueData(
+      id: data.id.present ? data.id.value : this.id,
+      operationType: data.operationType.present
+          ? data.operationType.value
+          : this.operationType,
+      data: data.data.present ? data.data.value : this.data,
+      retryCount: data.retryCount.present
+          ? data.retryCount.value
+          : this.retryCount,
+      lastAttempt: data.lastAttempt.present
+          ? data.lastAttempt.value
+          : this.lastAttempt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OfflineAiSyncQueueData(')
+          ..write('id: $id, ')
+          ..write('operationType: $operationType, ')
+          ..write('data: $data, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('lastAttempt: $lastAttempt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, operationType, data, retryCount, lastAttempt, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OfflineAiSyncQueueData &&
+          other.id == this.id &&
+          other.operationType == this.operationType &&
+          other.data == this.data &&
+          other.retryCount == this.retryCount &&
+          other.lastAttempt == this.lastAttempt &&
+          other.createdAt == this.createdAt);
+}
+
+class OfflineAiSyncQueueCompanion
+    extends UpdateCompanion<OfflineAiSyncQueueData> {
+  final Value<String> id;
+  final Value<String> operationType;
+  final Value<String> data;
+  final Value<int> retryCount;
+  final Value<DateTime?> lastAttempt;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const OfflineAiSyncQueueCompanion({
+    this.id = const Value.absent(),
+    this.operationType = const Value.absent(),
+    this.data = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.lastAttempt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  OfflineAiSyncQueueCompanion.insert({
+    required String id,
+    required String operationType,
+    required String data,
+    this.retryCount = const Value.absent(),
+    this.lastAttempt = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       operationType = Value(operationType),
+       data = Value(data),
+       createdAt = Value(createdAt);
+  static Insertable<OfflineAiSyncQueueData> custom({
+    Expression<String>? id,
+    Expression<String>? operationType,
+    Expression<String>? data,
+    Expression<int>? retryCount,
+    Expression<DateTime>? lastAttempt,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (operationType != null) 'operation_type': operationType,
+      if (data != null) 'data': data,
+      if (retryCount != null) 'retry_count': retryCount,
+      if (lastAttempt != null) 'last_attempt': lastAttempt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  OfflineAiSyncQueueCompanion copyWith({
+    Value<String>? id,
+    Value<String>? operationType,
+    Value<String>? data,
+    Value<int>? retryCount,
+    Value<DateTime?>? lastAttempt,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return OfflineAiSyncQueueCompanion(
+      id: id ?? this.id,
+      operationType: operationType ?? this.operationType,
+      data: data ?? this.data,
+      retryCount: retryCount ?? this.retryCount,
+      lastAttempt: lastAttempt ?? this.lastAttempt,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (operationType.present) {
+      map['operation_type'] = Variable<String>(operationType.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<String>(data.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    if (lastAttempt.present) {
+      map['last_attempt'] = Variable<DateTime>(lastAttempt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OfflineAiSyncQueueCompanion(')
+          ..write('id: $id, ')
+          ..write('operationType: $operationType, ')
+          ..write('data: $data, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('lastAttempt: $lastAttempt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8182,6 +10260,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PageReadHistoryTable pageReadHistory = $PageReadHistoryTable(
     this,
   );
+  late final $CachedEmbeddingsTable cachedEmbeddings = $CachedEmbeddingsTable(
+    this,
+  );
+  late final $LocalChatMessagesTable localChatMessages =
+      $LocalChatMessagesTable(this);
+  late final $ModelMetadataTable modelMetadata = $ModelMetadataTable(this);
+  late final $OfflineAiSyncQueueTable offlineAiSyncQueue =
+      $OfflineAiSyncQueueTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8203,6 +10289,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     notebookAiOutputs,
     readingSessions,
     pageReadHistory,
+    cachedEmbeddings,
+    localChatMessages,
+    modelMetadata,
+    offlineAiSyncQueue,
   ];
 }
 
@@ -12398,6 +14488,1090 @@ typedef $$PageReadHistoryTableProcessedTableManager =
       PageReadHistoryData,
       PrefetchHooks Function()
     >;
+typedef $$CachedEmbeddingsTableCreateCompanionBuilder =
+    CachedEmbeddingsCompanion Function({
+      required String id,
+      required String fileId,
+      required int chunkIndex,
+      required int pageNumber,
+      required String content,
+      required String embedding,
+      Value<bool> synced,
+      required DateTime createdAt,
+      Value<DateTime?> syncedAt,
+      Value<int> rowid,
+    });
+typedef $$CachedEmbeddingsTableUpdateCompanionBuilder =
+    CachedEmbeddingsCompanion Function({
+      Value<String> id,
+      Value<String> fileId,
+      Value<int> chunkIndex,
+      Value<int> pageNumber,
+      Value<String> content,
+      Value<String> embedding,
+      Value<bool> synced,
+      Value<DateTime> createdAt,
+      Value<DateTime?> syncedAt,
+      Value<int> rowid,
+    });
+
+class $$CachedEmbeddingsTableFilterComposer
+    extends Composer<_$AppDatabase, $CachedEmbeddingsTable> {
+  $$CachedEmbeddingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get chunkIndex => $composableBuilder(
+    column: $table.chunkIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get embedding => $composableBuilder(
+    column: $table.embedding,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get synced => $composableBuilder(
+    column: $table.synced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CachedEmbeddingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CachedEmbeddingsTable> {
+  $$CachedEmbeddingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get chunkIndex => $composableBuilder(
+    column: $table.chunkIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get embedding => $composableBuilder(
+    column: $table.embedding,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get synced => $composableBuilder(
+    column: $table.synced,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CachedEmbeddingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CachedEmbeddingsTable> {
+  $$CachedEmbeddingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get fileId =>
+      $composableBuilder(column: $table.fileId, builder: (column) => column);
+
+  GeneratedColumn<int> get chunkIndex => $composableBuilder(
+    column: $table.chunkIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get embedding =>
+      $composableBuilder(column: $table.embedding, builder: (column) => column);
+
+  GeneratedColumn<bool> get synced =>
+      $composableBuilder(column: $table.synced, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get syncedAt =>
+      $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+}
+
+class $$CachedEmbeddingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CachedEmbeddingsTable,
+          CachedEmbedding,
+          $$CachedEmbeddingsTableFilterComposer,
+          $$CachedEmbeddingsTableOrderingComposer,
+          $$CachedEmbeddingsTableAnnotationComposer,
+          $$CachedEmbeddingsTableCreateCompanionBuilder,
+          $$CachedEmbeddingsTableUpdateCompanionBuilder,
+          (
+            CachedEmbedding,
+            BaseReferences<
+              _$AppDatabase,
+              $CachedEmbeddingsTable,
+              CachedEmbedding
+            >,
+          ),
+          CachedEmbedding,
+          PrefetchHooks Function()
+        > {
+  $$CachedEmbeddingsTableTableManager(
+    _$AppDatabase db,
+    $CachedEmbeddingsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedEmbeddingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedEmbeddingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CachedEmbeddingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> fileId = const Value.absent(),
+                Value<int> chunkIndex = const Value.absent(),
+                Value<int> pageNumber = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<String> embedding = const Value.absent(),
+                Value<bool> synced = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> syncedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CachedEmbeddingsCompanion(
+                id: id,
+                fileId: fileId,
+                chunkIndex: chunkIndex,
+                pageNumber: pageNumber,
+                content: content,
+                embedding: embedding,
+                synced: synced,
+                createdAt: createdAt,
+                syncedAt: syncedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String fileId,
+                required int chunkIndex,
+                required int pageNumber,
+                required String content,
+                required String embedding,
+                Value<bool> synced = const Value.absent(),
+                required DateTime createdAt,
+                Value<DateTime?> syncedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CachedEmbeddingsCompanion.insert(
+                id: id,
+                fileId: fileId,
+                chunkIndex: chunkIndex,
+                pageNumber: pageNumber,
+                content: content,
+                embedding: embedding,
+                synced: synced,
+                createdAt: createdAt,
+                syncedAt: syncedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CachedEmbeddingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CachedEmbeddingsTable,
+      CachedEmbedding,
+      $$CachedEmbeddingsTableFilterComposer,
+      $$CachedEmbeddingsTableOrderingComposer,
+      $$CachedEmbeddingsTableAnnotationComposer,
+      $$CachedEmbeddingsTableCreateCompanionBuilder,
+      $$CachedEmbeddingsTableUpdateCompanionBuilder,
+      (
+        CachedEmbedding,
+        BaseReferences<_$AppDatabase, $CachedEmbeddingsTable, CachedEmbedding>,
+      ),
+      CachedEmbedding,
+      PrefetchHooks Function()
+    >;
+typedef $$LocalChatMessagesTableCreateCompanionBuilder =
+    LocalChatMessagesCompanion Function({
+      required String id,
+      required String conversationId,
+      required String role,
+      required String content,
+      Value<String?> citations,
+      Value<bool> generatedLocally,
+      Value<bool> synced,
+      required DateTime createdAt,
+      Value<DateTime?> syncedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalChatMessagesTableUpdateCompanionBuilder =
+    LocalChatMessagesCompanion Function({
+      Value<String> id,
+      Value<String> conversationId,
+      Value<String> role,
+      Value<String> content,
+      Value<String?> citations,
+      Value<bool> generatedLocally,
+      Value<bool> synced,
+      Value<DateTime> createdAt,
+      Value<DateTime?> syncedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalChatMessagesTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalChatMessagesTable> {
+  $$LocalChatMessagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get citations => $composableBuilder(
+    column: $table.citations,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get generatedLocally => $composableBuilder(
+    column: $table.generatedLocally,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get synced => $composableBuilder(
+    column: $table.synced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalChatMessagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalChatMessagesTable> {
+  $$LocalChatMessagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get citations => $composableBuilder(
+    column: $table.citations,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get generatedLocally => $composableBuilder(
+    column: $table.generatedLocally,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get synced => $composableBuilder(
+    column: $table.synced,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalChatMessagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalChatMessagesTable> {
+  $$LocalChatMessagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get citations =>
+      $composableBuilder(column: $table.citations, builder: (column) => column);
+
+  GeneratedColumn<bool> get generatedLocally => $composableBuilder(
+    column: $table.generatedLocally,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get synced =>
+      $composableBuilder(column: $table.synced, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get syncedAt =>
+      $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+}
+
+class $$LocalChatMessagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalChatMessagesTable,
+          LocalChatMessage,
+          $$LocalChatMessagesTableFilterComposer,
+          $$LocalChatMessagesTableOrderingComposer,
+          $$LocalChatMessagesTableAnnotationComposer,
+          $$LocalChatMessagesTableCreateCompanionBuilder,
+          $$LocalChatMessagesTableUpdateCompanionBuilder,
+          (
+            LocalChatMessage,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalChatMessagesTable,
+              LocalChatMessage
+            >,
+          ),
+          LocalChatMessage,
+          PrefetchHooks Function()
+        > {
+  $$LocalChatMessagesTableTableManager(
+    _$AppDatabase db,
+    $LocalChatMessagesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalChatMessagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalChatMessagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalChatMessagesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> conversationId = const Value.absent(),
+                Value<String> role = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<String?> citations = const Value.absent(),
+                Value<bool> generatedLocally = const Value.absent(),
+                Value<bool> synced = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> syncedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalChatMessagesCompanion(
+                id: id,
+                conversationId: conversationId,
+                role: role,
+                content: content,
+                citations: citations,
+                generatedLocally: generatedLocally,
+                synced: synced,
+                createdAt: createdAt,
+                syncedAt: syncedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String conversationId,
+                required String role,
+                required String content,
+                Value<String?> citations = const Value.absent(),
+                Value<bool> generatedLocally = const Value.absent(),
+                Value<bool> synced = const Value.absent(),
+                required DateTime createdAt,
+                Value<DateTime?> syncedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalChatMessagesCompanion.insert(
+                id: id,
+                conversationId: conversationId,
+                role: role,
+                content: content,
+                citations: citations,
+                generatedLocally: generatedLocally,
+                synced: synced,
+                createdAt: createdAt,
+                syncedAt: syncedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalChatMessagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalChatMessagesTable,
+      LocalChatMessage,
+      $$LocalChatMessagesTableFilterComposer,
+      $$LocalChatMessagesTableOrderingComposer,
+      $$LocalChatMessagesTableAnnotationComposer,
+      $$LocalChatMessagesTableCreateCompanionBuilder,
+      $$LocalChatMessagesTableUpdateCompanionBuilder,
+      (
+        LocalChatMessage,
+        BaseReferences<
+          _$AppDatabase,
+          $LocalChatMessagesTable,
+          LocalChatMessage
+        >,
+      ),
+      LocalChatMessage,
+      PrefetchHooks Function()
+    >;
+typedef $$ModelMetadataTableCreateCompanionBuilder =
+    ModelMetadataCompanion Function({
+      required String id,
+      required String name,
+      required String type,
+      required int sizeBytes,
+      required int parameterCount,
+      required String quantization,
+      required String localPath,
+      required DateTime installedAt,
+      Value<int> rowid,
+    });
+typedef $$ModelMetadataTableUpdateCompanionBuilder =
+    ModelMetadataCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> type,
+      Value<int> sizeBytes,
+      Value<int> parameterCount,
+      Value<String> quantization,
+      Value<String> localPath,
+      Value<DateTime> installedAt,
+      Value<int> rowid,
+    });
+
+class $$ModelMetadataTableFilterComposer
+    extends Composer<_$AppDatabase, $ModelMetadataTable> {
+  $$ModelMetadataTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get parameterCount => $composableBuilder(
+    column: $table.parameterCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get quantization => $composableBuilder(
+    column: $table.quantization,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get installedAt => $composableBuilder(
+    column: $table.installedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ModelMetadataTableOrderingComposer
+    extends Composer<_$AppDatabase, $ModelMetadataTable> {
+  $$ModelMetadataTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get parameterCount => $composableBuilder(
+    column: $table.parameterCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get quantization => $composableBuilder(
+    column: $table.quantization,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get installedAt => $composableBuilder(
+    column: $table.installedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ModelMetadataTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ModelMetadataTable> {
+  $$ModelMetadataTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<int> get sizeBytes =>
+      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
+
+  GeneratedColumn<int> get parameterCount => $composableBuilder(
+    column: $table.parameterCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get quantization => $composableBuilder(
+    column: $table.quantization,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get installedAt => $composableBuilder(
+    column: $table.installedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$ModelMetadataTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ModelMetadataTable,
+          ModelMetadataData,
+          $$ModelMetadataTableFilterComposer,
+          $$ModelMetadataTableOrderingComposer,
+          $$ModelMetadataTableAnnotationComposer,
+          $$ModelMetadataTableCreateCompanionBuilder,
+          $$ModelMetadataTableUpdateCompanionBuilder,
+          (
+            ModelMetadataData,
+            BaseReferences<
+              _$AppDatabase,
+              $ModelMetadataTable,
+              ModelMetadataData
+            >,
+          ),
+          ModelMetadataData,
+          PrefetchHooks Function()
+        > {
+  $$ModelMetadataTableTableManager(_$AppDatabase db, $ModelMetadataTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ModelMetadataTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ModelMetadataTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ModelMetadataTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<int> sizeBytes = const Value.absent(),
+                Value<int> parameterCount = const Value.absent(),
+                Value<String> quantization = const Value.absent(),
+                Value<String> localPath = const Value.absent(),
+                Value<DateTime> installedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ModelMetadataCompanion(
+                id: id,
+                name: name,
+                type: type,
+                sizeBytes: sizeBytes,
+                parameterCount: parameterCount,
+                quantization: quantization,
+                localPath: localPath,
+                installedAt: installedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String type,
+                required int sizeBytes,
+                required int parameterCount,
+                required String quantization,
+                required String localPath,
+                required DateTime installedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ModelMetadataCompanion.insert(
+                id: id,
+                name: name,
+                type: type,
+                sizeBytes: sizeBytes,
+                parameterCount: parameterCount,
+                quantization: quantization,
+                localPath: localPath,
+                installedAt: installedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ModelMetadataTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ModelMetadataTable,
+      ModelMetadataData,
+      $$ModelMetadataTableFilterComposer,
+      $$ModelMetadataTableOrderingComposer,
+      $$ModelMetadataTableAnnotationComposer,
+      $$ModelMetadataTableCreateCompanionBuilder,
+      $$ModelMetadataTableUpdateCompanionBuilder,
+      (
+        ModelMetadataData,
+        BaseReferences<_$AppDatabase, $ModelMetadataTable, ModelMetadataData>,
+      ),
+      ModelMetadataData,
+      PrefetchHooks Function()
+    >;
+typedef $$OfflineAiSyncQueueTableCreateCompanionBuilder =
+    OfflineAiSyncQueueCompanion Function({
+      required String id,
+      required String operationType,
+      required String data,
+      Value<int> retryCount,
+      Value<DateTime?> lastAttempt,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$OfflineAiSyncQueueTableUpdateCompanionBuilder =
+    OfflineAiSyncQueueCompanion Function({
+      Value<String> id,
+      Value<String> operationType,
+      Value<String> data,
+      Value<int> retryCount,
+      Value<DateTime?> lastAttempt,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$OfflineAiSyncQueueTableFilterComposer
+    extends Composer<_$AppDatabase, $OfflineAiSyncQueueTable> {
+  $$OfflineAiSyncQueueTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operationType => $composableBuilder(
+    column: $table.operationType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAttempt => $composableBuilder(
+    column: $table.lastAttempt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$OfflineAiSyncQueueTableOrderingComposer
+    extends Composer<_$AppDatabase, $OfflineAiSyncQueueTable> {
+  $$OfflineAiSyncQueueTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operationType => $composableBuilder(
+    column: $table.operationType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAttempt => $composableBuilder(
+    column: $table.lastAttempt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$OfflineAiSyncQueueTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OfflineAiSyncQueueTable> {
+  $$OfflineAiSyncQueueTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get operationType => $composableBuilder(
+    column: $table.operationType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastAttempt => $composableBuilder(
+    column: $table.lastAttempt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$OfflineAiSyncQueueTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $OfflineAiSyncQueueTable,
+          OfflineAiSyncQueueData,
+          $$OfflineAiSyncQueueTableFilterComposer,
+          $$OfflineAiSyncQueueTableOrderingComposer,
+          $$OfflineAiSyncQueueTableAnnotationComposer,
+          $$OfflineAiSyncQueueTableCreateCompanionBuilder,
+          $$OfflineAiSyncQueueTableUpdateCompanionBuilder,
+          (
+            OfflineAiSyncQueueData,
+            BaseReferences<
+              _$AppDatabase,
+              $OfflineAiSyncQueueTable,
+              OfflineAiSyncQueueData
+            >,
+          ),
+          OfflineAiSyncQueueData,
+          PrefetchHooks Function()
+        > {
+  $$OfflineAiSyncQueueTableTableManager(
+    _$AppDatabase db,
+    $OfflineAiSyncQueueTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OfflineAiSyncQueueTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OfflineAiSyncQueueTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OfflineAiSyncQueueTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> operationType = const Value.absent(),
+                Value<String> data = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<DateTime?> lastAttempt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => OfflineAiSyncQueueCompanion(
+                id: id,
+                operationType: operationType,
+                data: data,
+                retryCount: retryCount,
+                lastAttempt: lastAttempt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String operationType,
+                required String data,
+                Value<int> retryCount = const Value.absent(),
+                Value<DateTime?> lastAttempt = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => OfflineAiSyncQueueCompanion.insert(
+                id: id,
+                operationType: operationType,
+                data: data,
+                retryCount: retryCount,
+                lastAttempt: lastAttempt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$OfflineAiSyncQueueTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $OfflineAiSyncQueueTable,
+      OfflineAiSyncQueueData,
+      $$OfflineAiSyncQueueTableFilterComposer,
+      $$OfflineAiSyncQueueTableOrderingComposer,
+      $$OfflineAiSyncQueueTableAnnotationComposer,
+      $$OfflineAiSyncQueueTableCreateCompanionBuilder,
+      $$OfflineAiSyncQueueTableUpdateCompanionBuilder,
+      (
+        OfflineAiSyncQueueData,
+        BaseReferences<
+          _$AppDatabase,
+          $OfflineAiSyncQueueTable,
+          OfflineAiSyncQueueData
+        >,
+      ),
+      OfflineAiSyncQueueData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -12433,4 +15607,12 @@ class $AppDatabaseManager {
       $$ReadingSessionsTableTableManager(_db, _db.readingSessions);
   $$PageReadHistoryTableTableManager get pageReadHistory =>
       $$PageReadHistoryTableTableManager(_db, _db.pageReadHistory);
+  $$CachedEmbeddingsTableTableManager get cachedEmbeddings =>
+      $$CachedEmbeddingsTableTableManager(_db, _db.cachedEmbeddings);
+  $$LocalChatMessagesTableTableManager get localChatMessages =>
+      $$LocalChatMessagesTableTableManager(_db, _db.localChatMessages);
+  $$ModelMetadataTableTableManager get modelMetadata =>
+      $$ModelMetadataTableTableManager(_db, _db.modelMetadata);
+  $$OfflineAiSyncQueueTableTableManager get offlineAiSyncQueue =>
+      $$OfflineAiSyncQueueTableTableManager(_db, _db.offlineAiSyncQueue);
 }

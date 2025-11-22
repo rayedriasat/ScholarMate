@@ -2,29 +2,46 @@
 
 ## Phase 1: Foundation and Infrastructure
 
-- [ ] 1. Set up project dependencies and platform detection
+- [x] 1. Set up project dependencies and platform detection
+
+
+
+
   - Add `flutter_onnxruntime` package for native platforms using `flutter pub add`
   - Add `llama_cpp_dart` package for LLM inference using `flutter pub add`
   - Create platform detection utility to identify Android/Windows/Web
   - Create capability detection for WebGPU, NNAPI, DirectML
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ] 2. Extend Drift database schema for offline AI
-  - [ ] 2.1 Create `cached_embeddings` table with vector storage
+- [x] 2. Extend Drift database schema for offline AI
+
+
+
+
+
+
+
+  - [x] 2.1 Create `cached_embeddings` table with vector storage
+
+
     - Add columns: id, file_id, chunk_index, page_number, content, embedding (JSON), synced, created_at, synced_at
     - Add indices on file_id and synced for efficient queries
     - _Requirements: 6.1_
   
-  - [ ] 2.2 Create `local_chat_messages` table for offline chat history
+  - [x] 2.2 Create `local_chat_messages` table for offline chat history
+
     - Add columns: id, conversation_id, role, content, citations (JSON), generated_locally, synced, created_at, synced_at
     - Add indices on conversation_id and synced
     - _Requirements: 7.1_
   
-  - [ ] 2.3 Create `model_metadata` table for installed models
+  - [x] 2.3 Create `model_metadata` table for installed models
+
     - Add columns: id, name, type, size_bytes, parameter_count, quantization, local_path, installed_at
     - _Requirements: 5.3_
   
-  - [ ] 2.4 Create `sync_queue` table for pending operations
+  - [x] 2.4 Create `sync_queue` table for pending operations
+
+
     - Add columns: id, operation_type, data (JSON), retry_count, last_attempt, created_at
     - _Requirements: 1.5, 6.2_
   

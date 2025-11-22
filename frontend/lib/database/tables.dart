@@ -159,3 +159,66 @@ class PageReadHistory extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Cached embeddings table - stores locally generated embeddings for offline AI
+class CachedEmbeddings extends Table {
+  TextColumn get id => text()();
+  TextColumn get fileId => text()();
+  IntColumn get chunkIndex => integer()();
+  IntColumn get pageNumber => integer()();
+  TextColumn get content => text()();
+  TextColumn get embedding =>
+      text()(); // JSON array of floats (384-dimensional vector)
+  BoolColumn get synced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Local chat messages table - stores offline chat history
+class LocalChatMessages extends Table {
+  TextColumn get id => text()();
+  TextColumn get conversationId => text()();
+  TextColumn get role => text()(); // 'user' or 'assistant'
+  TextColumn get content => text()();
+  TextColumn get citations => text().nullable()(); // JSON array of citations
+  BoolColumn get generatedLocally =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get synced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Model metadata table - stores information about installed AI models
+class ModelMetadata extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get type => text()(); // 'embedding' or 'llm'
+  IntColumn get sizeBytes => integer()();
+  IntColumn get parameterCount => integer()();
+  TextColumn get quantization => text()(); // Q4, Q8, etc.
+  TextColumn get localPath => text()();
+  DateTimeColumn get installedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Sync queue table for offline AI operations
+class OfflineAiSyncQueue extends Table {
+  TextColumn get id => text()();
+  TextColumn get operationType =>
+      text()(); // 'embedding_sync', 'chat_sync', etc.
+  TextColumn get data => text()(); // JSON payload
+  IntColumn get retryCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get lastAttempt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

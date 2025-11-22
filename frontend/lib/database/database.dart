@@ -28,6 +28,10 @@ part 'database.g.dart';
     NotebookAiOutputs,
     ReadingSessions,
     PageReadHistory,
+    CachedEmbeddings,
+    LocalChatMessages,
+    ModelMetadata,
+    OfflineAiSyncQueue,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -37,13 +41,27 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
+
+        // Create indices for offline AI tables
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_cached_embeddings_file_id ON cached_embeddings(file_id);',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_cached_embeddings_synced ON cached_embeddings(synced);',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_local_chat_messages_conversation_id ON local_chat_messages(conversation_id);',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_local_chat_messages_synced ON local_chat_messages(synced);',
+        );
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
@@ -81,6 +99,27 @@ class AppDatabase extends _$AppDatabase {
           // Migration from version 7 to 8: Add analytics tables
           await m.createTable(readingSessions);
           await m.createTable(pageReadHistory);
+        }
+        if (from < 9) {
+          // Migration from version 8 to 9: Add offline AI tables
+          await m.createTable(cachedEmbeddings);
+          await m.createTable(localChatMessages);
+          await m.createTable(modelMetadata);
+          await m.createTable(offlineAiSyncQueue);
+
+          // Create indices for efficient queries
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_cached_embeddings_file_id ON cached_embeddings(file_id);',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_cached_embeddings_synced ON cached_embeddings(synced);',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_local_chat_messages_conversation_id ON local_chat_messages(conversation_id);',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_local_chat_messages_synced ON local_chat_messages(synced);',
+          );
         }
       },
     );
@@ -685,6 +724,174 @@ class AppDatabase extends _$AppDatabase {
     return (delete(
       notebookAiOutputs,
     )..where((nao) => nao.id.equals(outputId))).go();
+  }
+
+  // Cached embeddings operations
+  Future<List<CachedEmbedding>> getCachedEmbeddings(String fileId) {
+    return (select(cachedEmbeddings)
+          ..where((ce) => ce.fileId.equals(fileId))
+          ..orderBy([(ce) => OrderingTerm(expression: ce.chunkIndex)]))
+        .get();
+  }
+
+  Future<List<CachedEmbedding>> getUnsyncedEmbeddings() {
+    return (select(
+      cachedEmbeddings,
+    )..where((ce) => ce.synced.equals(false))).get();
+  }
+
+  Future<int> insertCachedEmbedding(CachedEmbeddingsCompanion embedding) {
+    return into(
+      cachedEmbeddings,
+    ).insert(embedding, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<void> insertCachedEmbeddings(
+    List<CachedEmbeddingsCompanion> embeddings,
+  ) async {
+    await batch((batch) {
+      batch.insertAll(
+        cachedEmbeddings,
+        embeddings,
+        mode: InsertMode.insertOrReplace,
+      );
+    });
+  }
+
+  Future<int> markEmbeddingsSynced(List<String> embeddingIds) async {
+    return await (update(
+      cachedEmbeddings,
+    )..where((ce) => ce.id.isIn(embeddingIds))).write(
+      CachedEmbeddingsCompanion(
+        synced: const Value(true),
+        syncedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<int> deleteCachedEmbeddingsByFile(String fileId) {
+    return (delete(
+      cachedEmbeddings,
+    )..where((ce) => ce.fileId.equals(fileId))).go();
+  }
+
+  // Local chat messages operations
+  Future<List<LocalChatMessage>> getLocalChatMessages(String conversationId) {
+    return (select(localChatMessages)
+          ..where((lcm) => lcm.conversationId.equals(conversationId))
+          ..orderBy([
+            (lcm) =>
+                OrderingTerm(expression: lcm.createdAt, mode: OrderingMode.asc),
+          ]))
+        .get();
+  }
+
+  Future<List<LocalChatMessage>> getUnsyncedChatMessages() {
+    return (select(
+      localChatMessages,
+    )..where((lcm) => lcm.synced.equals(false))).get();
+  }
+
+  Future<int> insertLocalChatMessage(LocalChatMessagesCompanion message) {
+    return into(
+      localChatMessages,
+    ).insert(message, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> markChatMessagesSynced(List<String> messageIds) async {
+    return await (update(
+      localChatMessages,
+    )..where((lcm) => lcm.id.isIn(messageIds))).write(
+      LocalChatMessagesCompanion(
+        synced: const Value(true),
+        syncedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<int> deleteLocalChatMessage(String messageId) {
+    return (delete(
+      localChatMessages,
+    )..where((lcm) => lcm.id.equals(messageId))).go();
+  }
+
+  Future<int> deleteLocalChatMessagesByConversation(String conversationId) {
+    return (delete(
+      localChatMessages,
+    )..where((lcm) => lcm.conversationId.equals(conversationId))).go();
+  }
+
+  // Model metadata operations
+  Future<List<ModelMetadataData>> getInstalledModels() {
+    return (select(modelMetadata)..orderBy([
+          (mm) =>
+              OrderingTerm(expression: mm.installedAt, mode: OrderingMode.desc),
+        ]))
+        .get();
+  }
+
+  Future<List<ModelMetadataData>> getModelsByType(String type) {
+    return (select(modelMetadata)
+          ..where((mm) => mm.type.equals(type))
+          ..orderBy([
+            (mm) => OrderingTerm(
+              expression: mm.installedAt,
+              mode: OrderingMode.desc,
+            ),
+          ]))
+        .get();
+  }
+
+  Future<ModelMetadataData?> getModel(String modelId) {
+    return (select(
+      modelMetadata,
+    )..where((mm) => mm.id.equals(modelId))).getSingleOrNull();
+  }
+
+  Future<int> insertModel(ModelMetadataCompanion model) {
+    return into(modelMetadata).insert(model, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<int> deleteModel(String modelId) {
+    return (delete(modelMetadata)..where((mm) => mm.id.equals(modelId))).go();
+  }
+
+  // Offline AI sync queue operations
+  Future<List<OfflineAiSyncQueueData>> getPendingAiSyncOperations() {
+    return (select(
+      offlineAiSyncQueue,
+    )..orderBy([(oasq) => OrderingTerm(expression: oasq.createdAt)])).get();
+  }
+
+  Future<List<OfflineAiSyncQueueData>> getAiSyncOperationsByType(
+    String operationType,
+  ) {
+    return (select(offlineAiSyncQueue)
+          ..where((oasq) => oasq.operationType.equals(operationType))
+          ..orderBy([(oasq) => OrderingTerm(expression: oasq.createdAt)]))
+        .get();
+  }
+
+  Future<int> insertAiSyncOperation(OfflineAiSyncQueueCompanion operation) {
+    return into(offlineAiSyncQueue).insert(operation);
+  }
+
+  Future<int> updateAiSyncOperation(OfflineAiSyncQueueCompanion operation) {
+    return (update(
+      offlineAiSyncQueue,
+    )..where((oasq) => oasq.id.equals(operation.id.value))).write(operation);
+  }
+
+  Future<int> deleteAiSyncOperation(String operationId) {
+    return (delete(
+      offlineAiSyncQueue,
+    )..where((oasq) => oasq.id.equals(operationId))).go();
+  }
+
+  Future<int> deleteAiSyncOperationsByType(String operationType) {
+    return (delete(
+      offlineAiSyncQueue,
+    )..where((oasq) => oasq.operationType.equals(operationType))).go();
   }
 }
 
