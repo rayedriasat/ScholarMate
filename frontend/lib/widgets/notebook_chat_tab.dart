@@ -231,7 +231,7 @@ class _NotebookChatTabState extends State<NotebookChatTab> {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -323,7 +323,7 @@ class _MessageBubble extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 5,
                         offset: const Offset(0, 2),
                       ),
@@ -385,7 +385,7 @@ class _MessageBubble extends StatelessWidget {
 
     final backgroundColor = colorScheme.primaryContainer;
     final textColor = colorScheme.onPrimaryContainer;
-    final borderColor = colorScheme.outline.withOpacity(0.5);
+    final borderColor = colorScheme.outline.withValues(alpha: 0.5);
 
     return Tooltip(
       message: 'Source: $fileName, Page $pageNumber',

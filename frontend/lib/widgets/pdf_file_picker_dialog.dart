@@ -13,7 +13,7 @@ class PdfFilePickerDialog extends StatefulWidget {
 
 class _PdfFilePickerDialogState extends State<PdfFilePickerDialog> {
   List<DriveFile> _files = [];
-  List<DriveFile> _navigationPath = [];
+  final List<DriveFile> _navigationPath = [];
   bool _isLoading = true;
   String? _error;
   String? _currentFolderId;

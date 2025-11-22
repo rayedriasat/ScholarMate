@@ -7,10 +7,10 @@ class ApiKeySettingsTile extends StatelessWidget {
   final String baseUrl;
 
   const ApiKeySettingsTile({
-    Key? key,
+    super.key,
     required this.userId,
     required this.baseUrl,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

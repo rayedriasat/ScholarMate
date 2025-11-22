@@ -6,10 +6,7 @@ import '../services/metadata_service.dart';
 class CitationGeneratorScreen extends StatefulWidget {
   final MetadataService metadataService;
 
-  const CitationGeneratorScreen({
-    Key? key,
-    required this.metadataService,
-  }) : super(key: key);
+  const CitationGeneratorScreen({super.key, required this.metadataService});
 
   @override
   State<CitationGeneratorScreen> createState() =>
@@ -20,7 +17,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
-  
+
   // Manual citation controllers
   final _manualTitleController = TextEditingController();
   final _manualAuthorsController = TextEditingController();
@@ -35,7 +32,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
   final _manualUrlController = TextEditingController();
   final _manualAccessDateController = TextEditingController();
   final _manualWebsiteNameController = TextEditingController();
-  
+
   late TabController _tabController;
   String _selectedType = 'doi';
   String _manualSourceType = 'journal_article';
@@ -108,7 +105,8 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
           _citation = citation;
           _isLoading = false;
           if (citation == null) {
-            _error = 'Could not generate citation. Please check the identifier.';
+            _error =
+                'Could not generate citation. Please check the identifier.';
           }
         });
       }
@@ -139,10 +137,10 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             : null,
         authors: _manualAuthorsController.text.trim().isNotEmpty
             ? _manualAuthorsController.text
-                .split(',')
-                .map((a) => a.trim())
-                .where((a) => a.isNotEmpty)
-                .toList()
+                  .split(',')
+                  .map((a) => a.trim())
+                  .where((a) => a.isNotEmpty)
+                  .toList()
             : [],
         publicationYear: _manualYearController.text.trim().isNotEmpty
             ? int.tryParse(_manualYearController.text.trim())
@@ -173,8 +171,8 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             : null,
       );
 
-      final citation =
-          await widget.metadataService.generateCitationFromMetadata(metadata);
+      final citation = await widget.metadataService
+          .generateCitationFromMetadata(metadata);
 
       if (mounted) {
         setState(() {
@@ -238,10 +236,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildAutoTab(),
-          _buildManualTab(),
-        ],
+        children: [_buildAutoTab(), _buildManualTab()],
       ),
     );
   }
@@ -268,8 +263,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                     child: Text(
                       'Generate formatted citations from DOI, ISBN, PubMed ID, arXiv ID, or URL',
                       style: TextStyle(
-                        color:
-                            Theme.of(context).colorScheme.onPrimaryContainer,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                     ),
                   ),
@@ -287,7 +281,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
               children: [
                 // Identifier type dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedType,
+                  initialValue: _selectedType,
                   decoration: const InputDecoration(
                     labelText: 'Identifier Type',
                     border: OutlineInputBorder(),
@@ -313,7 +307,8 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                 TextFormField(
                   controller: _identifierController,
                   decoration: InputDecoration(
-                    labelText: '${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['label']} (${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['hint']})',
+                    labelText:
+                        '${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['label']} (${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['hint']})',
                     border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
@@ -336,7 +331,9 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.auto_awesome),
-                  label: Text(_isLoading ? 'Generating...' : 'Generate Citations'),
+                  label: Text(
+                    _isLoading ? 'Generating...' : 'Generate Citations',
+                  ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.all(16),
                   ),
@@ -363,8 +360,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                       child: Text(
                         _error!,
                         style: TextStyle(
-                          color:
-                              Theme.of(context).colorScheme.onErrorContainer,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
                         ),
                       ),
                     ),
@@ -379,10 +375,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             const SizedBox(height: 32),
             const Text(
               'Generated Citations',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -393,19 +386,11 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             ],
 
             // APA
-            _buildCitationCard(
-              'APA',
-              _citation!.apa,
-              Icons.format_quote,
-            ),
+            _buildCitationCard('APA', _citation!.apa, Icons.format_quote),
             const SizedBox(height: 16),
 
             // MLA
-            _buildCitationCard(
-              'MLA',
-              _citation!.mla,
-              Icons.format_quote,
-            ),
+            _buildCitationCard('MLA', _citation!.mla, Icons.format_quote),
             const SizedBox(height: 16),
 
             // Chicago
@@ -453,8 +438,9 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                       child: Text(
                         'Manually enter citation details for any source type',
                         style: TextStyle(
-                          color:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),
@@ -466,7 +452,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
 
             // Source type dropdown
             DropdownButtonFormField<String>(
-              value: _manualSourceType,
+              initialValue: _manualSourceType,
               decoration: const InputDecoration(
                 labelText: 'Source Type',
                 border: OutlineInputBorder(),
@@ -518,7 +504,8 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                           )
                         : const Icon(Icons.auto_awesome),
                     label: Text(
-                        _isLoading ? 'Generating...' : 'Generate Citations'),
+                      _isLoading ? 'Generating...' : 'Generate Citations',
+                    ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                     ),
@@ -545,8 +532,9 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                         child: Text(
                           _error!,
                           style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onErrorContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
                           ),
                         ),
                       ),
@@ -561,27 +549,16 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
               const SizedBox(height: 32),
               const Text(
                 'Generated Citations',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
 
               // APA
-              _buildCitationCard(
-                'APA',
-                _citation!.apa,
-                Icons.format_quote,
-              ),
+              _buildCitationCard('APA', _citation!.apa, Icons.format_quote),
               const SizedBox(height: 16),
 
               // MLA
-              _buildCitationCard(
-                'MLA',
-                _citation!.mla,
-                Icons.format_quote,
-              ),
+              _buildCitationCard('MLA', _citation!.mla, Icons.format_quote),
               const SizedBox(height: 16),
 
               // Chicago
@@ -977,10 +954,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                 const SizedBox(width: 8),
                 const Text(
                   'Source Information',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -1024,9 +998,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             ),
           ),
         ),
-        Expanded(
-          child: Text(value),
-        ),
+        Expanded(child: Text(value)),
       ],
     );
   }
@@ -1068,9 +1040,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor,
-                ),
+                border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: SelectableText(
                 citation,

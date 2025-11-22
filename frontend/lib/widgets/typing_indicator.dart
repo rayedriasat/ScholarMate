@@ -95,8 +95,11 @@ class _TypingIndicatorState extends State<TypingIndicator>
     // Filter users typing on current page if page is specified
     final relevantUsers = widget.currentPage != null
         ? widget.typingUsers
-            .where((u) => u.pageNumber == null || u.pageNumber == widget.currentPage)
-            .toList()
+              .where(
+                (u) =>
+                    u.pageNumber == null || u.pageNumber == widget.currentPage,
+              )
+              .toList()
         : widget.typingUsers;
 
     if (relevantUsers.isEmpty) {
@@ -180,9 +183,10 @@ class _TypingDotState extends State<_TypingDot>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     Future.delayed(widget.delay, () {
       if (mounted) {
@@ -207,7 +211,9 @@ class _TypingDotState extends State<_TypingDot>
           height: 4,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.blue[700]!.withOpacity(0.3 + (_animation.value * 0.7)),
+            color: Colors.blue[700]!.withValues(
+              alpha: 0.3 + (_animation.value * 0.7),
+            ),
           ),
         );
       },
@@ -221,9 +227,8 @@ class TypingIndicatorManager extends ChangeNotifier {
   final Duration _typingTimeout;
   Timer? _cleanupTimer;
 
-  TypingIndicatorManager({
-    Duration typingTimeout = const Duration(seconds: 3),
-  }) : _typingTimeout = typingTimeout {
+  TypingIndicatorManager({Duration typingTimeout = const Duration(seconds: 3)})
+    : _typingTimeout = typingTimeout {
     _startCleanupTimer();
   }
 

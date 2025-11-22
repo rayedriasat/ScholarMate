@@ -203,8 +203,6 @@ class AnalyticsService {
     final activity = await getReadingActivityByDate(days: 365);
     if (activity.isEmpty) return 0;
 
-    final sortedDates = activity.keys.toList()..sort((a, b) => b.compareTo(a));
-
     int streak = 0;
     DateTime checkDate = DateTime.now();
     checkDate = DateTime(checkDate.year, checkDate.month, checkDate.day);

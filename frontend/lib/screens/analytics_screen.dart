@@ -248,7 +248,7 @@ class _StatCard extends StatelessWidget {
             Text(
               title,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 4),
@@ -295,7 +295,9 @@ class _ActivityHeatmap extends StatelessWidget {
         final intensity = seconds / maxSeconds;
         final color = seconds == 0
             ? theme.colorScheme.surfaceContainerHighest
-            : theme.colorScheme.primary.withOpacity(0.2 + (intensity * 0.8));
+            : theme.colorScheme.primary.withValues(
+                alpha: (0.2 + (intensity * 0.8)),
+              );
 
         return Tooltip(
           message: '${date.month}/${date.day}: ${seconds ~/ 60}m',
@@ -342,7 +344,7 @@ class _FileStatTile extends StatelessWidget {
                 Text(
                   '${stats.formattedTime} • ${stats.uniquePagesRead} pages',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],

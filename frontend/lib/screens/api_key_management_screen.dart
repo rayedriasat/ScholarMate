@@ -8,10 +8,10 @@ class ApiKeyManagementScreen extends StatefulWidget {
   final String baseUrl;
 
   const ApiKeyManagementScreen({
-    Key? key,
+    super.key,
     required this.userId,
     required this.baseUrl,
-  }) : super(key: key);
+  });
 
   @override
   State<ApiKeyManagementScreen> createState() => _ApiKeyManagementScreenState();
@@ -380,11 +380,11 @@ class AddApiKeyDialog extends StatefulWidget {
   final VoidCallback onKeyAdded;
 
   const AddApiKeyDialog({
-    Key? key,
+    super.key,
     required this.providers,
     required this.apiKeyService,
     required this.onKeyAdded,
-  }) : super(key: key);
+  });
 
   @override
   State<AddApiKeyDialog> createState() => _AddApiKeyDialogState();
@@ -450,7 +450,7 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
             children: [
               // Provider Selection
               DropdownButtonFormField<ProviderConfig>(
-                value: _selectedProvider,
+                initialValue: _selectedProvider,
                 decoration: const InputDecoration(
                   labelText: 'Provider',
                   border: OutlineInputBorder(),
@@ -567,11 +567,11 @@ class EditApiKeyDialog extends StatefulWidget {
   final VoidCallback onKeyUpdated;
 
   const EditApiKeyDialog({
-    Key? key,
+    super.key,
     required this.apiKey,
     required this.apiKeyService,
     required this.onKeyUpdated,
-  }) : super(key: key);
+  });
 
   @override
   State<EditApiKeyDialog> createState() => _EditApiKeyDialogState();

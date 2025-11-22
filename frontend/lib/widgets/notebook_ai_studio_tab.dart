@@ -397,7 +397,7 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
 
         return Card(
           elevation: isSelected ? 4 : 1,
-          color: isSelected ? tool.color.withOpacity(0.1) : null,
+          color: isSelected ? tool.color.withValues(alpha: 0.1) : null,
           child: InkWell(
             onTap: () => _selectTool(tool.id),
             onLongPress: () => _generateContent(tool.id),
@@ -470,7 +470,7 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: tool.color.withOpacity(0.2),
+              backgroundColor: tool.color.withValues(alpha: 0.2),
               child: Icon(tool.icon, color: tool.color),
             ),
             title: Text(output.title),
@@ -718,7 +718,7 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -743,7 +743,7 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(

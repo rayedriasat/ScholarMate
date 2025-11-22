@@ -294,8 +294,9 @@ class _FileCardState extends State<FileCard> {
   String _getFileTypeLabel() {
     if (widget.file.isPdf) return 'PDF Document';
     if (widget.file.isMarkdown) return 'Markdown File';
-    if (widget.file.extension != null)
+    if (widget.file.extension != null) {
       return '${widget.file.extension!.toUpperCase()} File';
+    }
     return 'File';
   }
 

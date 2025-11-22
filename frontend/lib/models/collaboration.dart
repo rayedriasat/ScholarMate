@@ -1,4 +1,6 @@
 /// Collaboration models for real-time PDF sessions
+library;
+
 import 'package:flutter/material.dart';
 
 /// User cursor position in PDF
@@ -7,23 +9,15 @@ class CursorPosition {
   final double y; // 0-1 normalized
   final int pageNumber;
 
-  CursorPosition({
-    required this.x,
-    required this.y,
-    required this.pageNumber,
-  });
+  CursorPosition({required this.x, required this.y, required this.pageNumber});
 
-  Map<String, dynamic> toJson() => {
-        'x': x,
-        'y': y,
-        'page_number': pageNumber,
-      };
+  Map<String, dynamic> toJson() => {'x': x, 'y': y, 'page_number': pageNumber};
 
   factory CursorPosition.fromJson(Map<String, dynamic> json) => CursorPosition(
-        x: (json['x'] as num).toDouble(),
-        y: (json['y'] as num).toDouble(),
-        pageNumber: json['page_number'] as int,
-      );
+    x: (json['x'] as num).toDouble(),
+    y: (json['y'] as num).toDouble(),
+    pageNumber: json['page_number'] as int,
+  );
 }
 
 /// Session role
@@ -60,18 +54,20 @@ class SessionParticipant {
   });
 
   Map<String, dynamic> toJson() => {
-        'user_id': userId,
-        'user_name': userName,
-        'user_email': userEmail,
-        'user_color': '#${userColor.value.toRadixString(16).substring(2)}',
-        'role': role.toJson(),
-        'cursor_position': cursorPosition?.toJson(),
-        'last_seen': lastSeen.toIso8601String(),
-      };
+    'user_id': userId,
+    'user_name': userName,
+    'user_email': userEmail,
+    'user_color': '#${userColor.value.toRadixString(16).substring(2)}',
+    'role': role.toJson(),
+    'cursor_position': cursorPosition?.toJson(),
+    'last_seen': lastSeen.toIso8601String(),
+  };
 
   factory SessionParticipant.fromJson(Map<String, dynamic> json) {
     final colorHex = json['user_color'] as String;
-    final color = Color(int.parse(colorHex.substring(1), radix: 16) + 0xFF000000);
+    final color = Color(
+      int.parse(colorHex.substring(1), radix: 16) + 0xFF000000,
+    );
 
     return SessionParticipant(
       userId: json['user_id'] as String,
@@ -80,7 +76,9 @@ class SessionParticipant {
       userColor: color,
       role: SessionRole.fromJson(json['role'] as String),
       cursorPosition: json['cursor_position'] != null
-          ? CursorPosition.fromJson(json['cursor_position'] as Map<String, dynamic>)
+          ? CursorPosition.fromJson(
+              json['cursor_position'] as Map<String, dynamic>,
+            )
           : null,
       lastSeen: DateTime.parse(json['last_seen'] as String),
     );
@@ -135,13 +133,13 @@ class CollaborationSession {
           .map((p) => SessionParticipant.fromJson(p as Map<String, dynamic>))
           .toList(),
       createdAt: DateTime.parse(json['created_at'] as String),
-      expiresAt: json['expires_at'] != null ? DateTime.parse(json['expires_at'] as String) : null,
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'] as String)
+          : null,
     );
   }
 
-  CollaborationSession copyWith({
-    List<SessionParticipant>? participants,
-  }) {
+  CollaborationSession copyWith({List<SessionParticipant>? participants}) {
     return CollaborationSession(
       sessionId: sessionId,
       fileId: fileId,
@@ -182,21 +180,23 @@ class CollaborationAnnotation {
   });
 
   Map<String, dynamic> toJson() => {
-        if (id != null) 'id': id,
-        'user_id': userId,
-        'user_name': userName,
-        'user_color': '#${userColor.value.toRadixString(16).substring(2)}',
-        'annotation_type': annotationType,
-        'page_number': pageNumber,
-        'position_data': positionData,
-        if (content != null) 'content': content,
-        if (color != null) 'color': color,
-        'created_at': createdAt.toIso8601String(),
-      };
+    if (id != null) 'id': id,
+    'user_id': userId,
+    'user_name': userName,
+    'user_color': '#${userColor.value.toRadixString(16).substring(2)}',
+    'annotation_type': annotationType,
+    'page_number': pageNumber,
+    'position_data': positionData,
+    if (content != null) 'content': content,
+    if (color != null) 'color': color,
+    'created_at': createdAt.toIso8601String(),
+  };
 
   factory CollaborationAnnotation.fromJson(Map<String, dynamic> json) {
     final colorHex = json['user_color'] as String;
-    final userColor = Color(int.parse(colorHex.substring(1), radix: 16) + 0xFF000000);
+    final userColor = Color(
+      int.parse(colorHex.substring(1), radix: 16) + 0xFF000000,
+    );
 
     return CollaborationAnnotation(
       id: json['id'] as String?,

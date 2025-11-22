@@ -182,7 +182,7 @@ class TtsService extends ChangeNotifier {
     ssml = '<speak>$ssml</speak>';
 
     debugPrint(
-      'Generated SSML: ${ssml.length > 200 ? ssml.substring(0, 200) + "..." : ssml}',
+      'Generated SSML: ${ssml.length > 200 ? "${ssml.substring(0, 200)}..." : ssml}',
     );
 
     return ssml;
@@ -209,7 +209,7 @@ class TtsService extends ChangeNotifier {
     enhanced = enhanced.trim();
 
     debugPrint(
-      'Enhanced text for pauses: ${enhanced.length > 200 ? enhanced.substring(0, 200) + "..." : enhanced}',
+      'Enhanced text for pauses: ${enhanced.length > 200 ? "${enhanced.substring(0, 200)}..." : enhanced}',
     );
 
     return enhanced;

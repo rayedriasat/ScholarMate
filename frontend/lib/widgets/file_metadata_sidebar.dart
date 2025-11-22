@@ -10,11 +10,11 @@ class FileMetadataSidebar extends StatefulWidget {
   final VoidCallback? onClose;
 
   const FileMetadataSidebar({
-    Key? key,
+    super.key,
     required this.file,
     required this.metadataService,
     this.onClose,
-  }) : super(key: key);
+  });
 
   @override
   State<FileMetadataSidebar> createState() => _FileMetadataSidebarState();
@@ -62,22 +62,23 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
       print('Error loading metadata: $e');
       if (mounted) {
         String errorMessage = 'Failed to load metadata';
-        
+
         // Provide more specific error messages
         if (e.toString().contains('timed out')) {
           errorMessage = 'Request timed out. Backend may not be running.';
-        } else if (e.toString().contains('not authenticated') || 
-                   e.toString().contains('Authentication failed')) {
+        } else if (e.toString().contains('not authenticated') ||
+            e.toString().contains('Authentication failed')) {
           errorMessage = 'Authentication error. Please sign in again.';
         } else if (e.toString().contains('not found')) {
           errorMessage = 'File not found in Google Drive';
-        } else if (e.toString().contains('SocketException') || 
-                   e.toString().contains('Connection refused')) {
+        } else if (e.toString().contains('SocketException') ||
+            e.toString().contains('Connection refused')) {
           errorMessage = 'Cannot connect to backend. Is it running?';
         } else {
-          errorMessage = 'Failed to load metadata: ${e.toString().replaceAll('Exception: ', '')}';
+          errorMessage =
+              'Failed to load metadata: ${e.toString().replaceAll('Exception: ', '')}';
         }
-        
+
         setState(() {
           _error = errorMessage;
           _isLoading = false;
@@ -94,9 +95,8 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
     });
 
     try {
-      final citations = await widget.metadataService.generateCitationFromMetadata(
-        _metadata!,
-      );
+      final citations = await widget.metadataService
+          .generateCitationFromMetadata(_metadata!);
 
       if (mounted) {
         setState(() {
@@ -115,9 +115,9 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
 
   void _copyToClipboard(String text, String label) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label copied to clipboard')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$label copied to clipboard')));
   }
 
   @override
@@ -127,10 +127,7 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         border: Border(
-          left: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: 1,
-          ),
+          left: BorderSide(color: Theme.of(context).dividerColor, width: 1),
         ),
       ),
       child: Column(
@@ -149,18 +146,12 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Theme.of(context).primaryColor,
-                ),
+                Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
                     'File Metadata',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 if (widget.onClose != null)
@@ -178,36 +169,36 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 48,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _error!,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                onPressed: _loadMetadata,
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('Retry'),
-                              ),
-                            ],
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Theme.of(context).colorScheme.error,
                           ),
-                        ),
-                      )
-                    : _buildMetadataContent(),
+                          const SizedBox(height: 16),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _loadMetadata,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _buildMetadataContent(),
           ),
         ],
       ),
@@ -239,9 +230,7 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor,
-                ),
+                border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: Row(
                 children: [
@@ -266,15 +255,9 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             if (widget.file.size != null)
               _buildInfoRow('File Size', widget.file.formattedSize),
             if (widget.file.createdTime != null)
-              _buildInfoRow(
-                'Created',
-                _formatDate(widget.file.createdTime!),
-              ),
+              _buildInfoRow('Created', _formatDate(widget.file.createdTime!)),
             if (widget.file.modifiedTime != null)
-              _buildInfoRow(
-                'Modified',
-                _formatDate(widget.file.modifiedTime!),
-              ),
+              _buildInfoRow('Modified', _formatDate(widget.file.modifiedTime!)),
           ],
         ),
       );
@@ -295,20 +278,19 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
           // Authors
           if (_metadata!.authors.isNotEmpty) ...[
             _buildSectionHeader('Authors'),
-            ..._metadata!.authors.map((author) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: _buildCopyableField(author, 'Author'),
-                )),
+            ..._metadata!.authors.map(
+              (author) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: _buildCopyableField(author, 'Author'),
+              ),
+            ),
             const SizedBox(height: 16),
           ],
 
           // Publication Year
           if (_metadata!.publicationYear != null) ...[
             _buildSectionHeader('Publication Year'),
-            _buildCopyableField(
-              _metadata!.publicationYear.toString(),
-              'Year',
-            ),
+            _buildCopyableField(_metadata!.publicationYear.toString(), 'Year'),
             const SizedBox(height: 16),
           ],
 
@@ -395,9 +377,7 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor,
-                ),
+                border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,10 +390,8 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
-                      onPressed: () => _copyToClipboard(
-                        _metadata!.abstract!,
-                        'Abstract',
-                      ),
+                      onPressed: () =>
+                          _copyToClipboard(_metadata!.abstract!, 'Abstract'),
                       icon: const Icon(Icons.copy, size: 16),
                       label: const Text('Copy'),
                     ),
@@ -431,10 +409,12 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
               spacing: 8,
               runSpacing: 8,
               children: _metadata!.keywords
-                  .map((keyword) => Chip(
-                        label: Text(keyword),
-                        labelStyle: const TextStyle(fontSize: 12),
-                      ))
+                  .map(
+                    (keyword) => Chip(
+                      label: Text(keyword),
+                      labelStyle: const TextStyle(fontSize: 12),
+                    ),
+                  )
                   .toList(),
             ),
             const SizedBox(height: 16),
@@ -465,9 +445,7 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor,
-                ),
+                border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: Row(
                 children: [
@@ -494,15 +472,9 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
           if (widget.file.size != null)
             _buildInfoRow('File Size', widget.file.formattedSize),
           if (widget.file.createdTime != null)
-            _buildInfoRow(
-              'Created',
-              _formatDate(widget.file.createdTime!),
-            ),
+            _buildInfoRow('Created', _formatDate(widget.file.createdTime!)),
           if (widget.file.modifiedTime != null)
-            _buildInfoRow(
-              'Modified',
-              _formatDate(widget.file.modifiedTime!),
-            ),
+            _buildInfoRow('Modified', _formatDate(widget.file.modifiedTime!)),
         ],
       ),
     );
@@ -529,18 +501,11 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).dividerColor,
-        ),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
           IconButton(
             icon: const Icon(Icons.copy, size: 18),
             onPressed: () => _copyToClipboard(text, label),
@@ -557,9 +522,7 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).dividerColor,
-        ),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -605,12 +568,7 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
               ),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 13),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
         ],
       ),
     );
@@ -626,9 +584,7 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).dividerColor,
-        ),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,10 +610,7 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            citation,
-            style: const TextStyle(fontSize: 13),
-          ),
+          Text(citation, style: const TextStyle(fontSize: 13)),
         ],
       ),
     );

@@ -1,7 +1,6 @@
 /// Collaborative PDF viewer with real-time annotations and cursors
 library;
 
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -154,7 +153,7 @@ class _CollaborativePdfViewerScreenState
   void _handleRealtimeAnnotationCreated(Map<String, dynamic> data) {
     final authorId = data['user_id'] as String?;
     final authService = context.read<AuthService>();
-    
+
     // Don't show notification for own annotations
     if (authorId == authService.currentUser?.id) return;
 
@@ -180,7 +179,7 @@ class _CollaborativePdfViewerScreenState
   void _handleRealtimeAnnotationUpdated(Map<String, dynamic> data) {
     final authorId = data['user_id'] as String?;
     final authService = context.read<AuthService>();
-    
+
     if (authorId == authService.currentUser?.id) return;
 
     final authorName = data['author_name'] as String? ?? 'Someone';
@@ -190,7 +189,7 @@ class _CollaborativePdfViewerScreenState
   void _handleRealtimeAnnotationDeleted(Map<String, dynamic> data) {
     final authorId = data['user_id'] as String?;
     final authService = context.read<AuthService>();
-    
+
     if (authorId == authService.currentUser?.id) return;
 
     debugPrint('An annotation was deleted');
@@ -213,15 +212,17 @@ class _CollaborativePdfViewerScreenState
       if (widget.sessionId == null) {
         final sharingService = context.read<SharingService>();
         try {
-          final collaborators = await sharingService.listCollaborators(widget.fileId);
-          
+          final collaborators = await sharingService.listCollaborators(
+            widget.fileId,
+          );
+
           if (collaborators.isEmpty) {
             // File is not shared with anyone
             setState(() {
               _error = 'Please share this PDF via Gmail first';
               _isLoading = false;
             });
-            
+
             // Show helpful dialog
             if (mounted) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -250,11 +251,26 @@ class _CollaborativePdfViewerScreenState
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-                        Text('1. Go back to the file list', style: TextStyle(color: Colors.grey[700])),
-                        Text('2. Click the ⋮ menu on the PDF', style: TextStyle(color: Colors.grey[700])),
-                        Text('3. Select "Share file"', style: TextStyle(color: Colors.grey[700])),
-                        Text('4. Add collaborators with Gmail addresses', style: TextStyle(color: Colors.grey[700])),
-                        Text('5. Then start the collaboration session', style: TextStyle(color: Colors.grey[700])),
+                        Text(
+                          '1. Go back to the file list',
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
+                        Text(
+                          '2. Click the ⋮ menu on the PDF',
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
+                        Text(
+                          '3. Select "Share file"',
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
+                        Text(
+                          '4. Add collaborators with Gmail addresses',
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
+                        Text(
+                          '5. Then start the collaboration session',
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
                       ],
                     ),
                     actions: [
@@ -346,7 +362,7 @@ class _CollaborativePdfViewerScreenState
                 behavior: SnackBarBehavior.floating,
               ),
             );
-            
+
             // TODO: Render annotation on PDF
             // Syncfusion doesn't support programmatic annotation addition easily
             // For now, users need to refresh or reload to see others' annotations
@@ -368,11 +384,11 @@ class _CollaborativePdfViewerScreenState
       // For User B joining: Try to load from their Drive cache first
       // If the file was previously opened, it will be in cache
       final driveService = context.read<DriveService>();
-      
+
       try {
         // Try to download from Drive (will use cache if available)
         _pdfBytes = await driveService.downloadFile(widget.fileId);
-        
+
         if (_pdfBytes != null && _pdfBytes!.isNotEmpty) {
           return; // Successfully loaded
         }
@@ -383,7 +399,7 @@ class _CollaborativePdfViewerScreenState
       // Fallback: Use backend proxy endpoint
       final authService = context.read<AuthService>();
       final user = authService.currentUser;
-      
+
       if (user == null || _session == null) {
         throw Exception('Not authenticated or no session');
       }
@@ -392,7 +408,7 @@ class _CollaborativePdfViewerScreenState
         'API_BASE_URL',
         defaultValue: 'http://localhost:8000',
       );
-      
+
       final url = Uri.parse(
         '$backendUrl/api/collaboration/sessions/${_session!.sessionId}/pdf?user_id=${user.id}',
       );
@@ -475,7 +491,10 @@ class _CollaborativePdfViewerScreenState
               SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               ),
               SizedBox(width: 12),
               Text('Refreshing annotations...'),
@@ -491,7 +510,9 @@ class _CollaborativePdfViewerScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Loaded ${annotations.length} annotations from other users'),
+            content: Text(
+              'Loaded ${annotations.length} annotations from other users',
+            ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -562,7 +583,7 @@ class _CollaborativePdfViewerScreenState
   String _formatTime(DateTime time) {
     final now = DateTime.now();
     final diff = now.difference(time);
-    
+
     if (diff.inMinutes < 1) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
@@ -586,7 +607,7 @@ class _CollaborativePdfViewerScreenState
     // Convert Syncfusion annotation to collaboration annotation
     // Get bounds based on annotation type
     final bounds = _getAnnotationBounds(annotation);
-    
+
     final collabAnnotation = CollaborationAnnotation(
       id: annotation.hashCode.toString(),
       userId: user.id,
@@ -594,9 +615,7 @@ class _CollaborativePdfViewerScreenState
       userColor: participant.userColor,
       annotationType: _getAnnotationType(annotation),
       pageNumber: annotation.pageNumber,
-      positionData: {
-        'bounds': bounds,
-      },
+      positionData: {'bounds': bounds},
       color: _annotationColor.value.toRadixString(16),
       createdAt: DateTime.now(),
     );
@@ -685,9 +704,7 @@ class _CollaborativePdfViewerScreenState
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.fileName),
-      ),
+      appBar: AppBar(title: Text(widget.fileName)),
       body: Column(
         children: [
           // Collaboration panel with refresh button
@@ -745,9 +762,7 @@ class _CollaborativePdfViewerScreenState
                           onAnnotationRemoved: _onAnnotationRemoved,
                         )
                       else
-                        const Center(
-                          child: Text('Loading PDF...'),
-                        ),
+                        const Center(child: Text('Loading PDF...')),
 
                       // Other users' cursors
                       if (_session != null)

@@ -1,4 +1,6 @@
 /// Collaboration panel showing active participants
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/collaboration.dart';
@@ -7,14 +9,14 @@ class CollaborationPanel extends StatelessWidget {
   final CollaborationSession session;
   final VoidCallback onLeave;
   final VoidCallback? onShare;
-  
+
   const CollaborationPanel({
     super.key,
     required this.session,
     required this.onLeave,
     this.onShare,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -24,7 +26,7 @@ class CollaborationPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -71,9 +73,9 @@ class CollaborationPanel extends StatelessWidget {
 
 class _ParticipantTile extends StatelessWidget {
   final SessionParticipant participant;
-  
+
   const _ParticipantTile({required this.participant});
-  
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -102,7 +104,7 @@ class _ParticipantTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: _getRoleColor(participant.role).withOpacity(0.2),
+              color: _getRoleColor(participant.role).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -118,7 +120,7 @@ class _ParticipantTile extends StatelessWidget {
       ),
     );
   }
-  
+
   Color _getRoleColor(SessionRole role) {
     switch (role) {
       case SessionRole.owner:
@@ -134,9 +136,9 @@ class _ParticipantTile extends StatelessWidget {
 /// Share link dialog
 class ShareLinkDialog extends StatelessWidget {
   final String shareLink;
-  
+
   const ShareLinkDialog({super.key, required this.shareLink});
-  
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(

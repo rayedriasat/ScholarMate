@@ -210,7 +210,7 @@ class _EnhancedDrawingCanvasScreenState
         );
 
         debugPrint(
-          'Adding stroke with ${stroke.points.length} points to page ${_currentPageIndex}',
+          'Adding stroke with ${stroke.points.length} points to page $_currentPageIndex',
         );
         _currentPage.strokes.add(stroke);
         debugPrint('Page now has ${_currentPage.strokes.length} strokes');
@@ -266,7 +266,7 @@ class _EnhancedDrawingCanvasScreenState
                       color: _currentColor,
                     );
                     debugPrint(
-                      'Adding text note "${textNote.text}" to page ${_currentPageIndex}',
+                      'Adding text note "${textNote.text}" to page $_currentPageIndex',
                     );
                     _currentPage.textNotes.add(textNote);
                     debugPrint(

@@ -136,20 +136,26 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
             Icon(
               Icons.folder_shared_outlined,
               size: 64,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               'No shared files',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Files shared with you will appear here',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -215,7 +221,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       fontSize: 12,
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   if (file.size != null) ...[
@@ -226,7 +232,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                         fontSize: 12,
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.6),
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],

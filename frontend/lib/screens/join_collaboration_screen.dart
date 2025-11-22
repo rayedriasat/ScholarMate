@@ -1,4 +1,6 @@
 /// Screen to join collaboration session via link or ID
+library;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/collaboration_service.dart';
@@ -7,14 +9,12 @@ import 'collaborative_pdf_viewer_screen.dart';
 
 class JoinCollaborationScreen extends StatefulWidget {
   final String? sessionId; // Pre-filled session ID from deep link
-  
-  const JoinCollaborationScreen({
-    super.key,
-    this.sessionId,
-  });
-  
+
+  const JoinCollaborationScreen({super.key, this.sessionId});
+
   @override
-  State<JoinCollaborationScreen> createState() => _JoinCollaborationScreenState();
+  State<JoinCollaborationScreen> createState() =>
+      _JoinCollaborationScreenState();
 }
 
 class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
@@ -22,7 +22,7 @@ class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
   final _sessionIdController = TextEditingController();
   bool _isLoading = false;
   String? _error;
-  
+
   @override
   void initState() {
     super.initState();
@@ -34,32 +34,34 @@ class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
       });
     }
   }
-  
+
   @override
   void dispose() {
     _sessionIdController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _joinSession() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
-    
+
     try {
       final authService = context.read<AuthService>();
       final user = authService.currentUser;
-      
+
       if (user == null) {
         throw Exception('Please sign in to join collaboration');
       }
-      
+
       final collaborationService = context.read<CollaborationService>();
-      final session = await collaborationService.getSession(_sessionIdController.text.trim());
-      
+      final session = await collaborationService.getSession(
+        _sessionIdController.text.trim(),
+      );
+
       // Navigate to collaborative viewer
       if (mounted) {
         Navigator.pushReplacement(
@@ -80,13 +82,11 @@ class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
       });
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Join Collaboration'),
-      ),
+      appBar: AppBar(title: const Text('Join Collaboration')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -105,7 +105,7 @@ class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
                     color: Theme.of(context).primaryColor,
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Title
                   Text(
                     'Join Collaboration Session',
@@ -113,17 +113,17 @@ class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Description
                   Text(
                     'Enter the session ID to join a collaborative PDF viewing session',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Session ID input
                   TextFormField(
                     controller: _sessionIdController,
@@ -142,7 +142,7 @@ class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
                     enabled: !_isLoading,
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Error message
                   if (_error != null)
                     Container(
@@ -166,7 +166,7 @@ class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
                       ),
                     ),
                   if (_error != null) const SizedBox(height: 16),
-                  
+
                   // Join button
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _joinSession,
@@ -183,7 +183,7 @@ class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Info card
                   Card(
                     color: Colors.blue[50],
@@ -194,7 +194,11 @@ class _JoinCollaborationScreenState extends State<JoinCollaborationScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.blue[700],
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'How it works',
