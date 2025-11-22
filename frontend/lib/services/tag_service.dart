@@ -86,42 +86,41 @@ class TagService extends ChangeNotifier {
     String color = '#2196F3',
   }) async {
     try {
-      final tagId = _uuid.v4();
-      final now = DateTime.now();
+      models.Tag tag;
 
-      final tag = models.Tag(
-        id: tagId,
-        userId: userId,
-        name: name,
-        color: color,
-        createdAt: now,
-        updatedAt: now,
-        documentCount: 0,
-      );
-
-      // Save to local cache
-      await _database
-          .into(_database.tags)
-          .insert(
-            TagsCompanion.insert(
-              id: tag.id,
-              userId: tag.userId,
-              name: tag.name,
-              color: Value(tag.color),
-              createdAt: tag.createdAt,
-              updatedAt: tag.updatedAt,
-            ),
-          );
-
-      // Sync to backend if online
+      // If online, create on backend first to get the server-generated ID
       if (_connectivityService.isOnline) {
         try {
-          await _apiService.createTag(userId: userId, name: name, color: color);
-          await _markTagSynced(tagId);
+          final backendTag = await _apiService.createTag(
+            userId: userId,
+            name: name,
+            color: color,
+          );
+
+          // Save backend tag to local cache
+          await _database
+              .into(_database.tags)
+              .insertOnConflictUpdate(
+                TagsCompanion.insert(
+                  id: backendTag.id,
+                  userId: backendTag.userId,
+                  name: backendTag.name,
+                  color: Value(backendTag.color),
+                  createdAt: backendTag.createdAt,
+                  updatedAt: backendTag.updatedAt,
+                  isSynced: const Value(true),
+                ),
+              );
+
+          tag = backendTag;
         } catch (e) {
-          debugPrint('Failed to sync tag to backend: $e');
-          // Continue - will sync later
+          debugPrint('Failed to create tag on backend: $e');
+          // Fall back to offline creation
+          tag = await _createTagOffline(userId, name, color);
         }
+      } else {
+        // Offline - create locally
+        tag = await _createTagOffline(userId, name, color);
       }
 
       notifyListeners();
@@ -130,6 +129,43 @@ class TagService extends ChangeNotifier {
       debugPrint('Error creating tag: $e');
       rethrow;
     }
+  }
+
+  /// Create tag offline (local only)
+  Future<models.Tag> _createTagOffline(
+    String userId,
+    String name,
+    String color,
+  ) async {
+    final tagId = _uuid.v4();
+    final now = DateTime.now();
+
+    final tag = models.Tag(
+      id: tagId,
+      userId: userId,
+      name: name,
+      color: color,
+      createdAt: now,
+      updatedAt: now,
+      documentCount: 0,
+    );
+
+    // Save to local cache
+    await _database
+        .into(_database.tags)
+        .insert(
+          TagsCompanion.insert(
+            id: tag.id,
+            userId: tag.userId,
+            name: tag.name,
+            color: Value(tag.color),
+            createdAt: tag.createdAt,
+            updatedAt: tag.updatedAt,
+            isSynced: const Value(false),
+          ),
+        );
+
+    return tag;
   }
 
   /// Update a tag
@@ -142,7 +178,47 @@ class TagService extends ChangeNotifier {
     try {
       final now = DateTime.now();
 
-      // Update local cache
+      // If online, update on backend first
+      if (_connectivityService.isOnline) {
+        try {
+          final updatedTag = await _apiService.updateTag(
+            tagId: tagId,
+            userId: userId,
+            name: name,
+            color: color,
+          );
+
+          // Update local cache with backend response
+          await (_database.update(
+            _database.tags,
+          )..where((t) => t.id.equals(tagId))).write(
+            TagsCompanion(
+              name: Value(updatedTag.name),
+              color: Value(updatedTag.color),
+              updatedAt: Value(updatedTag.updatedAt),
+              isSynced: const Value(true),
+            ),
+          );
+
+          final documentCount = await _getDocumentCount(tagId);
+          notifyListeners();
+
+          return models.Tag(
+            id: updatedTag.id,
+            userId: updatedTag.userId,
+            name: updatedTag.name,
+            color: updatedTag.color,
+            createdAt: updatedTag.createdAt,
+            updatedAt: updatedTag.updatedAt,
+            documentCount: documentCount,
+          );
+        } catch (e) {
+          debugPrint('Failed to update tag on backend: $e');
+          // Fall through to offline update
+        }
+      }
+
+      // Offline update or backend failed
       await (_database.update(
         _database.tags,
       )..where((t) => t.id.equals(tagId))).write(
@@ -153,22 +229,6 @@ class TagService extends ChangeNotifier {
           isSynced: const Value(false),
         ),
       );
-
-      // Sync to backend if online
-      if (_connectivityService.isOnline) {
-        try {
-          await _apiService.updateTag(
-            tagId: tagId,
-            userId: userId,
-            name: name,
-            color: color,
-          );
-          await _markTagSynced(tagId);
-        } catch (e) {
-          debugPrint('Failed to sync tag update to backend: $e');
-          // Continue - will sync later
-        }
-      }
 
       // Get updated tag
       final record = await (_database.select(
@@ -233,10 +293,7 @@ class TagService extends ChangeNotifier {
     required String tagId,
   }) async {
     try {
-      final fileTagId = _uuid.v4();
-      final now = DateTime.now();
-
-      // Check if association already exists
+      // Check if association already exists locally
       final existing =
           await (_database.select(_database.fileTags)..where(
                 (ft) => ft.fileId.equals(fileId) & ft.tagId.equals(tagId),
@@ -248,7 +305,10 @@ class TagService extends ChangeNotifier {
         return;
       }
 
-      // Save to local cache
+      final fileTagId = _uuid.v4();
+      final now = DateTime.now();
+
+      // Save to local cache first (optimistic update)
       await _database
           .into(_database.fileTags)
           .insert(
@@ -386,8 +446,13 @@ class TagService extends ChangeNotifier {
 
       final tags = await _apiService.getTags(userId: user.id);
 
+      // Get local tag IDs to detect deletions
+      final localTags = await _database.select(_database.tags).get();
+      final localTagIds = localTags.map((t) => t.id).toSet();
+      final backendTagIds = tags.map((t) => t.id).toSet();
+
+      // Upsert backend tags to local cache
       for (final tag in tags) {
-        // Upsert to local cache
         await _database
             .into(_database.tags)
             .insertOnConflictUpdate(
@@ -398,8 +463,17 @@ class TagService extends ChangeNotifier {
                 color: Value(tag.color),
                 createdAt: tag.createdAt,
                 updatedAt: tag.updatedAt,
+                isSynced: const Value(true),
               ),
             );
+      }
+
+      // Remove local tags that don't exist on backend (deleted elsewhere)
+      final deletedTagIds = localTagIds.difference(backendTagIds);
+      for (final tagId in deletedTagIds) {
+        await (_database.delete(
+          _database.tags,
+        )..where((t) => t.id.equals(tagId))).go();
       }
     } catch (e) {
       debugPrint('Error syncing tags from backend: $e');
@@ -429,5 +503,65 @@ class TagService extends ChangeNotifier {
             .getSingle();
 
     return count.read(_database.fileTags.id.count()) ?? 0;
+  }
+
+  /// Sync unsynced tags to backend (call when coming back online)
+  Future<void> syncUnsyncedTags() async {
+    if (!_connectivityService.isOnline) {
+      return;
+    }
+
+    try {
+      final user = _authService.currentUser;
+      if (user == null) {
+        return;
+      }
+
+      // Get unsynced tags
+      final unsyncedTags = await (_database.select(
+        _database.tags,
+      )..where((t) => t.isSynced.equals(false))).get();
+
+      for (final tag in unsyncedTags) {
+        try {
+          // Try to create on backend
+          await _apiService.createTag(
+            userId: user.id,
+            name: tag.name,
+            color: tag.color,
+          );
+
+          // Mark as synced
+          await _markTagSynced(tag.id);
+        } catch (e) {
+          debugPrint('Failed to sync tag ${tag.id}: $e');
+          // Continue with next tag
+        }
+      }
+
+      // Get unsynced file tags
+      final unsyncedFileTags = await (_database.select(
+        _database.fileTags,
+      )..where((ft) => ft.isSynced.equals(false))).get();
+
+      for (final fileTag in unsyncedFileTags) {
+        try {
+          await _apiService.addTagToFile(
+            userId: user.id,
+            fileId: fileTag.fileId,
+            tagId: fileTag.tagId,
+          );
+
+          await _markFileTagSynced(fileTag.id);
+        } catch (e) {
+          debugPrint('Failed to sync file tag ${fileTag.id}: $e');
+          // Continue with next file tag
+        }
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error syncing unsynced tags: $e');
+    }
   }
 }

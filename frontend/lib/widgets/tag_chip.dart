@@ -72,11 +72,11 @@ class TagChip extends StatelessWidget {
 
   Color _getContrastColor(Color backgroundColor) {
     // Calculate relative luminance
-    final luminance =
-        (0.299 * backgroundColor.red +
-            0.587 * backgroundColor.green +
-            0.114 * backgroundColor.blue) /
-        255;
+    final r = (backgroundColor.r * 255.0).round() & 0xff;
+    final g = (backgroundColor.g * 255.0).round() & 0xff;
+    final b = (backgroundColor.b * 255.0).round() & 0xff;
+
+    final luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
     // Return white for dark backgrounds, black for light backgrounds
     return luminance > 0.5 ? Colors.black : Colors.white;

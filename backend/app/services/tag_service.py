@@ -59,15 +59,26 @@ class TagService:
             Created tag record
         """
         try:
-            # Check for duplicate tag name for this user
-            existing = self.supabase.client.table("tags").select("*").eq("user_id", str(user_id)).eq("name", name).execute()
+            # Normalize tag name (trim whitespace, case-insensitive check)
+            normalized_name = name.strip()
+            
+            if not normalized_name:
+                raise Exception("Tag name cannot be empty")
+            
+            # Check for duplicate tag name for this user (case-insensitive)
+            existing = self.supabase.client.table("tags").select("*").eq("user_id", str(user_id)).ilike("name", normalized_name).execute()
             
             if existing.data:
-                raise Exception(f"Tag with name '{name}' already exists")
+                # Return existing tag instead of error to handle race conditions
+                tag = existing.data[0]
+                count_response = self.supabase.client.table("file_tags").select("id", count="exact").eq("tag_id", tag["id"]).execute()
+                tag["document_count"] = count_response.count if count_response.count else 0
+                logger.info(f"Tag '{normalized_name}' already exists for user {user_id}, returning existing tag")
+                return tag
             
             tag_data = {
                 "user_id": str(user_id),
-                "name": name,
+                "name": normalized_name,
                 "color": color
             }
             
@@ -109,12 +120,20 @@ class TagService:
             if not existing.data:
                 raise Exception("Tag not found or access denied")
             
-            # Check for duplicate name if name is being updated
+            # Normalize and check for duplicate name if name is being updated
             if "name" in updates:
-                duplicate = self.supabase.client.table("tags").select("*").eq("user_id", str(user_id)).eq("name", updates["name"]).neq("id", str(tag_id)).execute()
+                normalized_name = updates["name"].strip()
+                
+                if not normalized_name:
+                    raise Exception("Tag name cannot be empty")
+                
+                updates["name"] = normalized_name
+                
+                # Case-insensitive duplicate check
+                duplicate = self.supabase.client.table("tags").select("*").eq("user_id", str(user_id)).ilike("name", normalized_name).neq("id", str(tag_id)).execute()
                 
                 if duplicate.data:
-                    raise Exception(f"Tag with name '{updates['name']}' already exists")
+                    raise Exception(f"Tag with name '{normalized_name}' already exists")
             
             # Update tag
             response = self.supabase.client.table("tags").update(updates).eq("id", str(tag_id)).execute()
