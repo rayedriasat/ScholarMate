@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
@@ -129,34 +131,41 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
   Future<bool> _onWillPop() async {
     if (!_isModified) return true;
 
-    final result = await showDialog<bool>(
+    final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Unsaved Changes'),
         content: const Text(
-          'You have unsaved changes. Do you want to save before leaving?',
+          'You have unsaved changes. What would you like to do?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(context).pop('discard'),
             child: const Text('Discard'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(null),
+            onPressed: () => Navigator.of(context).pop('cancel'),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () async {
-              await _saveNote();
-              if (mounted) Navigator.of(context).pop(true);
-            },
+            onPressed: () => Navigator.of(context).pop('save'),
             child: const Text('Save'),
           ),
         ],
       ),
     );
 
-    return result ?? false;
+    if (result == 'discard') {
+      // User wants to discard changes and leave
+      return true;
+    } else if (result == 'save') {
+      // User wants to save before leaving
+      await _saveNote();
+      return true;
+    } else {
+      // User cancelled or dismissed dialog - stay on page
+      return false;
+    }
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -484,31 +493,128 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
     }
   }
 
-  void _exportNote() {
+  Future<void> _exportNote() async {
     if (_currentNote == null) return;
+
+    // Save current changes first
+    if (_isModified) {
+      await _saveNote();
+    }
 
     final exportContent = _storageService.exportNoteAsMarkdown(_currentNote!);
 
-    // For now, just show the export content in a dialog
-    // In a real app, you'd use file_picker to save to device
-    showDialog(
+    // Show export dialog with options
+    if (!mounted) return;
+
+    final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Export Note'),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            exportContent,
-            style: const TextStyle(fontFamily: 'monospace'),
-          ),
+        title: const Text('Export Note to Drive'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Export "${_currentNote!.title}" as a markdown file to your Google Drive?',
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'The file will be saved in your Drive files section.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop('export'),
+            child: const Text('Export to Drive'),
           ),
         ],
       ),
     );
+
+    if (result == 'export') {
+      await _exportToDrive(exportContent);
+    }
+  }
+
+  Future<void> _exportToDrive(String content) async {
+    try {
+      setState(() {
+        _isSaving = true;
+      });
+
+      final driveService = context.read<DriveService>();
+
+      // Get or create the Notes folder (same location as drawing notes)
+      final notesFolderId = await _getNotesFolderId(driveService);
+
+      // Create filename with .md extension
+      final fileName = _currentNote!.title.endsWith('.md')
+          ? _currentNote!.title
+          : '${_currentNote!.title}.md';
+
+      // Convert content to bytes
+      final contentBytes = utf8.encode(content);
+
+      // Upload to Drive Notes folder
+      final driveFile = await driveService.uploadFileFromBytes(
+        Uint8List.fromList(contentBytes),
+        fileName,
+        notesFolderId,
+      );
+
+      if (!mounted) return;
+
+      _showSnackBar('Note exported to Drive/Notes: ${driveFile.name}');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Failed to export note: $e', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  /// Get or create the Notes folder in Google Drive (same as drawing notes)
+  Future<String> _getNotesFolderId(DriveService driveService) async {
+    try {
+      final appFolderId = await driveService.getAppFolderId();
+      final files = await driveService.listFiles(appFolderId);
+
+      // Look for existing Notes folder
+      final notesFolder = files.firstWhere(
+        (file) => file.isFolder && file.name == 'Notes',
+        orElse: () => DriveFile(
+          id: '',
+          name: '',
+          parentId: '',
+          size: 0,
+          createdTime: DateTime.now(),
+          modifiedTime: DateTime.now(),
+        ),
+      );
+
+      if (notesFolder.id.isNotEmpty) {
+        return notesFolder.id;
+      } else {
+        // Create Notes folder
+        final newFolder = await driveService.createFolder('Notes', appFolderId);
+        return newFolder.id;
+      }
+    } catch (e) {
+      debugPrint('Error getting notes folder: $e');
+      rethrow;
+    }
   }
 
   void _showStatistics() {
