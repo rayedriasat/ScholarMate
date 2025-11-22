@@ -843,22 +843,19 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
   // Zoom Methods
   void _zoomIn() {
     setState(() {
-      _zoomLevel = (_zoomLevel + 0.25).clamp(0.5, 3.0);
-      _pdfViewerController.zoomLevel = _zoomLevel;
+      _zoomLevel = (_zoomLevel + 0.25).clamp(0.25, 3.0);
     });
   }
 
   void _zoomOut() {
     setState(() {
-      _zoomLevel = (_zoomLevel - 0.25).clamp(0.5, 3.0);
-      _pdfViewerController.zoomLevel = _zoomLevel;
+      _zoomLevel = (_zoomLevel - 0.25).clamp(0.25, 3.0);
     });
   }
 
   void _fitToPage() {
     setState(() {
       _zoomLevel = 1.0;
-      _pdfViewerController.zoomLevel = 1.0;
     });
   }
 
@@ -1793,7 +1790,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                             ? Colors.grey[300]
                             : Colors.grey[700],
                       ),
-                      onPressed: _zoomLevel > 0.5 ? _zoomOut : null,
+                      onPressed: _zoomLevel > 0.25 ? _zoomOut : null,
                       tooltip: 'Zoom out',
                       iconSize: 20,
                       padding: const EdgeInsets.all(8),
@@ -1879,52 +1876,84 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
               Expanded(
                 child: Row(
                   children: [
-                    // PDF Viewer
+                    // PDF Viewer with horizontal letterboxing for zoom < 100%
                     Expanded(
-                      child: SfPdfViewer.memory(
-                        pdfManager.currentPdfBytes!,
-                        key: _pdfViewerKey,
-                        controller: _pdfViewerController,
-                        onDocumentLoaded: (PdfDocumentLoadedDetails details) {
-                          setState(() {
-                            _totalPages = details.document.pages.count;
-                            _annotations = _pdfViewerController
-                                .getAnnotations();
-                          });
-                        },
-                        onPageChanged: (PdfPageChangedDetails details) {
-                          setState(() {
-                            _currentPage = details.newPageNumber;
-                          });
-                          // Track page read
-                          _analyticsService?.updateCurrentPage(_currentPage);
-                        },
-                        onAnnotationAdded: (Annotation annotation) {
-                          _onAnnotationAdded(annotation);
-                        },
-                        onAnnotationSelected: (Annotation annotation) {
-                          // Show context menu for annotation
-                          _showAnnotationContextMenu(annotation);
-                        },
-                        onAnnotationDeselected: (Annotation annotation) {
-                          // Annotation deselected
-                        },
-                        onAnnotationEdited: (Annotation annotation) {
-                          setState(() {
-                            _annotations = _pdfViewerController
-                                .getAnnotations();
-                          });
-                          // Auto-save when annotation is edited
-                          _savePdfWithAnnotations();
-                        },
-                        onAnnotationRemoved: (Annotation annotation) {
-                          setState(() {
-                            _annotations = _pdfViewerController
-                                .getAnnotations();
-                          });
-                          // Auto-save when annotation is removed
-                          _savePdfWithAnnotations();
-                        },
+                      child: Container(
+                        color: const Color(0xFF333333),
+                        child: Row(
+                          children: [
+                            // Left black bar (only visible when zoomed < 100%)
+                            if (_zoomLevel < 1.0)
+                              Expanded(
+                                flex: ((1.0 - _zoomLevel) * 100).toInt(),
+                                child: Container(
+                                  color: const Color(0xFF333333),
+                                ),
+                              ),
+                            // PDF Viewer (fills vertical space)
+                            Expanded(
+                              flex: (_zoomLevel * 200).toInt(),
+                              child: SfPdfViewer.memory(
+                                pdfManager.currentPdfBytes!,
+                                key: _pdfViewerKey,
+                                controller: _pdfViewerController,
+                                onDocumentLoaded:
+                                    (PdfDocumentLoadedDetails details) {
+                                      setState(() {
+                                        _totalPages =
+                                            details.document.pages.count;
+                                        _annotations = _pdfViewerController
+                                            .getAnnotations();
+                                      });
+                                    },
+                                onPageChanged: (PdfPageChangedDetails details) {
+                                  setState(() {
+                                    _currentPage = details.newPageNumber;
+                                  });
+                                  // Track page read
+                                  _analyticsService?.updateCurrentPage(
+                                    _currentPage,
+                                  );
+                                },
+                                onAnnotationAdded: (Annotation annotation) {
+                                  _onAnnotationAdded(annotation);
+                                },
+                                onAnnotationSelected: (Annotation annotation) {
+                                  // Show context menu for annotation
+                                  _showAnnotationContextMenu(annotation);
+                                },
+                                onAnnotationDeselected:
+                                    (Annotation annotation) {
+                                      // Annotation deselected
+                                    },
+                                onAnnotationEdited: (Annotation annotation) {
+                                  setState(() {
+                                    _annotations = _pdfViewerController
+                                        .getAnnotations();
+                                  });
+                                  // Auto-save when annotation is edited
+                                  _savePdfWithAnnotations();
+                                },
+                                onAnnotationRemoved: (Annotation annotation) {
+                                  setState(() {
+                                    _annotations = _pdfViewerController
+                                        .getAnnotations();
+                                  });
+                                  // Auto-save when annotation is removed
+                                  _savePdfWithAnnotations();
+                                },
+                              ),
+                            ),
+                            // Right black bar (only visible when zoomed < 100%)
+                            if (_zoomLevel < 1.0)
+                              Expanded(
+                                flex: ((1.0 - _zoomLevel) * 100).toInt(),
+                                child: Container(
+                                  color: const Color(0xFF333333),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                     // Annotation panel (desktop) or bottom sheet (mobile)
