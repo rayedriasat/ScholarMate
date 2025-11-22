@@ -15,7 +15,7 @@ ocr_service = OCRService()
 @router.post("/process", response_model=OCRProcessResponse)
 async def process_ocr(request: OCRProcessRequest):
     """
-    Process images and extract text using hybrid OCR (DeepSeek online or Tesseract offline).
+    Process images and extract text using Tesseract OCR.
     
     Args:
         request: OCR process request with base64 encoded images
@@ -32,11 +32,10 @@ async def process_ocr(request: OCRProcessRequest):
         
         logger.info(f"Processing {len(request.images)} images for OCR")
         
-        # Process images with hybrid approach
+        # Process images with Tesseract
         results = await ocr_service.process_images(
             request.images, 
-            request.language,
-            use_deepseek=True  # Try DeepSeek first, fallback to Tesseract
+            request.language
         )
         
         # Build response
@@ -46,17 +45,14 @@ async def process_ocr(request: OCRProcessRequest):
                 text=text,
                 confidence=confidence
             )
-            for page_num, text, confidence, _ in results
+            for page_num, text, confidence in results
         ]
-        
-        # Determine which OCR mode was used
-        ocr_mode = "deepseek" if ocr_service.deepseek_api_key else "tesseract"
         
         return OCRProcessResponse(
             success=True,
             pages=pages,
             total_pages=len(pages),
-            message=f"Successfully processed {len(pages)} pages using {ocr_mode.upper()}"
+            message=f"Successfully processed {len(pages)} pages using Tesseract OCR"
         )
         
     except Exception as e:
@@ -68,12 +64,13 @@ async def process_ocr(request: OCRProcessRequest):
 
 
 @router.post("/pdf-to-markdown")
-async def pdf_to_markdown(file: bytes = None):
+async def pdf_to_markdown(file: bytes = None, language: str = "eng"):
     """
-    Convert PDF to Markdown using DeepSeek OCR (online only).
+    Convert PDF to Markdown using Tesseract OCR.
     
     Args:
         file: PDF file bytes
+        language: OCR language code (default: 'eng')
         
     Returns:
         Markdown formatted text
@@ -85,21 +82,15 @@ async def pdf_to_markdown(file: bytes = None):
                 detail="No PDF file provided"
             )
         
-        if not ocr_service.deepseek_api_key:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="PDF to Markdown conversion requires DeepSeek API key (online mode only)"
-            )
-        
         logger.info(f"Converting PDF to Markdown ({len(file)} bytes)")
         
-        # Convert PDF to Markdown
-        markdown = await ocr_service.pdf_to_markdown(file)
+        # Convert PDF to Markdown using Tesseract
+        markdown = await ocr_service.pdf_to_markdown(file, language)
         
         return {
             "success": True,
             "markdown": markdown,
-            "message": "PDF successfully converted to Markdown"
+            "message": "PDF successfully converted to Markdown using Tesseract OCR"
         }
         
     except HTTPException:
@@ -114,38 +105,18 @@ async def pdf_to_markdown(file: bytes = None):
 
 @router.get("/health")
 async def health_check():
-    """Check if OCR service is available."""
+    """Check if Tesseract OCR service is available."""
     try:
-        # Use the configured OCR service to check Tesseract
-        import os
-        
-        # Check if tesseract_cmd is configured
+        # Check Tesseract availability
         tesseract_path = pytesseract.pytesseract.tesseract_cmd
-        
-        # If not configured, try common paths
-        if tesseract_path == 'tesseract':
-            possible_paths = [
-                r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-                r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-            ]
-            for path in possible_paths:
-                if os.path.exists(path):
-                    pytesseract.pytesseract.tesseract_cmd = path
-                    tesseract_path = path
-                    break
-        
         version = pytesseract.get_tesseract_version()
-        
-        # Check DeepSeek availability
-        deepseek_available = ocr_service.deepseek_api_key is not None
         
         return {
             "status": "healthy",
             "tesseract_version": str(version),
             "tesseract_path": tesseract_path,
             "tesseract_available": True,
-            "deepseek_available": deepseek_available,
-            "ocr_mode": "hybrid" if deepseek_available else "tesseract_only"
+            "ocr_engine": "tesseract"
         }
     except Exception as e:
         logger.warning(f"Tesseract not available: {e}")
@@ -153,5 +124,5 @@ async def health_check():
             "status": "unavailable",
             "error": str(e),
             "tesseract_available": False,
-            "deepseek_available": ocr_service.deepseek_api_key is not None
+            "message": "Please install Tesseract OCR. See installation guide."
         }

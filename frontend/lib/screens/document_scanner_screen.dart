@@ -443,24 +443,20 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: ocrResult.mode == OCRMode.online
-                    ? Colors.green
-                    : Colors.orange,
+                color: Colors.blue,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    ocrResult.mode == OCRMode.online
-                        ? Icons.cloud
-                        : Icons.offline_bolt,
+                  const Icon(
+                    Icons.document_scanner,
                     size: 16,
                     color: Colors.white,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    ocrResult.mode == OCRMode.online ? 'Online' : 'Offline',
+                    'Tesseract OCR',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -516,11 +512,10 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
             onPressed: () => Navigator.pop(context, 'cancel'),
             child: const Text('Cancel'),
           ),
-          if (ocrResult.mode == OCRMode.online)
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'markdown'),
-              child: const Text('Save as Markdown'),
-            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'markdown'),
+            child: const Text('Save as Markdown'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, 'pdf'),
             child: const Text('Save as PDF'),

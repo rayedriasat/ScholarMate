@@ -290,9 +290,9 @@
     - Design modern camera UI with capture button and flash controls ✅
     - _Requirements: 11.1, 11.2_
   
-  - [x] 10.2 Build DeepSeek OCR service in backend (online mode)
-    - Add DeepSeek OCR dependencies to pyproject.toml ✅
-    - Implement POST /api/ocr/process endpoint using DeepSeek OCR API ✅
+  - [x] 10.2 Build Tesseract OCR service in backend
+    - Add Tesseract OCR dependencies to pyproject.toml ✅
+    - Implement POST /api/ocr/process endpoint using Tesseract OCR ✅
     - Implement POST /api/ocr/pdf-to-markdown endpoint for PDF conversion ✅
     - Process images and return OCR text with high accuracy ✅
     - Support PDF to Markdown conversion with structure preservation ✅
@@ -303,7 +303,7 @@
     - Add flutter_tesseract_ocr dependency to pubspec.yaml ✅
     - Implement offline OCR fallback using flutter_tesseract_ocr ✅
     - Detect online/offline status and route to appropriate OCR service ✅
-    - Show OCR mode indicator (DeepSeek/Tesseract) in UI ✅
+    - Show OCR engine indicator (Tesseract) in UI ✅
     - Cache Tesseract language data for offline use ✅
     - _Requirements: 11.3, 11.4_
   
@@ -331,8 +331,8 @@
     - Add "Convert to Markdown" option in PDF context menu ✅ (in OCR preview)
     - _Requirements: 11.1, 11.6_
 
-**Test Checkpoint**: User can scan documents with camera, OCR processes images using DeepSeek (online) or Tesseract (offline), searchable PDFs are created, and PDFs can be converted to Markdown with preview/editing capabilities.
-✅ **COMPLETED** - Hybrid OCR with DeepSeek (online) and Tesseract (offline), automatic mode detection, OCR mode indicator, searchable PDF generation, Markdown conversion and editor with formatting toolbar implemented. See TASK_10_HYBRID_OCR_COMPLETE.md for details.
+**Test Checkpoint**: User can scan documents with camera, OCR processes images using Tesseract (works online via backend and offline locally), searchable PDFs are created, and PDFs can be converted to Markdown with preview/editing capabilities.
+✅ **COMPLETED** - Tesseract OCR implementation with automatic backend/local fallback, searchable PDF generation, Markdown conversion and editor with formatting toolbar implemented. See OCR_TESSERACT_ONLY.md for details.
 
 ## Phase 9: GROQ AI Integration (Testable Checkpoint)
 
@@ -932,6 +932,6 @@
 - `flutter_tts` - Text-to-speech (Phase 18)
 
 **Backend (FastAPI):**
-- DeepSeek OCR SDK - Online OCR with high accuracy (Phase 8)
+- Tesseract OCR - Free, open-source OCR engine (Phase 8)
 - `langchain` - RAG implementation (Phase 10)
 - `chromadb` - Vector database (Phase 10)

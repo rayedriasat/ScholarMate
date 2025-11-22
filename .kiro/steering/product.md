@@ -16,7 +16,7 @@ Offline-first AI research workspace for PDFs and Markdown, backed by user's Goog
 
 ## Feature Set
 
-**Documents**: PDF viewer with annotations (highlight, underline, strikethrough, squiggly, comments), hybrid OCR (DeepSeek online/Tesseract offline Android), PDF→Markdown conversion, Markdown editor with preview, TTS
+**Documents**: PDF viewer with annotations (highlight, underline, strikethrough, squiggly, comments), Tesseract OCR (works online via backend and offline locally), PDF→Markdown conversion, Markdown editor with preview, TTS
 
 **AI**: RAG semantic search with citations, multi-provider support (OpenRouter, OpenAI, Claude, Gemini, Grok), user API keys (encrypted), ChromaDB vector DB
 

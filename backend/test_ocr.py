@@ -15,16 +15,18 @@ def test_ocr_health():
     data = response.json()
     print(f"Response: {json.dumps(data, indent=2)}")
     
-    if not data.get('available', False):
+    if not data.get('tesseract_available', False):
         print("\n⚠️  WARNING: Tesseract OCR is not available!")
         print("Please install Tesseract OCR to use document scanning.")
-        print("See INSTALL_TESSERACT.md for installation instructions.")
-        print("\nQuick install (Windows):")
-        print("  1. Download from: https://github.com/UB-Mannheim/tesseract/wiki")
-        print("  2. Run installer")
-        print("  3. Restart backend server")
+        print("\nQuick install:")
+        print("  Windows: https://github.com/UB-Mannheim/tesseract/wiki")
+        print("  Linux: sudo apt-get install tesseract-ocr")
+        print("  macOS: brew install tesseract")
+        print("\nAfter installation, restart the backend server.")
     else:
         print("\n✅ Tesseract OCR is available and ready!")
+        print(f"   Version: {data.get('tesseract_version', 'unknown')}")
+        print(f"   Path: {data.get('tesseract_path', 'unknown')}")
     print()
 
 

@@ -27,7 +27,7 @@ inclusion: always
 - **Python**: 3.12+
 - **Package Manager**: uv (with pyproject.toml)
 - **Database**: Supabase Python SDK (PostgreSQL + Realtime)
-- **OCR**: DeepSeek OCR (online, high accuracy)
+- **OCR**: Tesseract OCR (works online and offline, free, open-source)
 - **Vector DB**: Pinecone (cloud-hosted, free tier)
 - **Embeddings**: HuggingFace sentence-transformers (local, free)
 - **LLM**: GROQ (llama-3.3-70b-versatile, free tier)

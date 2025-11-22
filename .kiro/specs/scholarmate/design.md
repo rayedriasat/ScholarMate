@@ -117,8 +117,8 @@ The backend fetches files directly from Google Drive (source of truth) using enc
 **Phase 8: OCR & Document Scanning (Testable Checkpoint)**
 - Camera integration
 - Image capture and cropping
-- DeepSeek OCR backend service (online mode)
-- Flutter Tesseract OCR (offline Android mode)
+- Tesseract OCR backend service (online mode)
+- Flutter Tesseract OCR (offline local mode)
 - Searchable PDF generation
 - PDF to Markdown conversion
 - Markdown preview and editor
@@ -407,20 +407,21 @@ GET /api/tags/statistics
 GET /api/health
 ```
 
-#### 2. OCR Service with DeepSeek OCR
+#### 2. OCR Service with Tesseract OCR
 ```python
 class OCRService:
-    async def process_image_deepseek(self, image_bytes: bytes) -> Dict[str, Any]:
-        """Extract text from image using DeepSeek OCR API with structure preservation"""
+    async def process_images(self, base64_images: List[str], language: str = "eng") -> List[Tuple[int, str, float]]:
+        """Extract text from images using Tesseract OCR"""
         
-    async def pdf_to_markdown(self, pdf_bytes: bytes) -> str:
-        """Convert PDF to Markdown using DeepSeek OCR"""
+    async def pdf_to_markdown(self, pdf_bytes: bytes, language: str = "eng") -> str:
+        """Convert PDF to Markdown using Tesseract OCR"""
         
-    async def create_searchable_pdf(
+    def create_searchable_pdf(
         self, 
-        images: List[bytes], 
-        ocr_texts: List[str]
-    ) -> bytes:
+        base64_images: List[str], 
+        ocr_texts: List[str],
+        output_path: str
+    ) -> bool:
         """Create PDF with embedded OCR text"""
 ```
 

@@ -52,9 +52,8 @@ services:
       - GROQ_CHAT_MODEL=llama-3.3-70b-versatile
       - GROQ_EMBEDDING_MODEL=llama-3.3-70b-versatile
       
-      # OCR Configuration - OPTIONAL
-      - DEEPSEEK_API_KEY
-      - DEEPSEEK_OCR_ENDPOINT=https://api.deepseek.com/v1/ocr
+      # OCR Configuration
+      # Tesseract OCR is installed in the Docker image (no API key needed)
       
       # Encryption - REQUIRED
       - ENCRYPTION_KEY

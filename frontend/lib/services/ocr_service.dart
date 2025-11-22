@@ -10,8 +10,7 @@ import 'package:path/path.dart' as path;
 import 'config_service.dart';
 
 enum OCRMode {
-  online, // DeepSeek OCR (high accuracy)
-  offline, // Tesseract OCR (basic)
+  tesseract, // Tesseract OCR (works online and offline)
 }
 
 class OCRPageResult {
@@ -113,8 +112,8 @@ class OCRService {
     }
   }
 
-  /// Process images with online OCR (DeepSeek via backend)
-  Future<OCRResult> _processImagesOnline(
+  /// Process images with backend OCR (Tesseract via backend API)
+  Future<OCRResult> _processImagesViaBackend(
     List<dynamic> imageFiles, {
     String language = 'eng',
   }) async {
@@ -126,7 +125,7 @@ class OCRService {
       base64Images.add(base64);
     }
 
-    // Send to backend
+    // Send to backend for processing
     final baseUrl = _configService.apiBaseUrl;
     final response = await http.post(
       Uri.parse('$baseUrl/api/ocr/process'),
@@ -136,14 +135,14 @@ class OCRService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return OCRResult.fromJson(data, OCRMode.online);
+      return OCRResult.fromJson(data, OCRMode.tesseract);
     } else {
       throw Exception('OCR processing failed: ${response.body}');
     }
   }
 
-  /// Process images with offline OCR (Tesseract on Android)
-  Future<OCRResult> _processImagesOffline(
+  /// Process images with local Tesseract OCR (mobile/desktop only)
+  Future<OCRResult> _processImagesLocally(
     List<dynamic> imageFiles, {
     String language = 'eng',
   }) async {
@@ -157,7 +156,7 @@ class OCRService {
 
     for (int i = 0; i < imageFiles.length; i++) {
       try {
-        debugPrint('Processing image ${i + 1} with Tesseract (offline)...');
+        debugPrint('Processing image ${i + 1} with local Tesseract...');
         debugPrint('Using tessdata path: $tessdataPath');
 
         // Get file path (handle both File and XFile)
@@ -191,7 +190,7 @@ class OCRService {
           ),
         );
       } catch (e) {
-        debugPrint('Offline OCR error for page ${i + 1}: $e');
+        debugPrint('Local Tesseract OCR error for page ${i + 1}: $e');
         debugPrint('Error details: ${e.toString()}');
         pages.add(
           OCRPageResult(
@@ -207,41 +206,43 @@ class OCRService {
       success: true,
       pages: pages,
       totalPages: pages.length,
-      message: 'Processed ${pages.length} pages using Tesseract (offline)',
-      mode: OCRMode.offline,
+      message: 'Processed ${pages.length} pages using Tesseract OCR',
+      mode: OCRMode.tesseract,
     );
   }
 
-  /// Process images with hybrid OCR (online preferred, offline fallback)
+  /// Process images with Tesseract OCR (backend or local)
   Future<OCRResult> processImages(
     List<dynamic> imageFiles, {
     String language = 'eng',
-    bool forceOffline = false,
+    bool forceLocal = false,
   }) async {
     try {
-      // On web, always use online mode (no offline support)
+      // On web, always use backend (no local Tesseract support)
       if (kIsWeb) {
-        debugPrint('Web platform detected, using online OCR only');
-        return await _processImagesOnline(imageFiles, language: language);
+        debugPrint('Web platform: using backend Tesseract OCR');
+        return await _processImagesViaBackend(imageFiles, language: language);
       }
 
-      // On mobile/desktop: try online first, fallback to offline
-      if (!forceOffline && await _isOnline()) {
+      // On mobile/desktop: prefer backend when online, use local when offline
+      if (!forceLocal && await _isOnline()) {
         try {
-          return await _processImagesOnline(imageFiles, language: language);
+          debugPrint('Online: using backend Tesseract OCR');
+          return await _processImagesViaBackend(imageFiles, language: language);
         } catch (e) {
-          debugPrint('Online OCR failed, falling back to offline: $e');
-          // Fall through to offline mode
+          debugPrint('Backend OCR failed, falling back to local: $e');
+          // Fall through to local mode
         }
       }
 
-      // Use offline mode (mobile/desktop only)
+      // Use local Tesseract (mobile/desktop only)
       try {
-        return await _processImagesOffline(imageFiles, language: language);
+        debugPrint('Using local Tesseract OCR');
+        return await _processImagesLocally(imageFiles, language: language);
       } catch (e) {
-        debugPrint('Offline OCR failed: $e');
+        debugPrint('Local OCR failed: $e');
         throw Exception(
-          'OCR failed. Please check your internet connection and try again.',
+          'OCR failed. Please ensure Tesseract is properly configured.',
         );
       }
     } catch (e) {
@@ -249,12 +250,12 @@ class OCRService {
     }
   }
 
-  /// Convert PDF to Markdown (online only, requires DeepSeek)
-  Future<String> pdfToMarkdown(File pdfFile) async {
+  /// Convert PDF to Markdown using Tesseract OCR (requires backend)
+  Future<String> pdfToMarkdown(File pdfFile, {String language = 'eng'}) async {
     try {
       if (!await _isOnline()) {
         throw Exception(
-          'PDF to Markdown conversion requires internet connection',
+          'PDF to Markdown conversion requires backend connection',
         );
       }
 
@@ -262,7 +263,7 @@ class OCRService {
       final baseUrl = _configService.apiBaseUrl;
 
       final response = await http.post(
-        Uri.parse('$baseUrl/api/ocr/pdf-to-markdown'),
+        Uri.parse('$baseUrl/api/ocr/pdf-to-markdown?language=$language'),
         headers: {'Content-Type': 'application/octet-stream'},
         body: bytes,
       );
@@ -278,7 +279,7 @@ class OCRService {
     }
   }
 
-  /// Check if OCR service is available
+  /// Check if Tesseract OCR service is available
   Future<Map<String, dynamic>> checkHealth() async {
     try {
       final baseUrl = _configService.apiBaseUrl;
@@ -289,8 +290,8 @@ class OCRService {
         return {
           'available': true,
           'tesseract_available': data['tesseract_available'] ?? false,
-          'deepseek_available': data['deepseek_available'] ?? false,
-          'ocr_mode': data['ocr_mode'] ?? 'unknown',
+          'tesseract_version': data['tesseract_version'] ?? 'unknown',
+          'ocr_engine': data['ocr_engine'] ?? 'tesseract',
         };
       }
       return {'available': false};

@@ -163,11 +163,11 @@ ScholarMate is an offline-first, Google-Drive-backed AI research workspace for m
 
 1. THE Flutter_Client SHALL provide camera capture interface for document scanning
 2. THE Flutter_Client SHALL perform perspective correction on captured images
-3. WHEN a user completes scanning online, THE Flutter_Client SHALL send images to FastAPI_Backend for DeepSeek OCR processing
-4. THE FastAPI_Backend SHALL process images using DeepSeek OCR API to extract text with high accuracy and structure preservation
+3. WHEN a user completes scanning, THE Flutter_Client SHALL send images to FastAPI_Backend for Tesseract OCR processing (when online) or process locally (when offline)
+4. THE FastAPI_Backend SHALL process images using Tesseract OCR to extract text with good accuracy
 5. WHEN a user completes scanning offline on Android, THE Flutter_Client SHALL use flutter_tesseract_ocr for local OCR processing
 6. THE Flutter_Client SHALL create a searchable PDF with embedded OCR text and save to Google_Drive_Storage
-7. THE FastAPI_Backend SHALL provide PDF to Markdown conversion using DeepSeek OCR
+7. THE FastAPI_Backend SHALL provide PDF to Markdown conversion using Tesseract OCR
 8. THE Flutter_Client SHALL provide Markdown preview and editor with live rendering and formatting toolbar
 
 ### Requirement 12: AI Chat with GROQ

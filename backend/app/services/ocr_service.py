@@ -1,103 +1,74 @@
-"""OCR service for text extraction from images using hybrid DeepSeek/Tesseract approach."""
+"""OCR service for text extraction from images using Tesseract OCR."""
 import base64
 import io
 import logging
 import os
+import platform
 from typing import List, Tuple, Dict, Any, Optional
 from PIL import Image
 import pytesseract
-import requests
 
 logger = logging.getLogger(__name__)
 
 
 class OCRService:
-    """Service for performing OCR on images with hybrid DeepSeek/Tesseract support."""
+    """Service for performing OCR on images using Tesseract OCR."""
     
     def __init__(self):
-        """Initialize OCR service."""
-        # Configure Tesseract for offline fallback
+        """Initialize OCR service with Tesseract."""
+        self._configure_tesseract()
+        self._verify_tesseract()
+    
+    def _configure_tesseract(self):
+        """Configure Tesseract executable path based on platform."""
         try:
-            # Common Windows installation paths
-            possible_paths = [
-                r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-                r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-            ]
-            found = False
-            for path in possible_paths:
-                if os.path.exists(path):
-                    pytesseract.pytesseract.tesseract_cmd = path
-                    logger.info(f"✅ Tesseract found and configured at: {path}")
-                    found = True
-                    break
+            system = platform.system()
             
-            if not found:
-                logger.warning("⚠️ Tesseract not found in common Windows paths. Assuming it's in PATH.")
+            if system == "Windows":
+                # Common Windows installation paths
+                possible_paths = [
+                    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+                ]
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        pytesseract.pytesseract.tesseract_cmd = path
+                        logger.info(f"✅ Tesseract configured at: {path}")
+                        return
+                logger.info("⚠️ Tesseract not found in common Windows paths. Assuming it's in PATH.")
+            
+            elif system == "Linux":
+                # On Linux (including Docker), tesseract is usually in PATH
+                logger.info("✅ Tesseract configured for Linux (using PATH)")
+            
+            elif system == "Darwin":
+                # macOS - usually installed via Homebrew
+                possible_paths = [
+                    "/usr/local/bin/tesseract",
+                    "/opt/homebrew/bin/tesseract",
+                ]
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        pytesseract.pytesseract.tesseract_cmd = path
+                        logger.info(f"✅ Tesseract configured at: {path}")
+                        return
+                logger.info("⚠️ Tesseract not found in common macOS paths. Assuming it's in PATH.")
+        
         except Exception as e:
             logger.warning(f"Could not configure Tesseract path: {e}")
-        
-        # DeepSeek OCR configuration
-        self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
-        self.deepseek_endpoint = os.getenv("DEEPSEEK_OCR_ENDPOINT", "https://api.deepseek.com/v1/ocr")
-        
-        if self.deepseek_api_key:
-            logger.info("✅ DeepSeek OCR configured (online mode available)")
-        else:
-            logger.warning("⚠️ DeepSeek API key not found. Only Tesseract (offline) mode available.")
     
-    async def process_images_deepseek(self, base64_images: List[str]) -> List[Tuple[int, str, float, Optional[Dict]]]:
-        """
-        Process images using DeepSeek OCR (online mode with high accuracy).
-        
-        Args:
-            base64_images: List of base64 encoded images
-            
-        Returns:
-            List of tuples (page_number, text, confidence, structure)
-        """
-        if not self.deepseek_api_key:
-            raise ValueError("DeepSeek API key not configured")
-        
-        results = []
-        
-        for idx, base64_image in enumerate(base64_images):
-            try:
-                # Call DeepSeek OCR API
-                response = requests.post(
-                    self.deepseek_endpoint,
-                    headers={
-                        "Authorization": f"Bearer {self.deepseek_api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "image": base64_image,
-                        "preserve_structure": True,
-                        "output_format": "json"
-                    },
-                    timeout=30
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    text = data.get("text", "")
-                    confidence = data.get("confidence", 0.0) * 100  # Convert to percentage
-                    structure = data.get("structure")
-                    
-                    results.append((idx + 1, text.strip(), confidence, structure))
-                    logger.info(f"DeepSeek processed page {idx + 1}: {len(text)} characters, {confidence:.1f}% confidence")
-                else:
-                    logger.error(f"DeepSeek API error: {response.status_code} - {response.text}")
-                    results.append((idx + 1, f"[DeepSeek API error: {response.status_code}]", 0.0, None))
-                    
-            except Exception as e:
-                logger.error(f"Error calling DeepSeek OCR for image {idx + 1}: {e}")
-                results.append((idx + 1, f"[Error: {str(e)}]", 0.0, None))
-        
-        return results
+    def _verify_tesseract(self):
+        """Verify Tesseract is available and working."""
+        try:
+            version = pytesseract.get_tesseract_version()
+            logger.info(f"✅ Tesseract OCR v{version} is ready")
+        except Exception as e:
+            logger.error(f"❌ Tesseract OCR is not available: {e}")
+            logger.error("Please install Tesseract OCR to use document scanning features.")
     
     def process_images_tesseract(self, base64_images: List[str], language: str = "eng") -> List[Tuple[int, str, float]]:
         """
-        Process images using Tesseract OCR (offline fallback).
+        Process images using Tesseract OCR.
         
         Args:
             base64_images: List of base64 encoded images
@@ -135,73 +106,60 @@ class OCRService:
         
         return results
     
-    async def process_images(self, base64_images: List[str], language: str = "eng", use_deepseek: bool = True) -> List[Tuple[int, str, float, Optional[Dict]]]:
+    async def process_images(self, base64_images: List[str], language: str = "eng") -> List[Tuple[int, str, float]]:
         """
-        Process images with hybrid OCR (DeepSeek online or Tesseract offline).
+        Process images using Tesseract OCR.
         
         Args:
             base64_images: List of base64 encoded images
-            language: OCR language code for Tesseract (default: 'eng')
-            use_deepseek: Try DeepSeek first if available (default: True)
+            language: OCR language code (default: 'eng')
             
         Returns:
-            List of tuples (page_number, text, confidence, structure)
+            List of tuples (page_number, text, confidence)
         """
-        # Try DeepSeek if requested and available
-        if use_deepseek and self.deepseek_api_key:
-            try:
-                logger.info("Using DeepSeek OCR (online mode)")
-                return await self.process_images_deepseek(base64_images)
-            except Exception as e:
-                logger.warning(f"DeepSeek OCR failed, falling back to Tesseract: {e}")
-        
-        # Fallback to Tesseract
-        logger.info("Using Tesseract OCR (offline mode)")
-        tesseract_results = self.process_images_tesseract(base64_images, language)
-        # Convert to same format (add None for structure)
-        return [(page, text, conf, None) for page, text, conf in tesseract_results]
+        logger.info(f"Processing {len(base64_images)} images with Tesseract OCR")
+        return self.process_images_tesseract(base64_images, language)
     
-    async def pdf_to_markdown(self, pdf_bytes: bytes) -> str:
+    async def pdf_to_markdown(self, pdf_bytes: bytes, language: str = "eng") -> str:
         """
-        Convert PDF to Markdown using DeepSeek OCR (online only).
+        Convert PDF to Markdown using Tesseract OCR.
         
         Args:
             pdf_bytes: PDF file bytes
+            language: OCR language code (default: 'eng')
             
         Returns:
             Markdown formatted text
         """
-        if not self.deepseek_api_key:
-            raise ValueError("DeepSeek API key required for PDF to Markdown conversion")
-        
         try:
-            # Convert PDF bytes to base64
-            pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
+            from pdf2image import convert_from_bytes
             
-            # Call DeepSeek PDF to Markdown API
-            response = requests.post(
-                f"{self.deepseek_endpoint}/pdf-to-markdown",
-                headers={
-                    "Authorization": f"Bearer {self.deepseek_api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "pdf": pdf_base64,
-                    "preserve_layout": True,
-                    "include_tables": True
-                },
-                timeout=60
-            )
+            logger.info("Converting PDF to images for OCR processing...")
             
-            if response.status_code == 200:
-                data = response.json()
-                markdown = data.get("markdown", "")
-                logger.info(f"PDF converted to Markdown: {len(markdown)} characters")
-                return markdown
-            else:
-                error_msg = f"DeepSeek API error: {response.status_code} - {response.text}"
-                logger.error(error_msg)
-                raise Exception(error_msg)
+            # Convert PDF pages to images
+            images = convert_from_bytes(pdf_bytes)
+            logger.info(f"Converted PDF to {len(images)} images")
+            
+            # Convert images to base64
+            base64_images = []
+            for img in images:
+                buffer = io.BytesIO()
+                img.save(buffer, format='PNG')
+                img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                base64_images.append(img_base64)
+            
+            # Process with Tesseract
+            results = self.process_images_tesseract(base64_images, language)
+            
+            # Convert to Markdown format
+            markdown_parts = []
+            for page_num, text, confidence in results:
+                if text and not text.startswith('[Error'):
+                    markdown_parts.append(f"## Page {page_num}\n\n{text}\n")
+            
+            markdown = "\n".join(markdown_parts)
+            logger.info(f"PDF converted to Markdown: {len(markdown)} characters")
+            return markdown
                 
         except Exception as e:
             logger.error(f"Error converting PDF to Markdown: {e}")
