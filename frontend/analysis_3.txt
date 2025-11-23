@@ -1,0 +1,14 @@
+Analyzing 3 items...                                            
+
+   info - Don't use 'BuildContext's across async gaps - lib\screens\pdf_viewer_screen.dart:494:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\pdf_viewer_screen.dart:501:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\pdf_viewer_screen.dart:502:37 - use_build_context_synchronously
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\pdf_viewer_screen.dart:674:45 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\pdf_viewer_screen.dart:674:60 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\pdf_viewer_screen.dart:677:45 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\pdf_viewer_screen.dart:677:60 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\pdf_viewer_screen.dart:680:41 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\pdf_viewer_screen.dart:680:56 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\pdf_viewer_screen.dart:1114:44 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\pdf_viewer_screen.dart:1525:44 - use_build_context_synchronously
+

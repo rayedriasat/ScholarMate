@@ -69,6 +69,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
   // Metadata sidebar state
   bool _showMetadataSidebar = false;
 
+  // Chat panel state
+  bool _showChatPanel = false;
+
   // Zoom state
   double _zoomLevel = 1.0;
 
@@ -874,18 +877,32 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
       return;
     }
 
-    // Navigate to AI chat screen with the current PDF preselected
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AIChatScreen(
-          preselectedFileId: fileId,
-          preselectedFileName: fileName,
+    // Check screen width
+    final isWideScreen = MediaQuery.of(context).size.width >= 900;
+
+    if (isWideScreen) {
+      setState(() {
+        _showChatPanel = !_showChatPanel;
+        // Close other sidebars if opening chat
+        if (_showChatPanel) {
+          _showMetadataSidebar = false;
+          _showAnnotations = false;
+        }
+      });
+    } else {
+      // Navigate to AI chat screen with the current PDF preselected
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AIChatScreen(
+            preselectedFileId: fileId,
+            preselectedFileName: fileName,
+          ),
         ),
-      ),
-    ).then((_) {
-      // When returning from chat, we could optionally refresh or do something
-    });
+      ).then((_) {
+        // When returning from chat, we could optionally refresh or do something
+      });
+    }
   }
 
   void _startCollaboration() {
@@ -1635,396 +1652,451 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
           ],
         ],
       ),
-      body: Consumer<PdfViewerManager>(
-        builder: (context, pdfManager, child) {
-          if (pdfManager.isLoading) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text(
-                    pdfManager.downloadProgress < 1.0
-                        ? 'Downloading... ${(pdfManager.downloadProgress * 100).toStringAsFixed(0)}%'
-                        : 'Loading PDF...',
-                  ),
-                  if (pdfManager.downloadProgress > 0 &&
-                      pdfManager.downloadProgress < 1.0)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 48,
-                        vertical: 16,
-                      ),
-                      child: LinearProgressIndicator(
-                        value: pdfManager.downloadProgress,
-                      ),
-                    ),
-                ],
-              ),
-            );
-          }
-
-          if (pdfManager.errorMessage != null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Failed to load PDF',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      pdfManager.errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _loadPdf,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          if (pdfManager.currentPdfBytes == null) {
-            return const Center(child: Text('No PDF loaded'));
-          }
-
-          return Column(
-            children: [
-              // TTS Controls
-              if (_showTtsControls)
-                TtsControls(
-                  onPlay: _speakCurrentPage,
-                  onNextPage: _onTtsNextPage,
-                  onPreviousPage: _onTtsPreviousPage,
-                  canGoNext: _currentPage < _totalPages,
-                  canGoPrevious: _currentPage > 1,
-                ),
-              // Search bar
-              if (_isSearching)
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[850]
-                      : Colors.grey[200],
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: const InputDecoration(
-                            hintText: 'Search in PDF...',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+      body: Row(
+        children: [
+          Expanded(
+            child: Consumer<PdfViewerManager>(
+              builder: (context, pdfManager, child) {
+                if (pdfManager.isLoading) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(
+                          pdfManager.downloadProgress < 1.0
+                              ? 'Downloading... ${(pdfManager.downloadProgress * 100).toStringAsFixed(0)}%'
+                              : 'Loading PDF...',
+                        ),
+                        if (pdfManager.downloadProgress > 0 &&
+                            pdfManager.downloadProgress < 1.0)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 48,
+                              vertical: 16,
+                            ),
+                            child: LinearProgressIndicator(
+                              value: pdfManager.downloadProgress,
                             ),
                           ),
-                          onSubmitted: (_) => _performSearch(),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.search_outlined, size: 20),
-                        onPressed: _performSearch,
-                        tooltip: 'Search',
-                        iconSize: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              // Annotation toolbar
-              if (_showAnnotationToolbar)
-                AnnotationToolbar(
-                  selectedMode: _pdfViewerController.annotationMode,
-                  selectedColor: _selectedAnnotationColor,
-                  onModeChanged: _onAnnotationModeChanged,
-                  onColorChanged: _onAnnotationColorChanged,
-                ),
-              // Zoom controls bar
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[850]
-                      : Colors.grey[100],
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[700]!
-                          : Colors.grey[300]!,
-                      width: 1,
+                      ],
                     ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  );
+                }
+
+                if (pdfManager.errorMessage != null) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Failed to load PDF',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            pdfManager.errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _loadPdf,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                if (pdfManager.currentPdfBytes == null) {
+                  return const Center(child: Text('No PDF loaded'));
+                }
+
+                return Column(
                   children: [
-                    // Zoom out
-                    IconButton(
-                      icon: Icon(
-                        Icons.zoom_out_outlined,
-                        size: 20,
+                    // TTS Controls
+                    if (_showTtsControls)
+                      TtsControls(
+                        onPlay: _speakCurrentPage,
+                        onNextPage: _onTtsNextPage,
+                        onPreviousPage: _onTtsPreviousPage,
+                        canGoNext: _currentPage < _totalPages,
+                        canGoPrevious: _currentPage > 1,
+                      ),
+                    // Search bar
+                    if (_isSearching)
+                      Container(
+                        padding: const EdgeInsets.all(8.0),
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[300]
-                            : Colors.grey[700],
-                      ),
-                      onPressed: _zoomLevel > 0.25 ? _zoomOut : null,
-                      tooltip: 'Zoom out',
-                      iconSize: 20,
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 12),
-                    // Zoom level display
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[800]
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.grey[600]!
-                              : Colors.grey[300]!,
-                        ),
-                      ),
-                      child: Text(
-                        '${(_zoomLevel * 100).toInt()}%',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.grey[200]
-                              : Colors.grey[800],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Zoom in
-                    IconButton(
-                      icon: Icon(
-                        Icons.zoom_in_outlined,
-                        size: 20,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[300]
-                            : Colors.grey[700],
-                      ),
-                      onPressed: _zoomLevel < 3.0 ? _zoomIn : null,
-                      tooltip: 'Zoom in',
-                      iconSize: 20,
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 16),
-                    // Fit to page
-                    TextButton.icon(
-                      onPressed: _fitToPage,
-                      icon: Icon(
-                        Icons.fit_screen_outlined,
-                        size: 18,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[300]
-                            : null,
-                      ),
-                      label: Text(
-                        'Fit',
-                        style: TextStyle(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.grey[300]
-                              : null,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // PDF Viewer with annotation panel
-              Expanded(
-                child: Row(
-                  children: [
-                    // PDF Viewer with horizontal letterboxing for zoom < 100%
-                    Expanded(
-                      child: Container(
-                        color: const Color(0xFF333333),
+                            ? Colors.grey[850]
+                            : Colors.grey[200],
                         child: Row(
                           children: [
-                            // Left black bar (only visible when zoomed < 100%)
-                            if (_zoomLevel < 1.0)
-                              Expanded(
-                                flex: ((1.0 - _zoomLevel) * 100).toInt(),
-                                child: Container(
-                                  color: const Color(0xFF333333),
-                                ),
-                              ),
-                            // PDF Viewer (fills vertical space)
                             Expanded(
-                              flex: (_zoomLevel * 200).toInt(),
-                              child: SfPdfViewer.memory(
-                                pdfManager.currentPdfBytes!,
-                                key: _pdfViewerKey,
-                                controller: _pdfViewerController,
-                                onDocumentLoaded:
-                                    (PdfDocumentLoadedDetails details) {
-                                      setState(() {
-                                        _totalPages =
-                                            details.document.pages.count;
-                                        _annotations = _pdfViewerController
-                                            .getAnnotations();
-                                      });
-                                    },
-                                onPageChanged: (PdfPageChangedDetails details) {
-                                  setState(() {
-                                    _currentPage = details.newPageNumber;
-                                  });
-                                  // Track page read
-                                  _analyticsService?.updateCurrentPage(
-                                    _currentPage,
-                                  );
-                                },
-                                onAnnotationAdded: (Annotation annotation) {
-                                  _onAnnotationAdded(annotation);
-                                },
-                                onAnnotationSelected: (Annotation annotation) {
-                                  // Show context menu for annotation
-                                  _showAnnotationContextMenu(annotation);
-                                },
-                                onAnnotationDeselected:
-                                    (Annotation annotation) {
-                                      // Annotation deselected
-                                    },
-                                onAnnotationEdited: (Annotation annotation) {
-                                  setState(() {
-                                    _annotations = _pdfViewerController
-                                        .getAnnotations();
-                                  });
-                                  // Auto-save when annotation is edited
-                                  _savePdfWithAnnotations();
-                                },
-                                onAnnotationRemoved: (Annotation annotation) {
-                                  setState(() {
-                                    _annotations = _pdfViewerController
-                                        .getAnnotations();
-                                  });
-                                  // Auto-save when annotation is removed
-                                  _savePdfWithAnnotations();
-                                },
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: const InputDecoration(
+                                  hintText: 'Search in PDF...',
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                onSubmitted: (_) => _performSearch(),
                               ),
                             ),
-                            // Right black bar (only visible when zoomed < 100%)
-                            if (_zoomLevel < 1.0)
-                              Expanded(
-                                flex: ((1.0 - _zoomLevel) * 100).toInt(),
-                                child: Container(
-                                  color: const Color(0xFF333333),
-                                ),
-                              ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.search_outlined, size: 20),
+                              onPressed: _performSearch,
+                              tooltip: 'Search',
+                              iconSize: 20,
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                    // Annotation panel (desktop) or bottom sheet (mobile)
-                    if (_showAnnotations &&
-                        MediaQuery.of(context).size.width >= 600)
-                      SizedBox(
-                        width: 300,
-                        child: AnnotationListPanel(
-                          annotations: _annotations,
-                          onAnnotationTap: _onAnnotationTap,
-                          onAnnotationDelete: _onAnnotationDelete,
+                    // Annotation toolbar
+                    if (_showAnnotationToolbar)
+                      AnnotationToolbar(
+                        selectedMode: _pdfViewerController.annotationMode,
+                        selectedColor: _selectedAnnotationColor,
+                        onModeChanged: _onAnnotationModeChanged,
+                        onColorChanged: _onAnnotationColorChanged,
+                      ),
+                    // Zoom controls bar
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[850]
+                            : Colors.grey[100],
+                        border: Border(
+                          bottom: BorderSide(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[700]!
+                                : Colors.grey[300]!,
+                            width: 1,
+                          ),
                         ),
                       ),
-                    // Metadata sidebar (desktop only)
-                    if (_showMetadataSidebar &&
-                        MediaQuery.of(context).size.width >= 600)
-                      SizedBox(
-                        width: 350,
-                        child: FileMetadataSidebar(
-                          file:
-                              widget.file ??
-                              DriveFile(
-                                id: widget.fileId ?? '',
-                                name: widget.fileName ?? '',
-                                mimeType: 'application/pdf',
-                                modifiedTime: DateTime.now(),
-                                size: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Zoom out
+                          IconButton(
+                            icon: Icon(
+                              Icons.zoom_out_outlined,
+                              size: 20,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[300]
+                                  : Colors.grey[700],
+                            ),
+                            onPressed: _zoomLevel > 0.25 ? _zoomOut : null,
+                            tooltip: 'Zoom out',
+                            iconSize: 20,
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(),
+                          ),
+                          const SizedBox(width: 12),
+                          // Zoom level display
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.grey[600]!
+                                    : Colors.grey[300]!,
                               ),
-                          metadataService: context.read<MetadataService>(),
-                          onClose: () {
-                            setState(() {
-                              _showMetadataSidebar = false;
-                            });
-                          },
-                        ),
+                            ),
+                            child: Text(
+                              '${(_zoomLevel * 100).toInt()}%',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.grey[200]
+                                    : Colors.grey[800],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Zoom in
+                          IconButton(
+                            icon: Icon(
+                              Icons.zoom_in_outlined,
+                              size: 20,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[300]
+                                  : Colors.grey[700],
+                            ),
+                            onPressed: _zoomLevel < 3.0 ? _zoomIn : null,
+                            tooltip: 'Zoom in',
+                            iconSize: 20,
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(),
+                          ),
+                          const SizedBox(width: 16),
+                          // Fit to page
+                          TextButton.icon(
+                            onPressed: _fitToPage,
+                            icon: Icon(
+                              Icons.fit_screen_outlined,
+                              size: 18,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[300]
+                                  : null,
+                            ),
+                            label: Text(
+                              'Fit',
+                              style: TextStyle(
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.grey[300]
+                                    : null,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    // PDF Viewer with annotation panel
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // PDF Viewer with horizontal letterboxing for zoom < 100%
+                          Expanded(
+                            child: Container(
+                              color: const Color(0xFF333333),
+                              child: Row(
+                                children: [
+                                  // Left black bar (only visible when zoomed < 100%)
+                                  if (_zoomLevel < 1.0)
+                                    Expanded(
+                                      flex: ((1.0 - _zoomLevel) * 100).toInt(),
+                                      child: Container(
+                                        color: const Color(0xFF333333),
+                                      ),
+                                    ),
+                                  // PDF Viewer (fills vertical space)
+                                  Expanded(
+                                    flex: (_zoomLevel * 200).toInt(),
+                                    child: SfPdfViewer.memory(
+                                      pdfManager.currentPdfBytes!,
+                                      key: _pdfViewerKey,
+                                      controller: _pdfViewerController,
+                                      onDocumentLoaded:
+                                          (PdfDocumentLoadedDetails details) {
+                                            setState(() {
+                                              _totalPages =
+                                                  details.document.pages.count;
+                                              _annotations =
+                                                  _pdfViewerController
+                                                      .getAnnotations();
+                                            });
+                                          },
+                                      onPageChanged:
+                                          (PdfPageChangedDetails details) {
+                                            setState(() {
+                                              _currentPage =
+                                                  details.newPageNumber;
+                                            });
+                                            // Track page read
+                                            _analyticsService
+                                                ?.updateCurrentPage(
+                                                  _currentPage,
+                                                );
+                                          },
+                                      onAnnotationAdded:
+                                          (Annotation annotation) {
+                                            _onAnnotationAdded(annotation);
+                                          },
+                                      onAnnotationSelected:
+                                          (Annotation annotation) {
+                                            // Show context menu for annotation
+                                            _showAnnotationContextMenu(
+                                              annotation,
+                                            );
+                                          },
+                                      onAnnotationDeselected:
+                                          (Annotation annotation) {
+                                            // Annotation deselected
+                                          },
+                                      onAnnotationEdited:
+                                          (Annotation annotation) {
+                                            setState(() {
+                                              _annotations =
+                                                  _pdfViewerController
+                                                      .getAnnotations();
+                                            });
+                                            // Auto-save when annotation is edited
+                                            _savePdfWithAnnotations();
+                                          },
+                                      onAnnotationRemoved:
+                                          (Annotation annotation) {
+                                            setState(() {
+                                              _annotations =
+                                                  _pdfViewerController
+                                                      .getAnnotations();
+                                            });
+                                            // Auto-save when annotation is removed
+                                            _savePdfWithAnnotations();
+                                          },
+                                    ),
+                                  ),
+                                  // Right black bar (only visible when zoomed < 100%)
+                                  if (_zoomLevel < 1.0)
+                                    Expanded(
+                                      flex: ((1.0 - _zoomLevel) * 100).toInt(),
+                                      child: Container(
+                                        color: const Color(0xFF333333),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Annotation panel (desktop) or bottom sheet (mobile)
+                          if (_showAnnotations &&
+                              MediaQuery.of(context).size.width >= 600)
+                            SizedBox(
+                              width: 300,
+                              child: AnnotationListPanel(
+                                annotations: _annotations,
+                                onAnnotationTap: _onAnnotationTap,
+                                onAnnotationDelete: _onAnnotationDelete,
+                              ),
+                            ),
+                          // Metadata sidebar (desktop only)
+                          if (_showMetadataSidebar &&
+                              MediaQuery.of(context).size.width >= 600)
+                            SizedBox(
+                              width: 350,
+                              child: FileMetadataSidebar(
+                                file:
+                                    widget.file ??
+                                    DriveFile(
+                                      id: widget.fileId ?? '',
+                                      name: widget.fileName ?? '',
+                                      mimeType: 'application/pdf',
+                                      modifiedTime: DateTime.now(),
+                                      size: 0,
+                                    ),
+                                metadataService: context
+                                    .read<MetadataService>(),
+                                onClose: () {
+                                  setState(() {
+                                    _showMetadataSidebar = false;
+                                  });
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
+                );
+              },
+            ),
+          ),
+          if (_showChatPanel && MediaQuery.of(context).size.width >= 900)
+            Container(
+              width: 400,
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Theme.of(context).dividerColor),
                 ),
               ),
-            ],
-          );
-        },
-      ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF0844), Color(0xFFFFB199)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF0844).withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              child: AIChatScreen(
+                preselectedFileId: widget.file?.id ?? widget.fileId,
+                preselectedFileName: widget.file?.name ?? widget.fileName,
+                isEmbedded: true,
+                onClose: () {
+                  setState(() {
+                    _showChatPanel = false;
+                  });
+                },
+              ),
             ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _openAiChatWithPdf,
-          tooltip: 'Chat with this PDF',
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(
-            Icons.chat_bubble_outline,
-            color: Colors.white,
-            size: 24,
-          ),
-        ),
+        ],
       ),
+      floatingActionButton: !_showChatPanel
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF0844), Color(0xFFFFB199)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF0844).withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                onPressed: _openAiChatWithPdf,
+                tooltip: 'Chat with this PDF',
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: const Icon(
+                  Icons.chat_bubble_outline,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }

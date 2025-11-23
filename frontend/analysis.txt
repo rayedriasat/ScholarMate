@@ -1,0 +1,6 @@
+Analyzing ai_chat_screen.dart...                                
+
+warning - The value of the local variable '<unnamed>' isn't used - lib\screens\ai_chat_screen.dart:577:10 - unused_local_variable
+  error - Expected an identifier - lib\screens\ai_chat_screen.dart:698:5 - missing_identifier
+   info - An uninitialized variable should have an explicit type annotation - lib\screens\ai_chat_screen.dart:698:6 - prefer_typing_uninitialized_variables
+

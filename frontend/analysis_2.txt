@@ -1,0 +1,4 @@
+Analyzing ai_chat_screen.dart...                                
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ai_chat_screen.dart:674:49 - deprecated_member_use
+

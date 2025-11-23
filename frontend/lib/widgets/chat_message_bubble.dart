@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
-import 'ui/glass_container.dart';
 
 /// Widget for displaying a chat message bubble
 class ChatMessageBubble extends StatelessWidget {
@@ -20,28 +19,39 @@ class ChatMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       child: Row(
         mainAxisAlignment: isUser
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.end, // Align to bottom for modern look
         children: [
           if (!isUser) ...[
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.5),
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.secondary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.smart_toy, color: Colors.white, size: 20),
+              child: const Icon(Icons.smart_toy, color: Colors.white, size: 18),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
           ],
           Flexible(
             child: Column(
@@ -49,115 +59,131 @@ class ChatMessageBubble extends StatelessWidget {
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
-                GlassContainer(
-                  padding: const EdgeInsets.all(16),
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(20),
-                    topRight: const Radius.circular(20),
-                    bottomLeft: Radius.circular(isUser ? 20 : 4),
-                    bottomRight: Radius.circular(isUser ? 4 : 20),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                  color: isUser
-                      ? AppColors.primary.withValues(alpha: 0.8)
-                      : Colors.white.withValues(alpha: 0.1),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                  child: Text(
-                    message.content,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      height: 1.4,
+                  decoration: BoxDecoration(
+                    color: isUser
+                        ? AppColors.primary
+                        : isDark
+                        ? const Color(0xFF2C2C2C)
+                        : Colors.white,
+                    gradient: isUser
+                        ? const LinearGradient(
+                            colors: [AppColors.primary, AppColors.secondary],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(20),
+                      topRight: const Radius.circular(20),
+                      bottomLeft: Radius.circular(isUser ? 20 : 4),
+                      bottomRight: Radius.circular(isUser ? 4 : 20),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        message.content,
+                        style: TextStyle(
+                          color: isUser
+                              ? Colors.white
+                              : isDark
+                              ? Colors.white
+                              : const Color(0xFF2D3748),
+                          fontSize: 14.5,
+                          height: 1.5,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      if (message.citations != null &&
+                          message.citations!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: message.citations!.map((citation) {
+                              return _buildCitationChip(
+                                context,
+                                citation,
+                                isUser,
+                                isDark,
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-
-                // Timestamp and actions
+                const SizedBox(height: 6),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       _formatTimestamp(message.timestamp),
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: isDark ? Colors.white54 : Colors.black45,
                         fontSize: 11,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    // Save as Note button for AI messages
                     if (!isUser && onSaveAsNote != null) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       InkWell(
                         onTap: onSaveAsNote,
                         borderRadius: BorderRadius.circular(12),
-                        child: Tooltip(
-                          message: 'Save as Note',
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bookmark_border,
+                              size: 14,
+                              color: isDark ? Colors.white60 : Colors.black54,
                             ),
-                            decoration: BoxDecoration(
-                              color: AppColors.secondary.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AppColors.secondary.withValues(
-                                  alpha: 0.5,
-                                ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Save',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark ? Colors.white60 : Colors.black54,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.save_alt,
-                                  size: 12,
-                                  color: AppColors.secondary,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Save',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppColors.secondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
                         ),
                       ),
                     ],
                   ],
                 ),
-
-                // Citations
-                if (message.citations != null && message.citations!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: message.citations!.map((citation) {
-                        return _buildCitationChip(context, citation);
-                      }).toList(),
-                    ),
-                  ),
               ],
             ),
           ),
           if (isUser) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: isDark ? const Color(0xFF3A3A3A) : Colors.grey[200],
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
               ),
-              child: const Icon(Icons.person, color: Colors.white, size: 20),
+              child: Icon(
+                Icons.person,
+                color: isDark ? Colors.white70 : Colors.grey[600],
+                size: 18,
+              ),
             ),
           ],
         ],
@@ -165,44 +191,50 @@ class ChatMessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildCitationChip(BuildContext context, Citation citation) {
-    return Tooltip(
-      message:
-          'Click to open ${citation.fileName} at page ${citation.pageNumber}',
-      child: InkWell(
-        onTap: () => onCitationTapped?.call(citation),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+  Widget _buildCitationChip(
+    BuildContext context,
+    Citation citation,
+    bool isUser,
+    bool isDark,
+  ) {
+    final textColor = isUser
+        ? Colors.white.withValues(alpha: 0.9)
+        : AppColors.primary;
+    final backgroundColor = isUser
+        ? Colors.white.withValues(alpha: 0.2)
+        : AppColors.primary.withValues(alpha: 0.1);
+
+    return InkWell(
+      onTap: () => onCitationTapped?.call(citation),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isUser
+                ? Colors.white.withValues(alpha: 0.3)
+                : AppColors.primary.withValues(alpha: 0.2),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.picture_as_pdf,
-                size: 14,
-                color: AppColors.accent,
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  '${citation.fileName} (p. ${citation.pageNumber})',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.description_outlined, size: 14, color: textColor),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                '${citation.fileName} (p. ${citation.pageNumber})',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.open_in_new, size: 12, color: AppColors.accent),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

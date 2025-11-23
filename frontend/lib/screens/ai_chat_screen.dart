@@ -28,6 +28,8 @@ class AIChatScreen extends StatefulWidget {
   final String? preselectedFileName;
   final List<String>? preselectedFileIds;
   final String? folderName;
+  final bool isEmbedded;
+  final VoidCallback? onClose;
 
   const AIChatScreen({
     super.key,
@@ -35,6 +37,8 @@ class AIChatScreen extends StatefulWidget {
     this.preselectedFileName,
     this.preselectedFileIds,
     this.folderName,
+    this.isEmbedded = false,
+    this.onClose,
   });
 
   @override
@@ -275,6 +279,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
     setState(() {
       _currentConversationId = null;
       _messages.clear();
+      // Preserve context if embedded with a preselected file
+      if (widget.preselectedFileId != null) {
+        _selectedFileIds = {widget.preselectedFileId!};
+      } else {
+        _selectedFileIds.clear();
+      }
     });
     await _loadSourcePreferences();
   }
@@ -575,119 +585,128 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Widget build(BuildContext context) {
     final isWideScreen = MediaQuery.of(context).size.width > 600;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Background
+    final content = Stack(
+      children: [
+        // Background
+        if (!widget.isEmbedded)
           const Positioned.fill(child: AnimatedBackground()),
+        if (widget.isEmbedded)
+          Container(color: Theme.of(context).scaffoldBackgroundColor),
 
-          Column(
-            children: [
-              // Custom AppBar
-              _buildAppBar(isWideScreen),
+        Column(
+          children: [
+            // Custom AppBar
+            if (!widget.isEmbedded) _buildAppBar(isWideScreen),
+            if (widget.isEmbedded) _buildEmbeddedHeader(),
 
-              // Main Content
-              Expanded(
-                child: Row(
-                  children: [
-                    // Conversation list sidebar (desktop only)
-                    if (_showConversationList && isWideScreen)
-                      ConversationListSidebar(
-                        conversations: _conversations,
-                        currentConversationId: _currentConversationId,
-                        onConversationSelected: _loadConversation,
-                        onNewConversation: _startNewConversation,
-                        onDeleteConversation: _deleteConversation,
-                        onRenameConversation: _renameConversation,
-                        isLoading: _isLoadingConversations,
-                      ),
-
-                    // Main chat area
-                    Expanded(
-                      flex: _showSourcePanel && isWideScreen ? 2 : 1,
-                      child: Column(
-                        children: [
-                          // Messages list
-                          Expanded(
-                            child: _messages.isEmpty
-                                ? _buildEmptyState()
-                                : ListView.builder(
-                                    controller: _scrollController,
-                                    padding: const EdgeInsets.all(16),
-                                    itemCount:
-                                        _messages.length + (_isLoading ? 1 : 0),
-                                    itemBuilder: (context, index) {
-                                      if (index == _messages.length) {
-                                        return const Padding(
-                                          padding: EdgeInsets.all(16.0),
-                                          child: Row(
-                                            children: [
-                                              SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: AppColors.primary,
-                                                    ),
-                                              ),
-                                              SizedBox(width: 12),
-                                              Text(
-                                                'AI is thinking...',
-                                                style: TextStyle(
-                                                  color: Colors.white70,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }
-                                      final message = _messages[index];
-                                      return ChatMessageBubble(
-                                        message: message,
-                                        onCitationTapped: _onCitationTapped,
-                                        onSaveAsNote: message.isUser
-                                            ? null
-                                            : () => _onSaveAsNote(message),
-                                      );
-                                    },
-                                  ),
-                          ),
-
-                          // Input area
-                          _buildInputArea(),
-                        ],
-                      ),
+            // Main Content
+            Expanded(
+              child: Row(
+                children: [
+                  // Conversation list sidebar (desktop only)
+                  if (_showConversationList && isWideScreen)
+                    ConversationListSidebar(
+                      conversations: _conversations,
+                      currentConversationId: _currentConversationId,
+                      onConversationSelected: _loadConversation,
+                      onNewConversation: _startNewConversation,
+                      onDeleteConversation: _deleteConversation,
+                      onRenameConversation: _renameConversation,
+                      isLoading: _isLoadingConversations,
                     ),
 
-                    // Source selection panel (desktop/tablet only)
-                    if (_showSourcePanel && isWideScreen)
-                      Container(
-                        width: 300,
-                        decoration: BoxDecoration(
-                          border: Border(
-                            left: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.1),
-                            ),
+                  // Main chat area
+                  Expanded(
+                    flex: _showSourcePanel && isWideScreen ? 2 : 1,
+                    child: Column(
+                      children: [
+                        // Messages list
+                        Expanded(
+                          child: _messages.isEmpty
+                              ? _buildEmptyState()
+                              : ListView.builder(
+                                  controller: _scrollController,
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount:
+                                      _messages.length + (_isLoading ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    if (index == _messages.length) {
+                                      return const Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                            SizedBox(width: 12),
+                                            Text(
+                                              'AI is thinking...',
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                    final message = _messages[index];
+                                    return ChatMessageBubble(
+                                      message: message,
+                                      onCitationTapped: _onCitationTapped,
+                                      onSaveAsNote: message.isUser
+                                          ? null
+                                          : () => _onSaveAsNote(message),
+                                    );
+                                  },
+                                ),
+                        ),
+
+                        // Input area
+                        _buildInputArea(),
+                      ],
+                    ),
+                  ),
+
+                  // Source selection panel (desktop/tablet only)
+                  if (_showSourcePanel && isWideScreen)
+                    Container(
+                      width: 300,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          left: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                         ),
-                        child: SourceSelectionPanel(
-                          availableFiles: _availableFiles,
-                          selectedFileIds: _selectedFileIds,
-                          isLoading: _isLoadingFiles,
-                          onToggleFile: _toggleSourceSelection,
-                          onClearAll: _clearAllSources,
-                          onSelectAll: _selectAllSources,
-                          onRefresh: _loadAvailableFiles,
-                        ),
                       ),
-                  ],
-                ),
+                      child: SourceSelectionPanel(
+                        availableFiles: _availableFiles,
+                        selectedFileIds: _selectedFileIds,
+                        isLoading: _isLoadingFiles,
+                        onToggleFile: _toggleSourceSelection,
+                        onClearAll: _clearAllSources,
+                        onSelectAll: _selectAllSources,
+                        onRefresh: _loadAvailableFiles,
+                      ),
+                    ),
+                ],
               ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    if (widget.isEmbedded) {
+      return content;
+    }
+
+    return Scaffold(
+      body: content,
       drawer: !isWideScreen
           ? Drawer(
               backgroundColor: AppColors.background,
@@ -708,6 +727,57 @@ class _AIChatScreenState extends State<AIChatScreen> {
               ),
             )
           : null,
+    );
+  }
+
+  Widget _buildEmbeddedHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.chat_bubble_outline,
+            size: 20,
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'AI Chat',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.add, size: 20),
+            onPressed: _startNewConversation,
+            tooltip: 'New Chat',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            color: isDark ? Colors.white70 : Colors.black54,
+          ),
+          if (widget.onClose != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.close, size: 20),
+              onPressed: widget.onClose,
+              tooltip: 'Close Chat',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -938,10 +1008,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildInputArea() {
-    return GlassContainer(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      opacity: 0.1,
-      padding: const EdgeInsets.all(16),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: EdgeInsets.all(widget.isEmbedded ? 12 : 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -965,8 +1038,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                             style: const TextStyle(fontSize: 12),
                           ),
                           backgroundColor: AppColors.primary.withValues(
-                            alpha: 0.2,
+                            alpha: 0.1,
                           ),
+                          side: BorderSide.none,
                           deleteIcon: const Icon(Icons.close, size: 16),
                           onDeleted: () =>
                               _toggleSourceSelection(widget.preselectedFileId!),
@@ -981,8 +1055,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           style: const TextStyle(fontSize: 12),
                         ),
                         backgroundColor: AppColors.primary.withValues(
-                          alpha: 0.2,
+                          alpha: 0.1,
                         ),
+                        side: BorderSide.none,
                         deleteIcon: const Icon(Icons.close, size: 16),
                         onDeleted: _clearAllSources,
                       ),
@@ -1006,8 +1081,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 label: '',
                 onPressed: _isLoading ? null : _sendMessage,
                 isLoading: _isLoading,
-                width: 50,
-                height: 50,
+                width: widget.isEmbedded ? 45 : 50,
+                height: widget.isEmbedded ? 45 : 50,
               ),
             ],
           ),
