@@ -462,6 +462,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_blur:
+    dependency: transitive
+    description:
+      name: flutter_blur
+      sha256: "0be9d31edfbdab758bf1b8ad37525b33580d3153cc249a5e4f83c6caf1272c2e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   flutter_colorpicker:
     dependency: "direct main"
     description:
@@ -544,6 +552,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.5.0"
+  glassmorphic_ui_kit:
+    dependency: "direct main"
+    description:
+      name: glassmorphic_ui_kit
+      sha256: "0b29a2de7c7707efedfc925efef2825d9fb80fe8a83a73196bb3236ef46066df"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.6"
   glob:
     dependency: transitive
     description:
@@ -552,6 +568,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.3"
+  google_fonts:
+    dependency: "direct main"
+    description:
+      name: google_fonts
+      sha256: "517b20870220c48752eafa0ba1a797a092fb22df0d89535fd9991e86ee2cdd9c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.3.2"
   google_identity_services_web:
     dependency: transitive
     description:

@@ -116,7 +116,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
-                    fillColor: Theme.of(context).colorScheme.background,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
                   onSubmitted: (_) => _performSearch(),
                   onChanged: (_) => setState(() {}),
@@ -259,7 +259,9 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
         // Results header
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
           child: Row(
             children: [
               Text(
@@ -356,7 +358,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                   decoration: BoxDecoration(
                     color: Theme.of(
                       context,
-                    ).colorScheme.surfaceVariant.withOpacity(0.3),
+                    ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -449,7 +451,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
             value: score,
             backgroundColor: Theme.of(
               context,
-            ).colorScheme.surfaceVariant.withOpacity(0.3),
+            ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
             valueColor: AlwaysStoppedAnimation<Color>(
               _getRelevanceColor(score),
             ),
