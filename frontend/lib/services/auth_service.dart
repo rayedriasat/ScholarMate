@@ -74,14 +74,15 @@ class AuthService extends ChangeNotifier {
       debugPrint('Initializing Google Sign-In All Platforms');
       debugPrint('Platform: ${defaultTargetPlatform.name}');
       debugPrint('Is Web: $kIsWeb');
-      
+
       // Initialize Google Sign-In with platform-appropriate configuration
       _googleSignIn = GoogleSignIn(
         params: GoogleSignInParams(
           clientId: clientId,
           clientSecret: clientSecret,
           scopes: _scopes,
-          redirectPort: 3000, // Port for desktop OAuth callback (avoiding 8000 used by backend)
+          redirectPort:
+              3000, // Port for desktop OAuth callback (avoiding 8000 used by backend)
           timeout: const Duration(minutes: 2), // Timeout for desktop login
         ),
       );
@@ -110,7 +111,9 @@ class AuthService extends ChangeNotifier {
 
   /// Handle authentication state changes from the stream
   void _handleAuthStateChange(GoogleSignInCredentials? credentials) async {
-    debugPrint('Auth state changed: ${credentials != null ? "signed in" : "signed out"}');
+    debugPrint(
+      'Auth state changed: ${credentials != null ? "signed in" : "signed out"}',
+    );
 
     if (credentials == null) {
       // User signed out
@@ -199,6 +202,34 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Mock login for testing/debugging
+  Future<void> mockLogin() async {
+    debugPrint('Performing MOCK login...');
+    _setLoading(true);
+
+    try {
+      // Create a dummy user
+      final user = User(
+        id: 'mock-user-id',
+        email: 'test@scholarmate.com',
+        displayName: 'Test User',
+        photoUrl: null,
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+        idToken: 'mock-id-token',
+        tokenExpiry: DateTime.now().add(const Duration(days: 1)),
+      );
+
+      _currentUser = user;
+      _authStateController.add(user);
+      notifyListeners();
+
+      debugPrint('Mock login successful');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Silent sign-in (restores previous session without user interaction)
   /// Recommended to call on app startup
   Future<User?> silentSignIn() async {
@@ -219,8 +250,12 @@ class AuthService extends ChangeNotifier {
 
       // Validate credentials have necessary tokens
       if (credentials.accessToken.isEmpty) {
-        debugPrint('ERROR: Silent sign-in returned credentials without access token!');
-        debugPrint('This usually means the OAuth session has expired or been revoked.');
+        debugPrint(
+          'ERROR: Silent sign-in returned credentials without access token!',
+        );
+        debugPrint(
+          'This usually means the OAuth session has expired or been revoked.',
+        );
         debugPrint('User needs to sign out and sign in again.');
         return null;
       }
@@ -332,13 +367,17 @@ class AuthService extends ChangeNotifier {
     // Check if token is expired or will expire soon (within 5 minutes)
     final now = DateTime.now();
     final expiryThreshold = now.add(const Duration(minutes: 5));
-    final needsRefresh = _currentUser!.tokenExpiry != null && 
-                         expiryThreshold.isAfter(_currentUser!.tokenExpiry!);
-    
+    final needsRefresh =
+        _currentUser!.tokenExpiry != null &&
+        expiryThreshold.isAfter(_currentUser!.tokenExpiry!);
+
     if (needsRefresh) {
       // Prevent refresh loop: Don't refresh if we just refreshed in the last 10 seconds
-      if (_lastTokenRefresh != null && now.difference(_lastTokenRefresh!).inSeconds < 10) {
-        debugPrint('Token was recently refreshed (${now.difference(_lastTokenRefresh!).inSeconds}s ago), using current token');
+      if (_lastTokenRefresh != null &&
+          now.difference(_lastTokenRefresh!).inSeconds < 10) {
+        debugPrint(
+          'Token was recently refreshed (${now.difference(_lastTokenRefresh!).inSeconds}s ago), using current token',
+        );
         return _currentUser!.accessToken;
       }
 
@@ -354,21 +393,27 @@ class AuthService extends ChangeNotifier {
         return _currentUser?.accessToken;
       }
 
-      debugPrint('Access token expired or expiring soon (expiry: ${_currentUser!.tokenExpiry}), attempting refresh...');
-      
+      debugPrint(
+        'Access token expired or expiring soon (expiry: ${_currentUser!.tokenExpiry}), attempting refresh...',
+      );
+
       _isRefreshing = true;
       try {
         // Token expired, try to refresh using silent sign-in
         // This uses the refresh token internally to get a new access token
         final user = await silentSignIn();
         _lastTokenRefresh = DateTime.now();
-        
+
         if (user != null) {
-          debugPrint('Token refresh successful via refresh token, new expiry: ${user.tokenExpiry}');
+          debugPrint(
+            'Token refresh successful via refresh token, new expiry: ${user.tokenExpiry}',
+          );
           return user.accessToken;
         }
-        
-        debugPrint('Token refresh failed: silentSignIn returned null - refresh token may be invalid');
+
+        debugPrint(
+          'Token refresh failed: silentSignIn returned null - refresh token may be invalid',
+        );
         return null;
       } finally {
         _isRefreshing = false;
@@ -384,25 +429,29 @@ class AuthService extends ChangeNotifier {
   ) async {
     // Decode ID token to extract user information
     final userInfo = _decodeIdToken(credentials.idToken);
-    
+
     // Calculate token expiry (Google tokens typically expire in 1 hour)
     // We set expiry to 50 minutes from now to trigger refresh before actual expiry
     final tokenExpiry = DateTime.now().add(const Duration(minutes: 50));
-    
+
     // Validate access token
     final hasAccessToken = credentials.accessToken.isNotEmpty;
-    final tokenPreview = hasAccessToken 
-        ? '${credentials.accessToken.substring(0, credentials.accessToken.length < 20 ? credentials.accessToken.length : 20)}...' 
+    final tokenPreview = hasAccessToken
+        ? '${credentials.accessToken.substring(0, credentials.accessToken.length < 20 ? credentials.accessToken.length : 20)}...'
         : 'EMPTY';
-    
-    debugPrint('Created user with token expiry: $tokenExpiry (credentials.expiresIn was: ${credentials.expiresIn})');
+
+    debugPrint(
+      'Created user with token expiry: $tokenExpiry (credentials.expiresIn was: ${credentials.expiresIn})',
+    );
     debugPrint('Access token present: $hasAccessToken, preview: $tokenPreview');
     debugPrint('ID token present: ${credentials.idToken?.isNotEmpty ?? false}');
-    
+
     if (!hasAccessToken) {
-      debugPrint('WARNING: No access token in credentials! This will cause authentication failures.');
+      debugPrint(
+        'WARNING: No access token in credentials! This will cause authentication failures.',
+      );
     }
-    
+
     return User.fromGoogleSignIn(
       id: userInfo['sub'] ?? '',
       email: userInfo['email'] ?? '',
@@ -432,7 +481,7 @@ class AuthService extends ChangeNotifier {
 
       // Decode the payload (second part)
       final payload = parts[1];
-      
+
       // Add padding if needed (JWT base64 doesn't use padding)
       var normalized = payload.replaceAll('-', '+').replaceAll('_', '/');
       while (normalized.length % 4 != 0) {
@@ -492,8 +541,10 @@ class AuthService extends ChangeNotifier {
         refreshToken: user.refreshToken,
         idToken: user.idToken,
       );
-      
-      debugPrint('Successfully stored user and tokens in backend: ${user.email}');
+
+      debugPrint(
+        'Successfully stored user and tokens in backend: ${user.email}',
+      );
     } catch (e) {
       debugPrint('Failed to store user in backend: $e');
       // Don't throw - this shouldn't prevent local authentication

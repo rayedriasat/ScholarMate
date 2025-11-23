@@ -84,16 +84,24 @@ class _AppNavigationState extends State<AppNavigation> {
           ),
 
           // Content
-          Row(
+          Column(
             children: [
-              // Left sidebar for web/desktop
-              if (isWideScreen) _buildSidebar(context),
+              // Top bar for web/desktop
+              if (isWideScreen) _buildTopBar(context),
 
               // Main content
               Expanded(
-                child: _showSettings
-                    ? _buildSettingsScreen(context)
-                    : widget.items[_selectedIndex].screen,
+                child: Row(
+                  children: [
+                    // Sidebar is now replaced by TopBar for wide screens
+                    // if (isWideScreen) _buildSidebar(context),
+                    Expanded(
+                      child: _showSettings
+                          ? _buildSettingsScreen(context)
+                          : widget.items[_selectedIndex].screen,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -407,6 +415,149 @@ class _AppNavigationState extends State<AppNavigation> {
     );
   }
 
+  Widget _buildTopBar(BuildContext context) {
+    return GlassContainer(
+      width: double.infinity,
+      height: 80,
+      borderRadius: BorderRadius.zero,
+      blur: 20,
+      opacity: 0.05,
+      border: const Border(bottom: BorderSide(color: Colors.white10, width: 1)),
+      child: Row(
+        children: [
+          const SizedBox(width: 24),
+          // App logo
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _onItemTapped(0),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(Icons.school, color: Colors.white, size: 24),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Text(
+            'ScholarMate',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+
+          const Spacer(),
+
+          // Navigation items
+          Row(
+            children: [
+              for (int i = 0; i < widget.items.length; i++)
+                _buildTopBarItem(
+                  context,
+                  widget.items[i],
+                  i == _selectedIndex,
+                  () => _onItemTapped(i),
+                ),
+            ],
+          ),
+
+          const Spacer(),
+
+          // Settings button
+          _buildTopBarItem(
+            context,
+            NavigationItem(
+              id: 'settings',
+              icon: Icons.settings_outlined,
+              activeIcon: Icons.settings,
+              label: 'Settings',
+              screen: Container(),
+            ),
+            _showSettings,
+            _toggleSettings,
+          ),
+          const SizedBox(width: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopBarItem(
+    BuildContext context,
+    NavigationItem item,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Tooltip(
+        message: item.label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: isSelected
+                    ? Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                      )
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    item.label,
+                    style: TextStyle(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildThemeToggle(BuildContext context) {
     final themeService = context.watch<SimpleThemeService>();
     final isDark = themeService.isDarkMode;
@@ -452,6 +603,59 @@ class _AppNavigationState extends State<AppNavigation> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           ),
         ],
+        const Divider(height: 1, color: Colors.white10),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Accent Color',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  for (final color in AppColors.accentColors)
+                    GestureDetector(
+                      onTap: () => themeService.setAccentColor(color),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: themeService.accentColor == color
+                                ? Colors.white
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            if (themeService.accentColor == color)
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.4),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                          ],
+                        ),
+                        child: themeService.accentColor == color
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 16,
+                              )
+                            : null,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

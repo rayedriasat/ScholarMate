@@ -50,4 +50,23 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // Accent Colors for Theme Customization
+  static const List<Color> accentColors = [
+    Color(0xFF6366F1), // Indigo (Default)
+    Color(0xFF3B82F6), // Blue
+    Color(0xFF0EA5E9), // Sky
+    Color(0xFF06B6D4), // Cyan
+    Color(0xFF14B8A6), // Teal
+    Color(0xFF10B981), // Emerald
+    Color(0xFF22C55E), // Green
+    Color(0xFF84CC16), // Lime
+    Color(0xFFEAB308), // Yellow
+    Color(0xFFF59E0B), // Amber
+    Color(0xFFF97316), // Orange
+    Color(0xFFEF4444), // Red
+    Color(0xFFEC4899), // Pink
+    Color(0xFFD946EF), // Fuchsia
+    Color(0xFF8B5CF6), // Violet
+  ];
 }
