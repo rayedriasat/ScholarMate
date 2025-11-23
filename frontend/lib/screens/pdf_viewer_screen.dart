@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
-import 'package:flutter_tts/flutter_tts.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart' as path;
-import 'package:uuid/uuid.dart';
 import '../models/drive_file.dart';
 import '../services/auth_service.dart';
 import '../services/tts_service.dart';
@@ -72,9 +68,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
 
   // Metadata sidebar state
   bool _showMetadataSidebar = false;
-
-  // Zoom state
-  double _zoomLevel = 1.0;
 
   // Analytics tracking
   AnalyticsService? _analyticsService;
@@ -544,7 +537,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
       debugPrint('PDF with annotations saved to cache');
 
       // Upload to Google Drive only if explicitly requested
-      if (uploadToDrive) {
+      if (uploadToDrive && mounted) {
         final driveService = context.read<DriveService>();
         final connectivityService = context.read<ConnectivityService>();
 
@@ -617,73 +610,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     );
   }
 
-  void _showAnnotationContextMenu(Annotation annotation) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GlassContainer(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        color: AppColors.surface,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Row(
-                children: [
-                  Icon(_getAnnotationIcon(annotation), color: annotation.color),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Annotation Options',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-
-            // Change Color
-            ListTile(
-              leading: const Icon(Icons.palette, color: Colors.white),
-              title: const Text(
-                'Change Color',
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _showColorPickerForAnnotation(annotation);
-              },
-            ),
-
-            // Delete
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text(
-                'Delete Annotation',
-                style: TextStyle(color: Colors.red),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmDeleteAnnotation(annotation);
-              },
-            ),
-
-            // Cancel
-            const SizedBox(height: 8),
-            ModernButton(
-              label: 'Cancel',
-              variant: ModernButtonVariant.outline,
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   IconData _getAnnotationIcon(Annotation annotation) {
     if (annotation is HighlightAnnotation) return Icons.highlight;
     if (annotation is UnderlineAnnotation) return Icons.format_underlined;
@@ -695,7 +621,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     return Icons.bookmark;
   }
 
-  void _showColorPickerForAnnotation(Annotation annotation) {
+  void _showColorPicker({Annotation? annotation}) {
     final colors = [
       const Color(0xFFFFEB3B), // Yellow
       const Color(0xFFFF9800), // Orange
@@ -724,7 +650,11 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
             return InkWell(
               onTap: () {
                 Navigator.pop(context);
-                _changeAnnotationColor(annotation, color);
+                if (annotation != null) {
+                  _changeAnnotationColor(annotation, color);
+                } else {
+                  _onAnnotationColorChanged(color);
+                }
               },
               child: Container(
                 width: 48,
@@ -733,13 +663,24 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                   color: color,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: annotation.color.value == color.value
+                    color:
+                        (annotation?.color.value ??
+                                _selectedAnnotationColor.value) ==
+                            color.value
                         ? Colors.white
                         : Colors.white.withValues(alpha: 0.2),
-                    width: annotation.color.value == color.value ? 3 : 1,
+                    width:
+                        (annotation?.color.value ??
+                                _selectedAnnotationColor.value) ==
+                            color.value
+                        ? 3
+                        : 1,
                   ),
                 ),
-                child: annotation.color.value == color.value
+                child:
+                    (annotation?.color.value ??
+                            _selectedAnnotationColor.value) ==
+                        color.value
                     ? const Icon(Icons.check, color: Colors.white)
                     : null,
               ),
@@ -1280,12 +1221,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                     const Divider(color: Colors.white24),
                     IconButton(
                       icon: Icon(Icons.circle, color: _selectedAnnotationColor),
-                      onPressed: () => _showColorPickerForAnnotation(
-                        HighlightAnnotation(
-                          bounds: Rect.zero,
-                          color: _selectedAnnotationColor,
-                        ),
-                      ),
+                      onPressed: () => _showColorPicker(),
                     ),
                   ],
                 ),
