@@ -4,6 +4,14 @@ This directory contains the design system foundation for the ScholarMate modern 
 
 ## Files
 
+### `theme_config.dart` (Model)
+Theme configuration model with:
+- **Serialization**: `toJson()` and `fromJson()` for persistence
+- **Predefined Presets**: Light, Dark, Midnight Blue, Forest Green, Sunset Orange
+- **Customization**: Support for custom accent colors and background images
+- **Equality**: Proper `==` and `hashCode` implementations
+- **Immutability**: Uses `copyWith()` for modifications
+
 ### `design_tokens.dart`
 Core design tokens including:
 - **Color Palettes**: Tailwind-inspired 50-900 shades for primary, secondary, accent, success, warning, error, and neutral colors
@@ -35,11 +43,13 @@ Predefined Material 3 themes:
 
 ### `app_theme.dart`
 Main theme provider with:
-- Theme mode management (light, dark, custom presets)
-- Accent color customization
-- Theme persistence using SharedPreferences
-- Glass theme configuration access
-- Context extensions for easy access
+- **Theme Management**: Uses `ThemeConfig` model for theme state
+- **Persistence**: Automatic save/load using SharedPreferences
+- **Legacy Migration**: Automatically migrates old enum-based themes
+- **Accent Color Customization**: Per-theme accent color support
+- **Glass Theme Access**: Provides matching glass configurations
+- **Context Extensions**: Easy access via `context.themeProvider` and `context.glassTheme`
+- **Backward Compatibility**: Maintains `AppThemeMode` enum for existing code
 
 ## Usage
 
@@ -59,6 +69,28 @@ void main() async {
     ),
   );
 }
+```
+
+### Using ThemeConfig Model
+
+```dart
+// Create a custom theme configuration
+final customTheme = ThemeConfig(
+  id: 'custom',
+  name: 'My Custom Theme',
+  mode: ThemeMode.dark,
+  accentColor: Colors.purple,
+);
+
+// Apply the theme
+await context.themeProvider.setThemeConfig(customTheme);
+
+// Serialize for storage or sync
+final json = customTheme.toJson();
+final restored = ThemeConfig.fromJson(json);
+
+// Use predefined presets
+await context.themeProvider.setThemeConfig(ThemeConfig.midnightBlue);
 ```
 
 ### Use Theme in App
@@ -123,11 +155,21 @@ Widget build(BuildContext context) {
 ### Switch Themes
 
 ```dart
-// Switch to dark theme
+// Method 1: Using ThemeConfig (recommended)
+await context.themeProvider.setThemeConfig(ThemeConfig.dark);
+
+// Method 2: Using AppThemeMode (backward compatibility)
 await context.themeProvider.setThemeMode(AppThemeMode.dark);
 
 // Set custom accent color
 await context.themeProvider.setAccentColor(Colors.purple);
+
+// Get current theme config
+final currentTheme = context.watchThemeProvider.currentTheme;
+print('Current theme: ${currentTheme.name}');
+
+// Get all available presets
+final presets = ThemeConfig.allPresets;
 
 // Reset to defaults
 await context.themeProvider.resetToDefaults();
