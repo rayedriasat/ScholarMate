@@ -4,20 +4,20 @@ import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/drive_file.dart';
+import '../services/pdf_viewer_manager.dart';
 import '../services/auth_service.dart';
+import '../services/drive_service.dart';
+import '../services/connectivity_service.dart';
 import '../services/tts_service.dart';
 import '../services/metadata_service.dart';
 import '../services/analytics_service.dart';
-import '../services/pdf_viewer_manager.dart';
-import '../services/drive_service.dart';
-import '../services/connectivity_service.dart';
 import '../database/database.dart' hide Annotation;
+import '../widgets/annotation_toolbar.dart';
 import '../widgets/annotation_list_panel.dart';
 import '../widgets/tts_controls.dart';
 import '../widgets/file_metadata_sidebar.dart';
-import '../widgets/ui/glass_container.dart';
-import '../widgets/ui/modern_button.dart';
-import '../theme/app_colors.dart';
+import '../widgets/connectivity_indicator.dart';
+import 'ai_chat_screen.dart';
 import 'collaborative_pdf_viewer_screen.dart';
 import 'split_pdf_viewer_screen.dart';
 
@@ -46,7 +46,7 @@ class PdfViewerScreen extends StatefulWidget {
 }
 
 class _PdfViewerScreenState extends State<PdfViewerScreen>
-    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+    with WidgetsBindingObserver {
   final PdfViewerController _pdfViewerController = PdfViewerController();
   final GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
 
@@ -69,13 +69,11 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
   // Metadata sidebar state
   bool _showMetadataSidebar = false;
 
+  // Zoom state
+  double _zoomLevel = 1.0;
+
   // Analytics tracking
   AnalyticsService? _analyticsService;
-
-  // UI State
-  bool _showControls = true;
-  late AnimationController _controlsController;
-  late Animation<double> _controlsAnimation;
 
   @override
   void initState() {
@@ -84,16 +82,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     _loadPdf();
     _initializeAnnotationSettings();
     _initializeAnalytics();
-
-    _controlsController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _controlsAnimation = CurvedAnimation(
-      parent: _controlsController,
-      curve: Curves.easeInOut,
-    );
-    _controlsController.forward();
 
     // Navigate to initial page and/or trigger search
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -128,12 +116,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                 ),
               ],
             ),
-            backgroundColor: AppColors.primary,
+            backgroundColor: Colors.blue,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
           ),
         );
       }
@@ -286,19 +271,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     }
     _pdfViewerController.dispose();
     _searchController.dispose();
-    _controlsController.dispose();
     super.dispose();
-  }
-
-  void _toggleControls() {
-    setState(() {
-      _showControls = !_showControls;
-      if (_showControls) {
-        _controlsController.forward();
-      } else {
-        _controlsController.reverse();
-      }
-    });
   }
 
   void _jumpToPage(int page) {
@@ -325,25 +298,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
       builder: (context) {
         int targetPage = _currentPage;
         return AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Text(
-            'Go to Page',
-            style: TextStyle(color: Colors.white),
-          ),
+          title: const Text('Go to Page'),
           content: TextField(
             keyboardType: TextInputType.number,
-            style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               labelText: 'Page number (1-$_totalPages)',
-              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.3),
-                ),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: AppColors.primary),
-              ),
+              border: const OutlineInputBorder(),
             ),
             onChanged: (value) {
               targetPage = int.tryParse(value) ?? _currentPage;
@@ -361,14 +321,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            ModernButton(
-              label: 'Go',
+            ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
                 _jumpToPage(targetPage);
               },
-              width: 80,
-              height: 36,
+              child: const Text('Go'),
             ),
           ],
         );
@@ -408,23 +366,18 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.6,
         minChildSize: 0.3,
         maxChildSize: 0.9,
         expand: false,
-        builder: (context, scrollController) => GlassContainer(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          color: AppColors.surface,
-          child: AnnotationListPanel(
-            annotations: _annotations,
-            onAnnotationTap: (annotation) {
-              Navigator.pop(context);
-              _onAnnotationTap(annotation);
-            },
-            onAnnotationDelete: _onAnnotationDelete,
-          ),
+        builder: (context, scrollController) => AnnotationListPanel(
+          annotations: _annotations,
+          onAnnotationTap: (annotation) {
+            Navigator.pop(context);
+            _onAnnotationTap(annotation);
+          },
+          onAnnotationDelete: _onAnnotationDelete,
         ),
       ),
     );
@@ -450,9 +403,13 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
           initialChildSize: 0.9,
           minChildSize: 0.5,
           maxChildSize: 0.95,
-          builder: (context, scrollController) => GlassContainer(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            color: AppColors.surface,
+          builder: (context, scrollController) => Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
             child: Column(
               children: [
                 // Handle bar
@@ -461,7 +418,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -537,7 +494,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
       debugPrint('PDF with annotations saved to cache');
 
       // Upload to Google Drive only if explicitly requested
-      if (uploadToDrive && mounted) {
+      if (uploadToDrive) {
         final driveService = context.read<DriveService>();
         final connectivityService = context.read<ConnectivityService>();
 
@@ -610,6 +567,62 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     );
   }
 
+  void _showAnnotationContextMenu(Annotation annotation) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                children: [
+                  Icon(_getAnnotationIcon(annotation), color: annotation.color),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Annotation Options',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+            ),
+
+            // Change Color
+            ListTile(
+              leading: const Icon(Icons.palette),
+              title: const Text('Change Color'),
+              onTap: () {
+                Navigator.pop(context);
+                _showColorPickerForAnnotation(annotation);
+              },
+            ),
+
+            // Delete
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete Annotation'),
+              textColor: Colors.red,
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDeleteAnnotation(annotation);
+              },
+            ),
+
+            // Cancel
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   IconData _getAnnotationIcon(Annotation annotation) {
     if (annotation is HighlightAnnotation) return Icons.highlight;
     if (annotation is UnderlineAnnotation) return Icons.format_underlined;
@@ -621,7 +634,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     return Icons.bookmark;
   }
 
-  void _showColorPicker({Annotation? annotation}) {
+  void _showColorPickerForAnnotation(Annotation annotation) {
     final colors = [
       const Color(0xFFFFEB3B), // Yellow
       const Color(0xFFFF9800), // Orange
@@ -638,11 +651,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
-          'Choose Color',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Choose Color'),
         content: Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -650,11 +659,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
             return InkWell(
               onTap: () {
                 Navigator.pop(context);
-                if (annotation != null) {
-                  _changeAnnotationColor(annotation, color);
-                } else {
-                  _onAnnotationColorChanged(color);
-                }
+                _changeAnnotationColor(annotation, color);
               },
               child: Container(
                 width: 48,
@@ -663,24 +668,13 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                   color: color,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color:
-                        (annotation?.color.value ??
-                                _selectedAnnotationColor.value) ==
-                            color.value
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.2),
-                    width:
-                        (annotation?.color.value ??
-                                _selectedAnnotationColor.value) ==
-                            color.value
-                        ? 3
-                        : 1,
+                    color: annotation.color.value == color.value
+                        ? Colors.black
+                        : Colors.grey[300]!,
+                    width: annotation.color.value == color.value ? 3 : 1,
                   ),
                 ),
-                child:
-                    (annotation?.color.value ??
-                            _selectedAnnotationColor.value) ==
-                        color.value
+                child: annotation.color.value == color.value
                     ? const Icon(Icons.check, color: Colors.white)
                     : null,
               ),
@@ -702,17 +696,14 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     _pdfViewerController.removeAnnotation(annotation);
 
     // Create a new annotation with the same properties but different color
-    // Note: In a real implementation, we would need to recreate the specific annotation type
-    // This is a simplification as the syncfusion_flutter_pdfviewer package handles this internally
-    // when we update settings, but for existing annotations we might need to recreate them.
-    // For now, we'll just show a message as the package might not support direct color change easily.
+
+    // Auto-save after color change
+    _savePdfWithAnnotations();
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'To change color, please recreate the annotation with the new color selected.',
-        ),
-        duration: Duration(seconds: 3),
+        content: Text('Annotation color changed'),
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -721,29 +712,25 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
-          'Delete Annotation',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Delete Annotation'),
         content: const Text(
           'Are you sure you want to delete this annotation? This action cannot be undone.',
-          style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ModernButton(
-            label: 'Delete',
-            backgroundColor: Colors.red,
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _onAnnotationDelete(annotation);
             },
-            width: 100,
-            height: 36,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -811,505 +798,1234 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
       return;
     }
 
-    _ttsService?.speak(_currentPageText);
+    await _ttsService?.speak(
+      _currentPageText,
+      onComplete: () {
+        // Auto-advance to next page when current page completes
+        if (_showTtsControls && _currentPage < _totalPages) {
+          _onTtsNextPage();
+        }
+      },
+    );
+  }
+
+  void _onTtsNextPage() {
+    if (_currentPage < _totalPages) {
+      _nextPage();
+      // Wait for page to load, then speak
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _speakCurrentPage();
+      });
+    } else {
+      // Reached end of document
+      _ttsService?.stop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reached end of document'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _onTtsPreviousPage() {
+    if (_currentPage > 1) {
+      _previousPage();
+      // Wait for page to load, then speak
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _speakCurrentPage();
+      });
+    }
+  }
+
+  // Zoom Methods
+  void _zoomIn() {
+    setState(() {
+      _zoomLevel = (_zoomLevel + 0.25).clamp(0.25, 3.0);
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      _zoomLevel = (_zoomLevel - 0.25).clamp(0.25, 3.0);
+    });
+  }
+
+  void _fitToPage() {
+    setState(() {
+      _zoomLevel = 1.0;
+    });
+  }
+
+  void _openAiChatWithPdf() {
+    // Get the current file
+    final fileId = widget.file?.id ?? widget.fileId;
+    final fileName = widget.file?.name ?? widget.fileName;
+
+    if (fileId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot open chat: file information not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to AI chat screen with the current PDF preselected
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AIChatScreen(
+          preselectedFileId: fileId,
+          preselectedFileName: fileName,
+        ),
+      ),
+    ).then((_) {
+      // When returning from chat, we could optionally refresh or do something
+    });
+  }
+
+  void _startCollaboration() {
+    final fileId = widget.file?.id ?? widget.fileId;
+    final fileName = widget.file?.name ?? widget.fileName;
+
+    if (fileId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot start collaboration: file information not available',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to collaborative PDF viewer
+    // Pass the already-loaded PDF bytes to avoid re-downloading
+    final pdfManager = context.read<PdfViewerManager>();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CollaborativePdfViewerScreen(
+          fileId: fileId,
+          fileName: fileName ?? 'document.pdf',
+          pdfBytes: pdfManager.currentPdfBytes, // Pass existing bytes
+        ),
+      ),
+    );
+  }
+
+  void _openSplitView() {
+    // Only available on web
+    if (!kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Split view is only available on web'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final fileId = widget.file?.id ?? widget.fileId;
+    final fileName = widget.file?.name ?? widget.fileName;
+
+    if (fileId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot open split view: file information not available',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to split PDF viewer
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SplitPdfViewerScreen(
+          leftFile: widget.file,
+          leftFileId: fileId,
+          leftFileName: fileName,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final pdfManager = context.watch<PdfViewerManager>();
+    final isAndroid = Theme.of(context).platform == TargetPlatform.android;
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // PDF Viewer
-          if (pdfManager.isLoading)
-            const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
-          else if (pdfManager.currentPdfBytes != null)
-            GestureDetector(
-              onTap: _toggleControls,
-              child: SfPdfViewer.memory(
-                pdfManager.currentPdfBytes!,
-                controller: _pdfViewerController,
-                key: _pdfViewerKey,
-                onDocumentLoaded: (PdfDocumentLoadedDetails details) {
-                  setState(() {
-                    _totalPages = details.document.pages.count;
-                  });
-                },
-                onPageChanged: (PdfPageChangedDetails details) {
-                  setState(() {
-                    _currentPage = details.newPageNumber;
-                  });
-                  // If TTS is active, stop it when page changes
-                  if (_ttsService?.isPlaying ?? false) {
-                    _ttsService?.stop();
-                  }
-                },
-                onAnnotationAdded: _onAnnotationAdded,
-                // onAnnotationDeserialized: (Annotation annotation) {
-                //   // This is called when annotations are loaded from the document
-                //   // We don't need to do anything here as we get them via controller
-                // },
-                canShowScrollHead: false,
-                canShowScrollStatus: false,
-                enableDoubleTapZooming: true,
-                enableTextSelection: true,
-                // searchTextHighlightColor: Colors.yellow.withValues(alpha: 0.5),
-                onTextSelectionChanged: (PdfTextSelectionChangedDetails details) {
-                  if (details.selectedText != null &&
-                      details.selectedText!.isNotEmpty) {
-                    // Show context menu for selected text
-                    // This is handled by the package, but we could add custom actions
-                  }
-                },
-              ),
-            )
-          else
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Failed to load PDF',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  const SizedBox(height: 16),
-                  ModernButton(
-                    label: 'Retry',
-                    onPressed: () => _loadPdf(forceRefresh: true),
-                  ),
-                ],
-              ),
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.fileName ?? widget.file?.name ?? 'PDF Document',
+              style: const TextStyle(fontSize: 16),
+              overflow: TextOverflow.ellipsis,
             ),
-
-          // Top Toolbar (Glassmorphism)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: FadeTransition(
-              opacity: _controlsAnimation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, -1),
-                  end: Offset.zero,
-                ).animate(_controlsAnimation),
-                child: GlassContainer(
-                  borderRadius: BorderRadius.zero,
-                  opacity: 0.2,
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    bottom: 12,
-                    left: 16,
-                    right: 16,
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
+            if (_totalPages > 0)
+              Flexible(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Page $_currentPage of $_totalPages',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    if (widget.initialPage != null && !isAndroid) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              widget.fileName ?? 'Document',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Icon(
+                              Icons.bookmark,
+                              size: 10,
+                              color: Colors.blue[700],
                             ),
+                            const SizedBox(width: 2),
                             Text(
-                              'Page $_currentPage of $_totalPages',
+                              'From citation',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: 12,
+                                fontSize: 10,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      if (_isSearching)
-                        Expanded(
-                          child: Container(
-                            height: 40,
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.2),
-                              ),
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                hintText: 'Search...',
-                                hintStyle: TextStyle(color: Colors.white54),
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                              ),
-                              onSubmitted: (_) => _performSearch(),
-                            ),
-                          ),
-                        ),
-                      IconButton(
-                        icon: Icon(
-                          _isSearching ? Icons.close : Icons.search,
-                          color: Colors.white,
-                        ),
-                        onPressed: _toggleSearch,
+                    ],
+                  ],
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          // Cached indicator in app bar
+          Consumer<PdfViewerManager>(
+            builder: (context, pdfManager, child) {
+              if (pdfManager.isFromCache) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: Colors.white),
-                        color: AppColors.surface,
-                        onSelected: (value) {
-                          switch (value) {
-                            case 'refresh':
-                              _refreshPdf();
-                              break;
-                            case 'metadata':
-                              _toggleMetadataSidebar();
-                              break;
-                            case 'tts':
-                              _toggleTtsControls();
-                              break;
-                            case 'annotations':
-                              _toggleAnnotationPanel();
-                              break;
-                            case 'toolbar':
-                              _toggleAnnotationToolbar();
-                              break;
-                            case 'split':
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => SplitPdfViewerScreen(
-                                    leftFileId: widget.fileId,
-                                    leftFileName: widget.fileName,
-                                  ),
-                                ),
-                              );
-                              break;
-                            case 'collaborate':
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      CollaborativePdfViewerScreen(
-                                        fileId: widget.fileId!,
-                                        fileName: widget.fileName!,
-                                      ),
-                                ),
-                              );
-                              break;
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'refresh',
-                            child: Row(
-                              children: [
-                                Icon(Icons.refresh, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Refresh',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.green.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.offline_pin,
+                            size: 14,
+                            color: Colors.green[700],
                           ),
-                          const PopupMenuItem(
-                            value: 'metadata',
-                            child: Row(
-                              children: [
-                                Icon(Icons.info_outline, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Metadata',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'tts',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.record_voice_over,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Read Aloud',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'annotations',
-                            child: Row(
-                              children: [
-                                Icon(Icons.comment, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Annotations',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'toolbar',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Annotation Tools',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'split',
-                            child: Row(
-                              children: [
-                                Icon(Icons.vertical_split, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Split View',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'collaborate',
-                            child: Row(
-                              children: [
-                                Icon(Icons.people, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Collaborate',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ],
+                          const SizedBox(width: 4),
+                          Text(
+                            'Cached',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Bottom Controls (Glassmorphism)
-          Positioned(
-            bottom: 24,
-            left: 24,
-            right: 24,
-            child: FadeTransition(
-              opacity: _controlsAnimation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 1),
-                  end: Offset.zero,
-                ).animate(_controlsAnimation),
-                child: Center(
-                  child: GlassContainer(
-                    borderRadius: BorderRadius.circular(30),
-                    opacity: 0.2,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
                     ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          // Connectivity and sync status indicator
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: ConnectivityIndicator(),
+          ),
+          // On Android, use overflow menu to prevent toolbar overflow
+          if (isAndroid)
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                switch (value) {
+                  case 'refresh':
+                    final connectivity = context.read<ConnectivityService>();
+                    if (connectivity.isOnline) await _refreshPdf();
+                    break;
+                  case 'tts':
+                    _toggleTtsControls();
+                    break;
+                  case 'annotate':
+                    _toggleAnnotationToolbar();
+                    break;
+                  case 'annotations':
+                    _toggleAnnotationPanel();
+                    break;
+                  case 'save':
+                    await _savePdfWithAnnotations(uploadToDrive: true);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'PDF saved and uploaded to Google Drive',
+                          ),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                    break;
+                  case 'search':
+                    _toggleSearch();
+                    break;
+                  case 'goto':
+                    if (_totalPages > 0) _showPageNavigator();
+                    break;
+                  case 'metadata':
+                    _toggleMetadataSidebar();
+                    break;
+                  case 'collaborate':
+                    _startCollaboration();
+                    break;
+                  case 'splitview':
+                    _openSplitView();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                if (kIsWeb)
+                  const PopupMenuItem(
+                    value: 'splitview',
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.navigate_before,
-                            color: Colors.white,
-                          ),
-                          onPressed: _previousPage,
-                          tooltip: 'Previous Page',
-                        ),
-                        InkWell(
-                          onTap: _showPageNavigator,
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            child: Text(
-                              '$_currentPage / $_totalPages',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.navigate_next,
-                            color: Colors.white,
-                          ),
-                          onPressed: _nextPage,
-                          tooltip: 'Next Page',
-                        ),
+                        Icon(Icons.view_column, size: 20, color: Colors.blue),
+                        SizedBox(width: 12),
+                        Text('Split View'),
                       ],
                     ),
                   ),
+                PopupMenuItem(
+                  value: 'collaborate',
+                  enabled: context.read<ConnectivityService>().isOnline,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.people, size: 20, color: Colors.purple),
+                      SizedBox(width: 12),
+                      Text('Start Collaboration'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'refresh',
+                  enabled: context.read<ConnectivityService>().isOnline,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.refresh, size: 20),
+                      SizedBox(width: 12),
+                      Text('Refresh'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'tts',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _showTtsControls ? Icons.volume_off : Icons.volume_up,
+                        size: 20,
+                        color: _showTtsControls ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Read Aloud'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'annotate',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _showAnnotationToolbar ? Icons.edit_off : Icons.edit,
+                        size: 20,
+                        color: _showAnnotationToolbar ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Annotations'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'annotations',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.bookmark,
+                        size: 20,
+                        color: _showAnnotations ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Show Annotations'),
+                    ],
+                  ),
+                ),
+                if (_annotations.isNotEmpty)
+                  const PopupMenuItem(
+                    value: 'save',
+                    child: Row(
+                      children: [
+                        Icon(Icons.cloud_upload, size: 20),
+                        SizedBox(width: 12),
+                        Text('Upload to Drive'),
+                      ],
+                    ),
+                  ),
+                PopupMenuItem(
+                  value: 'search',
+                  child: Row(
+                    children: [
+                      Icon(_isSearching ? Icons.close : Icons.search, size: 20),
+                      const SizedBox(width: 12),
+                      const Text('Search'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'goto',
+                  enabled: _totalPages > 0,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.format_list_numbered, size: 20),
+                      SizedBox(width: 12),
+                      Text('Go to Page'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'metadata',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 20,
+                        color: _showMetadataSidebar ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Metadata & Citations'),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          else ...[
+            // Desktop/non-Android: Show all buttons in toolbar with theme-aware design
+            if (kIsWeb)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[800]
+                      : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[700]!
+                        : Colors.grey[300]!,
+                    width: 1,
+                  ),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.view_column_outlined,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[300]
+                        : Colors.grey[700],
+                    size: 20,
+                  ),
+                  onPressed: _openSplitView,
+                  tooltip: 'Split View',
+                  iconSize: 20,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
                 ),
               ),
+            Consumer<ConnectivityService>(
+              builder: (context, connectivity, child) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: connectivity.isOnline
+                        ? (isDark ? Colors.grey[800] : Colors.grey[100])
+                        : (isDark ? Colors.grey[850] : Colors.grey[200]),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: connectivity.isOnline
+                          ? (isDark ? Colors.grey[700]! : Colors.grey[300]!)
+                          : (isDark ? Colors.grey[800]! : Colors.grey[400]!),
+                      width: 1,
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.people_outline,
+                      color: connectivity.isOnline
+                          ? (isDark ? Colors.grey[300] : Colors.grey[700])
+                          : (isDark ? Colors.grey[700] : Colors.grey[400]),
+                      size: 20,
+                    ),
+                    onPressed: connectivity.isOnline
+                        ? _startCollaboration
+                        : null,
+                    tooltip: connectivity.isOnline
+                        ? 'Start Collaboration'
+                        : 'Offline - Cannot collaborate',
+                    iconSize: 20,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(),
+                  ),
+                );
+              },
             ),
-          ),
-
-          // Annotation Toolbar
-          if (_showAnnotationToolbar)
-            Positioned(
-              top: 100,
-              right: 16,
-              child: GlassContainer(
-                borderRadius: BorderRadius.circular(16),
-                opacity: 0.2,
+            Consumer<ConnectivityService>(
+              builder: (context, connectivity, child) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: connectivity.isOnline
+                        ? (isDark ? Colors.grey[800] : Colors.grey[100])
+                        : (isDark ? Colors.grey[850] : Colors.grey[200]),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: connectivity.isOnline
+                          ? (isDark ? Colors.grey[700]! : Colors.grey[300]!)
+                          : (isDark ? Colors.grey[800]! : Colors.grey[400]!),
+                      width: 1,
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.refresh_outlined,
+                      color: connectivity.isOnline
+                          ? (isDark ? Colors.grey[300] : Colors.grey[700])
+                          : (isDark ? Colors.grey[700] : Colors.grey[400]),
+                      size: 20,
+                    ),
+                    onPressed: connectivity.isOnline ? _refreshPdf : null,
+                    tooltip: connectivity.isOnline
+                        ? 'Refresh from Google Drive'
+                        : 'Offline - Cannot refresh',
+                    iconSize: 20,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(),
+                  ),
+                );
+              },
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: _showTtsControls
+                    ? (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.blue[900]
+                          : Colors.blue[50])
+                    : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey[100]),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _showTtsControls
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.blue[700]!
+                            : Colors.blue[300]!)
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[700]!
+                            : Colors.grey[300]!),
+                  width: 1,
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  _showTtsControls
+                      ? Icons.volume_off_outlined
+                      : Icons.volume_up_outlined,
+                  color: _showTtsControls
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.blue[300]
+                            : Colors.blue[700])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : Colors.grey[700]),
+                  size: 20,
+                ),
+                onPressed: _toggleTtsControls,
+                tooltip: 'Read Aloud',
+                iconSize: 20,
                 padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: _showAnnotationToolbar
+                    ? (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.orange[900]
+                          : Colors.orange[50])
+                    : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey[100]),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _showAnnotationToolbar
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.orange[700]!
+                            : Colors.orange[300]!)
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[700]!
+                            : Colors.grey[300]!),
+                  width: 1,
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  _showAnnotationToolbar
+                      ? Icons.edit_off_outlined
+                      : Icons.edit_outlined,
+                  color: _showAnnotationToolbar
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.orange[300]
+                            : Colors.orange[700])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : Colors.grey[700]),
+                  size: 20,
+                ),
+                onPressed: _toggleAnnotationToolbar,
+                tooltip: 'Annotations',
+                iconSize: 20,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: _showAnnotations
+                    ? (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.purple[900]
+                          : Colors.purple[50])
+                    : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey[100]),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _showAnnotations
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.purple[700]!
+                            : Colors.purple[300]!)
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[700]!
+                            : Colors.grey[300]!),
+                  width: 1,
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  Icons.bookmark_outline,
+                  color: _showAnnotations
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.purple[300]
+                            : Colors.purple[700])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : Colors.grey[700]),
+                  size: 20,
+                ),
+                onPressed: _toggleAnnotationPanel,
+                tooltip: 'Show annotations',
+                iconSize: 20,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+            if (_annotations.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.green[900]
+                      : Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.green[700]!
+                        : Colors.green[300]!,
+                    width: 1,
+                  ),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.cloud_upload_outlined,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.green[300]
+                        : Colors.green[700],
+                    size: 20,
+                  ),
+                  onPressed: () async {
+                    await _savePdfWithAnnotations(uploadToDrive: true);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'PDF saved and uploaded to Google Drive',
+                          ),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  tooltip: 'Upload to Drive',
+                  iconSize: 20,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: _isSearching
+                    ? (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.amber[900]
+                          : Colors.amber[50])
+                    : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey[100]),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _isSearching
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.amber[700]!
+                            : Colors.amber[300]!)
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[700]!
+                            : Colors.grey[300]!),
+                  width: 1,
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  _isSearching ? Icons.close_outlined : Icons.search_outlined,
+                  color: _isSearching
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.amber[300]
+                            : Colors.amber[800])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : Colors.grey[700]),
+                  size: 20,
+                ),
+                onPressed: _toggleSearch,
+                tooltip: 'Search',
+                iconSize: 20,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey[800]
+                    : Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[700]!
+                      : Colors.grey[300]!,
+                  width: 1,
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  Icons.format_list_numbered_outlined,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[300]
+                      : Colors.grey[700],
+                  size: 20,
+                ),
+                onPressed: _totalPages > 0 ? _showPageNavigator : null,
+                tooltip: 'Go to page',
+                iconSize: 20,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: _showMetadataSidebar
+                    ? (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.teal[900]
+                          : Colors.teal[50])
+                    : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey[100]),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _showMetadataSidebar
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.teal[700]!
+                            : Colors.teal[300]!)
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[700]!
+                            : Colors.grey[300]!),
+                  width: 1,
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  Icons.info_outlined,
+                  color: _showMetadataSidebar
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.teal[300]
+                            : Colors.teal[700])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : Colors.grey[700]),
+                  size: 20,
+                ),
+                onPressed: _toggleMetadataSidebar,
+                tooltip: 'Metadata & Citations',
+                iconSize: 20,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+          ],
+        ],
+      ),
+      body: Consumer<PdfViewerManager>(
+        builder: (context, pdfManager, child) {
+          if (pdfManager.isLoading) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    pdfManager.downloadProgress < 1.0
+                        ? 'Downloading... ${(pdfManager.downloadProgress * 100).toStringAsFixed(0)}%'
+                        : 'Loading PDF...',
+                  ),
+                  if (pdfManager.downloadProgress > 0 &&
+                      pdfManager.downloadProgress < 1.0)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 48,
+                        vertical: 16,
+                      ),
+                      child: LinearProgressIndicator(
+                        value: pdfManager.downloadProgress,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }
+
+          if (pdfManager.errorMessage != null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildAnnotationTool(
-                      PdfAnnotationMode.highlight,
-                      Icons.highlight,
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
                     ),
-                    _buildAnnotationTool(
-                      PdfAnnotationMode.underline,
-                      Icons.format_underlined,
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Failed to load PDF',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    _buildAnnotationTool(
-                      PdfAnnotationMode.strikethrough,
-                      Icons.format_strikethrough,
+                    const SizedBox(height: 8),
+                    Text(
+                      pdfManager.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
                     ),
-                    _buildAnnotationTool(
-                      PdfAnnotationMode.squiggly,
-                      Icons.waves,
-                    ),
-                    _buildAnnotationTool(
-                      PdfAnnotationMode.stickyNote,
-                      Icons.note,
-                    ),
-                    const Divider(color: Colors.white24),
-                    IconButton(
-                      icon: Icon(Icons.circle, color: _selectedAnnotationColor),
-                      onPressed: () => _showColorPicker(),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: _loadPdf,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
                     ),
                   ],
                 ),
               ),
-            ),
+            );
+          }
 
-          // Side Panels (Annotations / Metadata)
-          if (_showAnnotations && MediaQuery.of(context).size.width >= 600)
-            Positioned(
-              top: 80,
-              bottom: 0,
-              right: 0,
-              width: 300,
-              child: GlassContainer(
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(16),
-                ),
-                color: AppColors.surface,
-                child: AnnotationListPanel(
-                  annotations: _annotations,
-                  onAnnotationTap: _onAnnotationTap,
-                  onAnnotationDelete: _onAnnotationDelete,
-                ),
-              ),
-            ),
+          if (pdfManager.currentPdfBytes == null) {
+            return const Center(child: Text('No PDF loaded'));
+          }
 
-          if (_showMetadataSidebar && MediaQuery.of(context).size.width >= 600)
-            Positioned(
-              top: 80,
-              bottom: 0,
-              right: 0,
-              width: 300,
-              child: GlassContainer(
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(16),
+          return Column(
+            children: [
+              // TTS Controls
+              if (_showTtsControls)
+                TtsControls(
+                  onPlay: _speakCurrentPage,
+                  onNextPage: _onTtsNextPage,
+                  onPreviousPage: _onTtsPreviousPage,
+                  canGoNext: _currentPage < _totalPages,
+                  canGoPrevious: _currentPage > 1,
                 ),
-                color: AppColors.surface,
-                child: FileMetadataSidebar(
-                  file:
-                      widget.file ??
-                      DriveFile(
-                        id: widget.fileId ?? '',
-                        name: widget.fileName ?? '',
-                        mimeType: 'application/pdf',
-                        modifiedTime: DateTime.now(),
-                        size: 0,
+              // Search bar
+              if (_isSearching)
+                Container(
+                  padding: const EdgeInsets.all(8.0),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[850]
+                      : Colors.grey[200],
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: const InputDecoration(
+                            hintText: 'Search in PDF...',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          onSubmitted: (_) => _performSearch(),
+                        ),
                       ),
-                  metadataService: context.read<MetadataService>(),
-                  onClose: _toggleMetadataSidebar,
-                ),
-              ),
-            ),
-
-          // TTS Controls
-          if (_showTtsControls)
-            Positioned(
-              bottom: 100,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: GlassContainer(
-                  borderRadius: BorderRadius.circular(24),
-                  color: AppColors.surface,
-                  padding: const EdgeInsets.all(16),
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  child: TtsControls(
-                    onPlay: () {
-                      if (_ttsService?.isPlaying ?? false) {
-                        _ttsService?.stop();
-                      } else {
-                        _speakCurrentPage();
-                      }
-                    },
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.search_outlined, size: 20),
+                        onPressed: _performSearch,
+                        tooltip: 'Search',
+                        iconSize: 20,
+                      ),
+                    ],
                   ),
                 ),
+              // Annotation toolbar
+              if (_showAnnotationToolbar)
+                AnnotationToolbar(
+                  selectedMode: _pdfViewerController.annotationMode,
+                  selectedColor: _selectedAnnotationColor,
+                  onModeChanged: _onAnnotationModeChanged,
+                  onColorChanged: _onAnnotationColorChanged,
+                ),
+              // Zoom controls bar
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[850]
+                      : Colors.grey[100],
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[700]!
+                          : Colors.grey[300]!,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Zoom out
+                    IconButton(
+                      icon: Icon(
+                        Icons.zoom_out_outlined,
+                        size: 20,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : Colors.grey[700],
+                      ),
+                      onPressed: _zoomLevel > 0.25 ? _zoomOut : null,
+                      tooltip: 'Zoom out',
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 12),
+                    // Zoom level display
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[800]
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[600]!
+                              : Colors.grey[300]!,
+                        ),
+                      ),
+                      child: Text(
+                        '${(_zoomLevel * 100).toInt()}%',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[200]
+                              : Colors.grey[800],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Zoom in
+                    IconButton(
+                      icon: Icon(
+                        Icons.zoom_in_outlined,
+                        size: 20,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : Colors.grey[700],
+                      ),
+                      onPressed: _zoomLevel < 3.0 ? _zoomIn : null,
+                      tooltip: 'Zoom in',
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 16),
+                    // Fit to page
+                    TextButton.icon(
+                      onPressed: _fitToPage,
+                      icon: Icon(
+                        Icons.fit_screen_outlined,
+                        size: 18,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : null,
+                      ),
+                      label: Text(
+                        'Fit',
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[300]
+                              : null,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
+              // PDF Viewer with annotation panel
+              Expanded(
+                child: Row(
+                  children: [
+                    // PDF Viewer with horizontal letterboxing for zoom < 100%
+                    Expanded(
+                      child: Container(
+                        color: const Color(0xFF333333),
+                        child: Row(
+                          children: [
+                            // Left black bar (only visible when zoomed < 100%)
+                            if (_zoomLevel < 1.0)
+                              Expanded(
+                                flex: ((1.0 - _zoomLevel) * 100).toInt(),
+                                child: Container(
+                                  color: const Color(0xFF333333),
+                                ),
+                              ),
+                            // PDF Viewer (fills vertical space)
+                            Expanded(
+                              flex: (_zoomLevel * 200).toInt(),
+                              child: SfPdfViewer.memory(
+                                pdfManager.currentPdfBytes!,
+                                key: _pdfViewerKey,
+                                controller: _pdfViewerController,
+                                onDocumentLoaded:
+                                    (PdfDocumentLoadedDetails details) {
+                                      setState(() {
+                                        _totalPages =
+                                            details.document.pages.count;
+                                        _annotations = _pdfViewerController
+                                            .getAnnotations();
+                                      });
+                                    },
+                                onPageChanged: (PdfPageChangedDetails details) {
+                                  setState(() {
+                                    _currentPage = details.newPageNumber;
+                                  });
+                                  // Track page read
+                                  _analyticsService?.updateCurrentPage(
+                                    _currentPage,
+                                  );
+                                },
+                                onAnnotationAdded: (Annotation annotation) {
+                                  _onAnnotationAdded(annotation);
+                                },
+                                onAnnotationSelected: (Annotation annotation) {
+                                  // Show context menu for annotation
+                                  _showAnnotationContextMenu(annotation);
+                                },
+                                onAnnotationDeselected:
+                                    (Annotation annotation) {
+                                      // Annotation deselected
+                                    },
+                                onAnnotationEdited: (Annotation annotation) {
+                                  setState(() {
+                                    _annotations = _pdfViewerController
+                                        .getAnnotations();
+                                  });
+                                  // Auto-save when annotation is edited
+                                  _savePdfWithAnnotations();
+                                },
+                                onAnnotationRemoved: (Annotation annotation) {
+                                  setState(() {
+                                    _annotations = _pdfViewerController
+                                        .getAnnotations();
+                                  });
+                                  // Auto-save when annotation is removed
+                                  _savePdfWithAnnotations();
+                                },
+                              ),
+                            ),
+                            // Right black bar (only visible when zoomed < 100%)
+                            if (_zoomLevel < 1.0)
+                              Expanded(
+                                flex: ((1.0 - _zoomLevel) * 100).toInt(),
+                                child: Container(
+                                  color: const Color(0xFF333333),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Annotation panel (desktop) or bottom sheet (mobile)
+                    if (_showAnnotations &&
+                        MediaQuery.of(context).size.width >= 600)
+                      SizedBox(
+                        width: 300,
+                        child: AnnotationListPanel(
+                          annotations: _annotations,
+                          onAnnotationTap: _onAnnotationTap,
+                          onAnnotationDelete: _onAnnotationDelete,
+                        ),
+                      ),
+                    // Metadata sidebar (desktop only)
+                    if (_showMetadataSidebar &&
+                        MediaQuery.of(context).size.width >= 600)
+                      SizedBox(
+                        width: 350,
+                        child: FileMetadataSidebar(
+                          file:
+                              widget.file ??
+                              DriveFile(
+                                id: widget.fileId ?? '',
+                                name: widget.fileName ?? '',
+                                mimeType: 'application/pdf',
+                                modifiedTime: DateTime.now(),
+                                size: 0,
+                              ),
+                          metadataService: context.read<MetadataService>(),
+                          onClose: () {
+                            setState(() {
+                              _showMetadataSidebar = false;
+                            });
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
-    );
-  }
-
-  Widget _buildAnnotationTool(PdfAnnotationMode mode, IconData icon) {
-    final isSelected = _pdfViewerController.annotationMode == mode;
-    return IconButton(
-      icon: Icon(icon, color: isSelected ? AppColors.primary : Colors.white),
-      onPressed: () => _onAnnotationModeChanged(mode),
-      tooltip: mode.toString().split('.').last,
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF0844), Color(0xFFFFB199)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF0844).withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _openAiChatWithPdf,
+          tooltip: 'Chat with this PDF',
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(
+            Icons.chat_bubble_outline,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
