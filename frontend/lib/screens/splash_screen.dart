@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../widgets/ui/animated_background.dart';
+import '../widgets/ui/glass_container.dart';
 
 /// Splash screen shown during app initialization
 class SplashScreen extends StatefulWidget {
@@ -48,90 +51,101 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
-            ],
-          ),
-        ),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return Opacity(
-                opacity: _fadeAnimation.value,
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: child,
-                ),
-              );
-            },
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // App Icon/Logo
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+      body: Stack(
+        children: [
+          // Animated Background
+          const Positioned.fill(child: AnimatedBackground()),
+
+          Center(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: _fadeAnimation.value,
+                  child: Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: child,
+                  ),
+                );
+              },
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // App Icon/Logo
+                  GlassContainer(
+                    width: 120,
+                    height: 120,
                     borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+                    blur: 20,
+                    opacity: 0.1,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1.5,
+                    ),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [AppColors.primary, AppColors.secondary],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.4),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.school,
+                          size: 50,
+                          color: Colors.white,
+                        ),
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.school,
-                    size: 60,
-                    color: Color(0xFF6366F1),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // App Name
-                const Text(
-                  'ScholarMate',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Tagline
-                Text(
-                  'Your AI Research Workspace',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withValues(alpha: 0.9),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 48),
-                // Loading Indicator
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.white.withValues(alpha: 0.8),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+                  // App Name
+                  const Text(
+                    'ScholarMate',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Tagline
+                  Text(
+                    'Your AI Research Workspace',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white.withValues(alpha: 0.8),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 64),
+                  // Loading Indicator
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.accent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

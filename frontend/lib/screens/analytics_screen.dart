@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../database/database.dart';
+import '../widgets/ui/glass_container.dart';
+import '../theme/app_colors.dart';
 
 /// Analytics and insights screen
 class AnalyticsScreen extends StatefulWidget {
@@ -75,23 +77,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Analytics & Insights'),
+        title: const Text(
+          'Analytics & Insights',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: _loadStats,
             tooltip: 'Refresh',
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : RefreshIndicator(
               onRefresh: _loadStats,
+              color: AppColors.primary,
+              backgroundColor: AppColors.surface,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -143,74 +154,81 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   const SizedBox(height: 24),
 
                   // Activity heatmap
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today,
-                                size: 20,
-                                color: theme.colorScheme.primary,
+                  GlassContainer(
+                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.surface,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today,
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Reading Activity (Last 30 Days)',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontSize: 16,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Reading Activity (Last 30 Days)',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _ActivityHeatmap(activityData: _activityData),
-                        ],
-                      ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _ActivityHeatmap(activityData: _activityData),
+                      ],
                     ),
                   ),
 
                   const SizedBox(height: 16),
 
                   // Top files
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.trending_up,
-                                size: 20,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Most Read Files',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          if (_topFiles.isEmpty)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Text('No reading data yet'),
-                              ),
-                            )
-                          else
-                            ..._topFiles.map(
-                              (stats) => _FileStatTile(stats: stats),
+                  GlassContainer(
+                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.surface,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.trending_up,
+                              size: 20,
+                              color: AppColors.primary,
                             ),
-                        ],
-                      ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Most Read Files',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (_topFiles.isEmpty)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Text(
+                                'No reading data yet',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ),
+                          )
+                        else
+                          ..._topFiles.map(
+                            (stats) => _FileStatTile(stats: stats),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -235,31 +253,32 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
+    return GlassContainer(
+      borderRadius: BorderRadius.circular(16),
+      color: AppColors.surface,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 12,
             ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: Colors.white,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -272,7 +291,6 @@ class _ActivityHeatmap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final now = DateTime.now();
     final startDate = now.subtract(const Duration(days: 29));
 
@@ -294,10 +312,8 @@ class _ActivityHeatmap extends StatelessWidget {
         final seconds = activityData[date] ?? 0;
         final intensity = seconds / maxSeconds;
         final color = seconds == 0
-            ? theme.colorScheme.surfaceContainerHighest
-            : theme.colorScheme.primary.withValues(
-                alpha: (0.2 + (intensity * 0.8)),
-              );
+            ? Colors.white.withValues(alpha: 0.1)
+            : AppColors.primary.withValues(alpha: (0.2 + (intensity * 0.8)));
 
         return Tooltip(
           message: '${date.month}/${date.day}: ${seconds ~/ 60}m',
@@ -322,13 +338,11 @@ class _FileStatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(Icons.description, color: theme.colorScheme.primary),
+          const Icon(Icons.description, color: AppColors.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -336,15 +350,19 @@ class _FileStatTile extends StatelessWidget {
               children: [
                 Text(
                   stats.fileId,
-                  style: theme.textTheme.bodyMedium,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${stats.formattedTime} • ${stats.uniquePagesRead} pages',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12,
                   ),
                 ),
               ],

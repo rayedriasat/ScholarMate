@@ -8,6 +8,9 @@ import 'dart:io';
 import 'package:uuid/uuid.dart';
 import '../models/drawing_note.dart';
 import '../services/drawing_storage_service.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../theme/app_colors.dart';
 
 enum DrawingTool { pen, eraser, text, select }
 
@@ -146,14 +149,26 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
       builder: (context) {
         final textController = TextEditingController();
         return AlertDialog(
-          title: const Text('Add Text Note'),
+          backgroundColor: AppColors.surface,
+          title: const Text(
+            'Add Text Note',
+            style: TextStyle(color: Colors.white),
+          ),
           content: TextField(
             controller: textController,
             autofocus: true,
             maxLines: 3,
+            style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
               hintText: 'Enter your text...',
+              hintStyle: TextStyle(color: Colors.white38),
               border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
             ),
           ),
           actions: [
@@ -161,7 +176,7 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            ModernButton(
               onPressed: () {
                 if (textController.text.isNotEmpty) {
                   setState(() {
@@ -177,7 +192,9 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
                 }
                 Navigator.pop(context);
               },
-              child: const Text('Add'),
+              label: 'Add',
+              width: 80,
+              height: 36,
             ),
           ],
         );
@@ -219,12 +236,25 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
       builder: (context) {
         final textController = TextEditingController(text: note.text);
         return AlertDialog(
-          title: const Text('Edit Text Note'),
+          backgroundColor: AppColors.surface,
+          title: const Text(
+            'Edit Text Note',
+            style: TextStyle(color: Colors.white),
+          ),
           content: TextField(
             controller: textController,
             autofocus: true,
             maxLines: 3,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
+            ),
           ),
           actions: [
             TextButton(
@@ -241,14 +271,16 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            ModernButton(
               onPressed: () {
                 setState(() {
                   note.text = textController.text;
                 });
                 Navigator.pop(context);
               },
-              child: const Text('Save'),
+              label: 'Save',
+              width: 80,
+              height: 36,
             ),
           ],
         );
@@ -276,14 +308,21 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear Canvas'),
-        content: const Text('Are you sure you want to clear everything?'),
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Clear Canvas',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to clear everything?',
+          style: TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ModernButton(
             onPressed: () {
               setState(() {
                 _strokes.clear();
@@ -292,8 +331,10 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
               });
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Clear'),
+            label: 'Clear',
+            backgroundColor: Colors.red,
+            width: 80,
+            height: 36,
           ),
         ],
       ),
@@ -304,7 +345,11 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Pick a color'),
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Pick a color',
+          style: TextStyle(color: Colors.white),
+        ),
         content: SingleChildScrollView(
           child: ColorPicker(
             pickerColor: _currentColor,
@@ -313,12 +358,16 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
                 _currentColor = color;
               });
             },
+            labelTypes: const [],
+            pickerAreaHeightPercent: 0.8,
           ),
         ),
         actions: [
-          ElevatedButton(
+          ModernButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Done'),
+            label: 'Done',
+            width: 80,
+            height: 36,
           ),
         ],
       ),
@@ -430,15 +479,26 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: SizedBox(
-          width: 200,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: GlassContainer(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.white.withValues(alpha: 0.1),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: TextField(
             controller: _titleController,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
             decoration: const InputDecoration(
               border: InputBorder.none,
               hintText: 'Note title',
+              hintStyle: TextStyle(color: Colors.white38),
             ),
           ),
         ),
@@ -447,19 +507,25 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
             icon: const Icon(Icons.undo),
             onPressed: _strokes.isEmpty ? null : _undo,
             tooltip: 'Undo',
+            color: Colors.white,
+            disabledColor: Colors.white24,
           ),
           IconButton(
             icon: const Icon(Icons.redo),
             onPressed: _undoStack.isEmpty ? null : _redo,
             tooltip: 'Redo',
+            color: Colors.white,
+            disabledColor: Colors.white24,
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: _clearCanvas,
             tooltip: 'Clear',
+            color: Colors.white,
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.file_download),
+            icon: const Icon(Icons.file_download, color: Colors.white),
+            color: AppColors.surface,
             onSelected: (value) {
               if (value == 'png') {
                 _exportAsPNG();
@@ -472,9 +538,12 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
                 value: 'png',
                 child: Row(
                   children: [
-                    Icon(Icons.image),
+                    Icon(Icons.image, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Export as PNG'),
+                    Text(
+                      'Export as PNG',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -482,9 +551,12 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
                 value: 'pdf',
                 child: Row(
                   children: [
-                    Icon(Icons.picture_as_pdf),
+                    Icon(Icons.picture_as_pdf, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Export as PDF'),
+                    Text(
+                      'Export as PDF',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -495,9 +567,12 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
                   )
-                : const Icon(Icons.save),
+                : const Icon(Icons.save, color: AppColors.primary),
             onPressed: _isSaving ? null : _saveNote,
             tooltip: 'Save',
           ),
@@ -507,27 +582,33 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
         children: [
           _buildToolbar(),
           Expanded(
-            child: Screenshot(
-              controller: _screenshotController,
-              child: Container(
-                color: Colors.white,
-                child: GestureDetector(
-                  key: _canvasKey,
-                  onPanStart: _onPanStart,
-                  onPanUpdate: _onPanUpdate,
-                  onPanEnd: _onPanEnd,
-                  child: CustomPaint(
-                    painter: DrawingPainter(
-                      strokes: _strokes,
-                      currentStroke: _currentStroke,
-                      currentColor: _currentColor,
-                      strokeWidth: _strokeWidth,
-                      textNotes: _textNotes,
-                      selectedTextNote: _selectedTextNote,
-                      eraserPosition: _eraserPosition,
-                      isErasing: _currentTool == DrawingTool.eraser,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Screenshot(
+                  controller: _screenshotController,
+                  child: Container(
+                    color: Colors.white,
+                    child: GestureDetector(
+                      key: _canvasKey,
+                      onPanStart: _onPanStart,
+                      onPanUpdate: _onPanUpdate,
+                      onPanEnd: _onPanEnd,
+                      child: CustomPaint(
+                        painter: DrawingPainter(
+                          strokes: _strokes,
+                          currentStroke: _currentStroke,
+                          currentColor: _currentColor,
+                          strokeWidth: _strokeWidth,
+                          textNotes: _textNotes,
+                          selectedTextNote: _selectedTextNote,
+                          eraserPosition: _eraserPosition,
+                          isErasing: _currentTool == DrawingTool.eraser,
+                        ),
+                        size: Size.infinite,
+                      ),
                     ),
-                    size: Size.infinite,
                   ),
                 ),
               ),
@@ -539,17 +620,12 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
   }
 
   Widget _buildToolbar() {
-    return Container(
+    return GlassContainer(
+      borderRadius: BorderRadius.zero,
+      color: AppColors.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      border: Border(
+        bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -583,7 +659,7 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
               onTap: () => setState(() => _currentTool = DrawingTool.select),
             ),
             const SizedBox(width: 16),
-            const VerticalDivider(),
+            Container(height: 24, width: 1, color: Colors.white24),
             const SizedBox(width: 16),
             _buildColorButton(),
             const SizedBox(width: 16),
@@ -600,10 +676,9 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
     return Material(
       color: isSelected
-          ? theme.colorScheme.primaryContainer
+          ? AppColors.primary.withValues(alpha: 0.2)
           : Colors.transparent,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
@@ -616,18 +691,14 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
             children: [
               Icon(
                 icon,
-                color: isSelected
-                    ? theme.colorScheme.onPrimaryContainer
-                    : theme.colorScheme.onSurface,
+                color: isSelected ? AppColors.primary : Colors.white70,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isSelected
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurface,
+                  color: isSelected ? AppColors.primary : Colors.white70,
                 ),
               ),
             ],
@@ -652,11 +723,14 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
               decoration: BoxDecoration(
                 color: _currentColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey, width: 2),
+                border: Border.all(color: Colors.white54, width: 2),
               ),
             ),
             const SizedBox(height: 4),
-            const Text('Color', style: TextStyle(fontSize: 12)),
+            const Text(
+              'Color',
+              style: TextStyle(fontSize: 12, color: Colors.white70),
+            ),
           ],
         ),
       ),
@@ -669,22 +743,30 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
       children: [
         SizedBox(
           width: 150,
-          child: Slider(
-            value: _strokeWidth,
-            min: 1,
-            max: 20,
-            divisions: 19,
-            label: _strokeWidth.round().toString(),
-            onChanged: (value) {
-              setState(() {
-                _strokeWidth = value;
-              });
-            },
+          child: SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: Colors.white24,
+              thumbColor: Colors.white,
+              overlayColor: AppColors.primary.withValues(alpha: 0.2),
+            ),
+            child: Slider(
+              value: _strokeWidth,
+              min: 1,
+              max: 20,
+              divisions: 19,
+              label: _strokeWidth.round().toString(),
+              onChanged: (value) {
+                setState(() {
+                  _strokeWidth = value;
+                });
+              },
+            ),
           ),
         ),
         Text(
           'Width: ${_strokeWidth.round()}',
-          style: const TextStyle(fontSize: 12),
+          style: const TextStyle(fontSize: 12, color: Colors.white70),
         ),
       ],
     );
@@ -809,7 +891,8 @@ class DrawingPainter extends CustomPainter {
           ),
         ),
         textDirection: TextDirection.ltr,
-      )..layout();
+      );
+      textPainter.layout();
 
       // Draw selection box if selected
       if (note == selectedTextNote) {
@@ -822,7 +905,7 @@ class DrawingPainter extends CustomPainter {
         canvas.drawRect(
           rect,
           Paint()
-            ..color = Colors.blue.withValues(alpha: 0.3)
+            ..color = Colors.blue.withValues(alpha: 0.2)
             ..style = PaintingStyle.fill,
         );
         canvas.drawRect(
@@ -830,7 +913,7 @@ class DrawingPainter extends CustomPainter {
           Paint()
             ..color = Colors.blue
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 2,
+            ..strokeWidth = 1,
         );
       }
 

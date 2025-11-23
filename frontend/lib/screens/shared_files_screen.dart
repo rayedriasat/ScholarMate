@@ -4,6 +4,9 @@ import '../services/sharing_service.dart';
 import '../services/drive_service.dart';
 import '../models/drive_file.dart';
 import '../widgets/breadcrumb_navigation.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../theme/app_colors.dart';
 import 'pdf_viewer_screen.dart';
 import 'markdown_viewer_screen.dart';
 
@@ -204,6 +207,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
         return true;
       },
       child: Scaffold(
+        backgroundColor: Colors.black,
         appBar: AppBar(
           title: Text(
             _currentFolderId != null
@@ -211,7 +215,11 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       ? _navigationPath.last.name
                       : 'Folder'
                 : 'Shared with Me',
+            style: const TextStyle(color: Colors.white),
           ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
           leading: _canNavigateBack
               ? IconButton(
                   icon: const Icon(Icons.arrow_back),
@@ -244,7 +252,9 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
 
     if (_error != null) {
@@ -252,30 +262,26 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Error loading files',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: TextStyle(fontSize: 20, color: Colors.white),
             ),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 _error!,
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: const TextStyle(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
+            ModernButton(
               onPressed: _refresh,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              icon: Icons.refresh,
+              label: 'Retry',
             ),
           ],
         ),
@@ -296,27 +302,20 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
             Icon(
               Icons.folder_shared_outlined,
               size: 64,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.3),
+              color: Colors.white.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               'No shared files',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.white.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Files shared with you will appear here',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
             ),
           ],
         ),
@@ -325,6 +324,8 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
 
     return RefreshIndicator(
       onRefresh: _refresh,
+      color: AppColors.primary,
+      backgroundColor: AppColors.surface,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _sharedFiles.length,
@@ -332,11 +333,15 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
           final fileInfo = _sharedFiles[index];
           final file = fileInfo.toDriveFile();
 
-          return Card(
+          return GlassContainer(
+            borderRadius: BorderRadius.circular(16),
+            color: AppColors.surface,
             margin: const EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.zero,
             child: ListTile(
+              contentPadding: const EdgeInsets.all(16),
               leading: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.2),
                 child: Icon(
                   file.isFolder
                       ? Icons.folder
@@ -345,12 +350,15 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       : file.isMarkdown
                       ? Icons.description
                       : Icons.insert_drive_file,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  color: AppColors.primary,
                 ),
               ),
               title: Text(
                 file.name,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,13 +371,13 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                             ? Icons.edit_outlined
                             : Icons.visibility_outlined,
                         size: 14,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: AppColors.primary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         fileInfo.permission == 'editor' ? 'Editor' : 'Viewer',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
+                        style: const TextStyle(
+                          color: AppColors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -381,9 +389,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                     'Shared by ${fileInfo.ownerName ?? fileInfo.ownerEmail ?? 'Unknown'}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                     ),
                   ),
                   if (file.size != null) ...[
@@ -392,15 +398,13 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       file.formattedSize,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
                 ],
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(Icons.chevron_right, color: Colors.white70),
               onTap: () => _openFile(fileInfo),
             ),
           );
@@ -418,27 +422,20 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
             Icon(
               Icons.folder_open_outlined,
               size: 64,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.3),
+              color: Colors.white.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               'Empty folder',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.white.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'This folder contains no files',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
             ),
           ],
         ),
@@ -447,17 +444,23 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
 
     return RefreshIndicator(
       onRefresh: _refresh,
+      color: AppColors.primary,
+      backgroundColor: AppColors.surface,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _currentFolderFiles.length,
         itemBuilder: (context, index) {
           final file = _currentFolderFiles[index];
 
-          return Card(
+          return GlassContainer(
+            borderRadius: BorderRadius.circular(16),
+            color: AppColors.surface,
             margin: const EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.zero,
             child: ListTile(
+              contentPadding: const EdgeInsets.all(16),
               leading: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.2),
                 child: Icon(
                   file.isFolder
                       ? Icons.folder
@@ -466,12 +469,15 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       : file.isMarkdown
                       ? Icons.description
                       : Icons.insert_drive_file,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  color: AppColors.primary,
                 ),
               ),
               title: Text(
                 file.name,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -482,9 +488,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       'Modified ${_formatDate(file.modifiedTime!)}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -494,15 +498,13 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       file.formattedSize,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
                 ],
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(Icons.chevron_right, color: Colors.white70),
               onTap: () => _openFileFromFolder(file),
             ),
           );

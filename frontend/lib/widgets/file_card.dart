@@ -4,12 +4,14 @@ import '../models/drive_file.dart';
 import '../models/tag.dart';
 import '../services/cache_service.dart';
 import '../services/tag_service.dart';
+import '../theme/app_colors.dart';
+import 'ui/glass_container.dart';
 import 'file_context_menu.dart';
 import 'tag_chip.dart';
 import 'tag_selection_dialog.dart';
 import 'indexing_status_badge.dart';
 
-/// A card widget displaying file or folder information
+/// A modern glassmorphism card displaying file or folder information
 class FileCard extends StatefulWidget {
   final DriveFile file;
   final VoidCallback? onTap;
@@ -38,14 +40,26 @@ class FileCard extends StatefulWidget {
   State<FileCard> createState() => _FileCardState();
 }
 
-class _FileCardState extends State<FileCard> {
+class _FileCardState extends State<FileCard>
+    with SingleTickerProviderStateMixin {
   List<Tag> _tags = [];
   bool _isLoadingTags = false;
   bool _initialized = false;
+  bool _isHovered = false;
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.02,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -55,6 +69,12 @@ class _FileCardState extends State<FileCard> {
       _initialized = true;
       _loadTags();
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTags() async {
@@ -91,162 +111,183 @@ class _FileCardState extends State<FileCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: widget.isSelected ? 8 : 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: widget.isSelected
-            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
-            : BorderSide.none,
-      ),
-      child: InkWell(
-        onTap: widget.onTap,
-        onLongPress: widget.onLongPress,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon and name row
-              Row(
-                children: [
-                  Stack(
-                    children: [
-                      _buildFileIcon(),
-                      if (widget.file.isPdf)
-                        FutureBuilder<bool>(
-                          future: context.read<CacheService>().isPdfCached(
-                            widget.file.id,
-                          ),
-                          builder: (context, snapshot) {
-                            if (snapshot.data == true) {
-                              return Positioned(
-                                right: 0,
-                                bottom: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _isHovered = true);
+        _controller.forward();
+      },
+      onExit: (_) {
+        setState(() => _isHovered = false);
+        _controller.reverse();
+      },
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
+          child: GlassContainer(
+            padding: const EdgeInsets.all(16),
+            blur: 10,
+            opacity: widget.isSelected ? 0.15 : (_isHovered ? 0.1 : 0.05),
+            color: widget.isSelected
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : (_isHovered ? Colors.white.withValues(alpha: 0.08) : null),
+            border: Border.all(
+              color: widget.isSelected
+                  ? AppColors.primary.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.1),
+              width: 1,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon and name row
+                Row(
+                  children: [
+                    Stack(
+                      children: [
+                        _buildFileIcon(),
+                        if (widget.file.isPdf)
+                          FutureBuilder<bool>(
+                            future: context.read<CacheService>().isPdfCached(
+                              widget.file.id,
+                            ),
+                            builder: (context, snapshot) {
+                              if (snapshot.data == true) {
+                                return Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: AppColors.surface,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.check,
+                                      size: 10,
                                       color: Colors.white,
-                                      width: 2,
                                     ),
                                   ),
-                                  child: const Icon(
-                                    Icons.check,
-                                    size: 12,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.file.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (!widget.file.isFolder) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _getFileTypeLabel(),
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
-                  ),
-                  if (widget.file.isShared)
-                    Icon(Icons.people, size: 16, color: Colors.blue[600]),
-                  const SizedBox(width: 8),
-                  FileContextMenu(
-                    file: widget.file,
-                    onRename: widget.onRename,
-                    onMove: widget.onMove,
-                    onDelete: widget.onDelete,
-                    onShare: widget.onShare,
-                    onManageTags: widget.file.isFolder ? null : _manageTags,
-                    onReindex: widget.file.isPdf ? widget.onReindex : null,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Tags section (only for files, not folders)
-              if (!widget.file.isFolder) ...[
-                if (_isLoadingTags)
-                  const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else if (_tags.isNotEmpty) ...[
-                  TagChipList(
-                    tags: _tags,
-                    small: true,
-                    maxTags: 3,
-                    onTagTap: (tag) {
-                      // Optional: Navigate to filtered view with this tag
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ],
-
-              // Metadata row
-              Row(
-                children: [
-                  if (!widget.file.isFolder && widget.file.size != null) ...[
-                    Icon(Icons.storage, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      widget.file.formattedSize,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
                     const SizedBox(width: 16),
-                  ],
-                  Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      _formatDate(widget.file.modifiedTime),
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.file.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (!widget.file.isFolder) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              _getFileTypeLabel(),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.5),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
+                    if (widget.file.isShared)
+                      Icon(Icons.people, size: 16, color: AppColors.accent),
+                    const SizedBox(width: 8),
+                    FileContextMenu(
+                      file: widget.file,
+                      onRename: widget.onRename,
+                      onMove: widget.onMove,
+                      onDelete: widget.onDelete,
+                      onShare: widget.onShare,
+                      onManageTags: widget.file.isFolder ? null : _manageTags,
+                      onReindex: widget.file.isPdf ? widget.onReindex : null,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Tags section (only for files, not folders)
+                if (!widget.file.isFolder) ...[
+                  if (_isLoadingTags)
+                    const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else if (_tags.isNotEmpty) ...[
+                    TagChipList(
+                      tags: _tags,
+                      small: true,
+                      maxTags: 3,
+                      onTagTap: (tag) {
+                        // Optional: Navigate to filtered view with this tag
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ],
-              ),
 
-              // Sync status indicator
-              if (widget.file.syncStatus != 'synced') ...[
-                const SizedBox(height: 8),
-                _buildSyncStatusBadge(),
-              ],
+                // Metadata row
+                Row(
+                  children: [
+                    if (!widget.file.isFolder && widget.file.size != null) ...[
+                      Icon(Icons.storage, size: 14, color: Colors.white54),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.file.formattedSize,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+                    Icon(Icons.access_time, size: 14, color: Colors.white54),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _formatDate(widget.file.modifiedTime),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
 
-              // Indexing status badge (only for PDFs)
-              if (widget.file.isPdf) ...[
-                const SizedBox(height: 8),
-                IndexingStatusBadge(fileId: widget.file.id),
+                // Sync status indicator
+                if (widget.file.syncStatus != 'synced') ...[
+                  const SizedBox(height: 8),
+                  _buildSyncStatusBadge(),
+                ],
+
+                // Indexing status badge (only for PDFs)
+                if (widget.file.isPdf) ...[
+                  const SizedBox(height: 8),
+                  IndexingStatusBadge(fileId: widget.file.id),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -259,35 +300,61 @@ class _FileCardState extends State<FileCard> {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.blue[100],
-          borderRadius: BorderRadius.circular(8),
+          gradient: LinearGradient(
+            colors: [Colors.blue[400]!, Colors.blue[600]!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blue.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Icon(Icons.folder, color: Colors.blue[700], size: 28),
+        child: const Icon(Icons.folder, color: Colors.white, size: 24),
       );
     }
 
     Color iconColor;
     IconData iconData;
+    List<Color> gradientColors;
 
     if (widget.file.isPdf) {
-      iconColor = Colors.red[700]!;
+      iconColor = Colors.red;
       iconData = Icons.picture_as_pdf;
+      gradientColors = [Colors.red[400]!, Colors.red[700]!];
     } else if (widget.file.isMarkdown) {
-      iconColor = Colors.green[700]!;
+      iconColor = Colors.green;
       iconData = Icons.description;
+      gradientColors = [Colors.green[400]!, Colors.green[700]!];
     } else {
-      iconColor = Colors.grey[700]!;
+      iconColor = Colors.grey;
       iconData = Icons.insert_drive_file;
+      gradientColors = [Colors.grey[400]!, Colors.grey[600]!];
     }
 
     return Container(
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: iconColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: iconColor.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Icon(iconData, color: iconColor, size: 28),
+      child: Icon(iconData, color: Colors.white, size: 24),
     );
   }
 
@@ -348,13 +415,13 @@ class _FileCardState extends State<FileCard> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(badgeIcon, size: 14, color: badgeColor),
+          Icon(badgeIcon, size: 12, color: badgeColor),
           const SizedBox(width: 4),
           Text(
             badgeText,
             style: TextStyle(
               color: badgeColor,
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w500,
             ),
           ),

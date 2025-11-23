@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import '../services/auth_service.dart';
 
-/// Login screen with Google Sign-In (v7 API)
+import '../services/auth_service.dart';
+import '../theme/app_colors.dart';
+import '../widgets/ui/animated_background.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+
+/// Login screen with modern glassmorphism UI
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -23,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
@@ -33,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.1),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
@@ -47,9 +51,10 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleSignIn() async {
-    // On web, this should not be called - use signInButton() widget instead
     if (kIsWeb) {
-      debugPrint('Warning: Direct signIn() called on web, should use signInButton()');
+      debugPrint(
+        'Warning: Direct signIn() called on web, should use signInButton()',
+      );
       return;
     }
 
@@ -61,7 +66,6 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       await authService.signInWithGoogle();
-      // Navigation will be handled by the auth state listener in main.dart
     } catch (e) {
       setState(() {
         final errorMessage = e.toString();
@@ -71,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen>
         } else if (errorMessage.contains('timed out') ||
             errorMessage.contains('browser settings')) {
           _errorMessage =
-              'Please enable third-party sign-in in your browser settings (click the icon next to the URL bar)';
+              'Please enable third-party sign-in in your browser settings';
         } else {
           _errorMessage = 'An unexpected error occurred. Please try again.';
         }
@@ -79,282 +83,71 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  /// Build the web-specific sign-in button
   Widget _buildWebSignInButton(AuthService authService) {
     if (authService.isLoading) {
-      return const SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
-    // Get the sign-in button widget from AuthService
     final signInButton = authService.getWebSignInButton();
 
     if (signInButton == null) {
-      // Fallback if button not available
       return Container(
         width: double.infinity,
-        height: 56,
+        height: 48,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Text(
           'Web sign-in not available',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: Colors.white70),
         ),
       );
     }
 
-    // Wrap the Google sign-in button in a styled container
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: signInButton,
-    );
+    return SizedBox(width: double.infinity, height: 48, child: signInButton);
   }
 
   @override
   Widget build(BuildContext context) {
-    final authService = context.watch<AuthService>();
     final size = MediaQuery.of(context).size;
-    final isSmallScreen = size.width < 600;
+    final isWideScreen = size.width >= 900;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
-            ],
-          ),
+      body: AnimatedBackground(
+        child: Center(
+          child: isWideScreen
+              ? _buildSplitLayout(context)
+              : _buildSingleLayout(context),
         ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: isSmallScreen ? 24 : 48,
-              ),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.school,
-                          size: 50,
-                          color: Color(0xFF6366F1),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
+      ),
+    );
+  }
 
-                      // App Name
-                      const Text(
-                        'ScholarMate',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Tagline
-                      Text(
-                        'Your AI Research Workspace',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-
-                      // Welcome Card
-                      Container(
-                        constraints: const BoxConstraints(maxWidth: 400),
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Welcome Back',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Sign in to access your research library',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-
-                            // Google Sign-In Button
-                            // Web requires using the signInButton() widget
-                            // Other platforms use custom button
-                            if (kIsWeb)
-                              // Web: Use Google's official sign-in button
-                              _buildWebSignInButton(authService)
-                            else
-                              // Mobile/Desktop: Use custom styled button
-                              SizedBox(
-                                width: double.infinity,
-                                height: 56,
-                                child: ElevatedButton(
-                                  onPressed: authService.isLoading
-                                      ? null
-                                      : _handleSignIn,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.grey[800],
-                                    elevation: 2,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: Colors.grey[300]!,
-                                        width: 1,
-                                      ),
-                                    ),
-                                  ),
-                                  child: authService.isLoading
-                                      ? const SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            SvgPicture.asset(
-                                              'assets/google_logo.svg',
-                                              width: 24,
-                                              height: 24,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            const Text(
-                                              'Sign in with Google',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                ),
-                              ),
-
-                            // Error Message
-                            if (_errorMessage != null) ...[
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[50],
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.red[200]!),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      color: Colors.red[700],
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _errorMessage!,
-                                        style: TextStyle(
-                                          color: Colors.red[700],
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Features
-                      Container(
-                        constraints: const BoxConstraints(maxWidth: 400),
-                        child: Column(
-                          children: [
-                            _buildFeature(
-                              icon: Icons.cloud_outlined,
-                              title: 'Cloud Storage',
-                              description: 'Store files in your Google Drive',
-                            ),
-                            const SizedBox(height: 16),
-                            _buildFeature(
-                              icon: Icons.offline_bolt_outlined,
-                              title: 'Offline Access',
-                              description: 'Work without internet connection',
-                            ),
-                            const SizedBox(height: 16),
-                            _buildFeature(
-                              icon: Icons.psychology_outlined,
-                              title: 'AI-Powered',
-                              description:
-                                  'Semantic search and chat with your documents',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+  Widget _buildSingleLayout(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: GlassContainer(
+            width: 400,
+            padding: const EdgeInsets.all(32),
+            blur: 20,
+            opacity: 0.1,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildLogo(),
+                const SizedBox(height: 32),
+                _buildWelcomeText(),
+                const SizedBox(height: 48),
+                _buildLoginForm(context),
+              ],
             ),
           ),
         ),
@@ -362,43 +155,207 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildFeature({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
+  Widget _buildSplitLayout(BuildContext context) {
+    return Row(
+      children: [
+        // Left Side - Branding
+        Expanded(
+          flex: 5,
+          child: Container(
+            padding: const EdgeInsets.all(64),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLogo(size: 80),
+                const SizedBox(height: 32),
+                const Text(
+                  'ScholarMate',
+                  style: TextStyle(
+                    fontSize: 64,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    height: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Your AI-Powered Research Workspace',
+                  style: TextStyle(
+                    fontSize: 24,
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+                const SizedBox(height: 64),
+                _buildFeaturesList(),
+              ],
+            ),
+          ),
+        ),
+
+        // Right Side - Login Form
+        Expanded(
+          flex: 4,
+          child: Center(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: GlassContainer(
+                width: 450,
+                margin: const EdgeInsets.all(48),
+                padding: const EdgeInsets.all(48),
+                blur: 30,
+                opacity: 0.15,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Welcome Back',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sign in to continue your research',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    _buildLoginForm(context),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLogo({double size = 60}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(size * 0.25),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Icon(Icons.school, size: size * 0.5, color: Colors.white),
+    );
+  }
+
+  Widget _buildWelcomeText() {
+    return Column(
+      children: [
+        const Text(
+          'ScholarMate',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Your AI Research Workspace',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.white.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginForm(BuildContext context) {
+    final authService = context.watch<AuthService>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (kIsWeb)
+          _buildWebSignInButton(authService)
+        else
+          ModernButton(
+            label: 'Sign in with Google',
+            icon: Icons.login, // Placeholder, ideally use SVG
+            isLoading: authService.isLoading,
+            onPressed: _handleSignIn,
+            variant: ModernButtonVariant.primary,
+          ),
+
+        if (_errorMessage != null) ...[
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFeaturesList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFeatureItem(Icons.cloud_outlined, 'Cloud Storage & Sync'),
+        const SizedBox(height: 24),
+        _buildFeatureItem(Icons.psychology_outlined, 'AI Research Assistant'),
+        const SizedBox(height: 24),
+        _buildFeatureItem(Icons.auto_stories_outlined, 'Smart Notebooks'),
+      ],
+    );
+  }
+
+  Widget _buildFeatureItem(IconData icon, String text) {
     return Row(
       children: [
         Container(
-          width: 48,
-          height: 48,
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Colors.white, size: 24),
+          child: Icon(icon, color: AppColors.accent, size: 24),
         ),
         const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.8),
-                ),
-              ),
-            ],
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 18,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

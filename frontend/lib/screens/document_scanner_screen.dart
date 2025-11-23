@@ -14,6 +14,9 @@ import '../services/cache_service.dart';
 import '../models/markdown_note.dart';
 import 'markdown_editor_screen.dart';
 import 'package:universal_html/html.dart' as html;
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../theme/app_colors.dart';
 
 class DocumentScannerScreen extends StatefulWidget {
   final String? parentFolderId;
@@ -131,7 +134,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
     OCRResult ocrResult,
     String fileName,
   ) async {
-    print('🔵 Creating text-only PDF...');
+    debugPrint('🔵 Creating text-only PDF...');
 
     // Create a new PDF document
     final PdfDocument document = PdfDocument();
@@ -145,7 +148,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
       if (i < ocrResult.pages.length) {
         final ocrPage = ocrResult.pages[i];
         if (ocrPage.text.isNotEmpty) {
-          print(
+          debugPrint(
             '🔵 Adding text for page ${i + 1}: ${ocrPage.text.length} characters',
           );
 
@@ -169,7 +172,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
           // Draw a line under header
           page.graphics.drawLine(
             PdfPen(PdfColor(0, 0, 0), width: 0.5),
-            Offset(40, 55),
+            const Offset(40, 55),
             Offset(pageSize.width - 40, 55),
           );
 
@@ -207,7 +210,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
             }
           }
 
-          print('🔵 Text added successfully');
+          debugPrint('🔵 Text added successfully');
         }
       }
     }
@@ -218,7 +221,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
 
     if (kIsWeb) {
       // On web, trigger download instead of saving to file system
-      print(
+      debugPrint(
         '🔵 PDF created in memory for web: $fileName (${bytes.length} bytes)',
       );
 
@@ -234,7 +237,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         ..click();
       html.Url.revokeObjectUrl(url);
 
-      print('🔵 PDF downloaded: $fileName');
+      debugPrint('🔵 PDF downloaded: $fileName');
 
       // Return a dummy file (won't be used for upload on web)
       return File(fileName);
@@ -247,13 +250,15 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
       // Write PDF bytes to file
       await pdfFile.writeAsBytes(bytes);
 
-      print('🔵 PDF created: $filePath');
+      debugPrint('🔵 PDF created: $filePath');
       return pdfFile;
     }
   }
 
   Future<void> _processAndSave() async {
-    print('🔵 _processAndSave called with ${_capturedImages.length} images');
+    debugPrint(
+      '🔵 _processAndSave called with ${_capturedImages.length} images',
+    );
 
     if (_capturedImages.isEmpty) {
       _showError('No images to process');
@@ -265,28 +270,29 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
     });
 
     try {
-      print('🔵 Getting services from context...');
+      debugPrint('🔵 Getting services from context...');
       final ocrService = context.read<OCRService>();
       final driveService = context.read<DriveService>();
       final cacheService = context.read<CacheService>();
 
       // Show processing dialog
       if (!mounted) return;
-      print('🔵 Showing processing dialog...');
+      debugPrint('🔵 Showing processing dialog...');
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
+          backgroundColor: AppColors.surface,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              CircularProgressIndicator(),
+              CircularProgressIndicator(color: AppColors.primary),
               SizedBox(height: 16),
-              Text('Processing OCR...'),
+              Text('Processing OCR...', style: TextStyle(color: Colors.white)),
               SizedBox(height: 8),
               Text(
                 'Detecting best OCR mode...',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: Colors.white70),
               ),
             ],
           ),
@@ -294,10 +300,10 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
       );
 
       // Process OCR
-      print('🔵 Starting OCR processing...');
+      debugPrint('🔵 Starting OCR processing...');
       final ocrResult = await ocrService.processImages(_capturedImages);
 
-      print('🔵 OCR processing complete: ${ocrResult.success}');
+      debugPrint('🔵 OCR processing complete: ${ocrResult.success}');
 
       if (!mounted) return;
       Navigator.pop(context); // Close processing dialog
@@ -306,10 +312,10 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         throw Exception('OCR processing failed');
       }
 
-      print('🔵 Showing OCR preview...');
+      debugPrint('🔵 Showing OCR preview...');
       // Show OCR preview with mode indicator
       final action = await _showOCRPreview(ocrResult);
-      print('🔵 User chose action: $action');
+      debugPrint('🔵 User chose action: $action');
 
       if (action == null || action == 'cancel') {
         setState(() {
@@ -327,19 +333,20 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
       // Create PDF with OCR text
       final fileName = 'Scanned_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      print('🔵 Creating searchable PDF: $fileName');
+      debugPrint('🔵 Creating searchable PDF: $fileName');
 
       if (!mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const AlertDialog(
+          backgroundColor: AppColors.surface,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
+              CircularProgressIndicator(color: AppColors.primary),
               SizedBox(height: 16),
-              Text('Creating PDF...'),
+              Text('Creating PDF...', style: TextStyle(color: Colors.white)),
             ],
           ),
         ),
@@ -361,12 +368,16 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         context: context,
         barrierDismissible: false,
         builder: (context) => const AlertDialog(
+          backgroundColor: AppColors.surface,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
+              CircularProgressIndicator(color: AppColors.primary),
               SizedBox(height: 16),
-              Text('Uploading to Drive...'),
+              Text(
+                'Uploading to Drive...',
+                style: TextStyle(color: Colors.white),
+              ),
             ],
           ),
         ),
@@ -387,14 +398,14 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         Navigator.pop(context);
       } else {
         // On mobile/desktop, upload to Drive
-        print('🔵 Uploading PDF to Drive...');
+        debugPrint('🔵 Uploading PDF to Drive...');
         final driveFile = await driveService.uploadFile(
           pdfFile,
           widget.parentFolderId ?? '',
           customName: fileName,
         );
 
-        print('🔵 Upload complete, caching metadata...');
+        debugPrint('🔵 Upload complete, caching metadata...');
 
         // Cache the file metadata
         await cacheService.cacheFileMetadata(driveFile);
@@ -414,8 +425,8 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         Navigator.pop(context, driveFile);
       }
     } catch (e, stackTrace) {
-      print('❌ Error in _processAndSave: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('❌ Error in _processAndSave: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         // Try to close any open dialogs
         try {
@@ -436,28 +447,25 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
         title: Row(
           children: [
-            const Text('OCR Preview'),
+            const Text('OCR Preview', style: TextStyle(color: Colors.white)),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.document_scanner,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 4),
+                children: const [
+                  Icon(Icons.document_scanner, size: 16, color: Colors.white),
+                  SizedBox(width: 4),
                   Text(
                     'Tesseract OCR',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -476,6 +484,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
             itemBuilder: (context, index) {
               final page = ocrResult.pages[index];
               return Card(
+                color: Colors.white.withValues(alpha: 0.1),
                 margin: const EdgeInsets.only(bottom: 8),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
@@ -484,13 +493,16 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                     children: [
                       Text(
                         'Page ${page.pageNumber}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       if (page.confidence != null)
                         Text(
                           'Confidence: ${page.confidence!.toStringAsFixed(1)}%',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                         ),
@@ -499,6 +511,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                         page.text.isEmpty ? '[No text detected]' : page.text,
                         maxLines: 5,
                         overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white70),
                       ),
                     ],
                   ),
@@ -516,9 +529,11 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
             onPressed: () => Navigator.pop(context, 'markdown'),
             child: const Text('Save as Markdown'),
           ),
-          ElevatedButton(
+          ModernButton(
             onPressed: () => Navigator.pop(context, 'pdf'),
-            child: const Text('Save as PDF'),
+            label: 'Save as PDF',
+            width: 120,
+            height: 36,
           ),
         ],
       ),
@@ -571,20 +586,26 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Scan Document'),
+        title: const Text(
+          'Scan Document',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (_capturedImages.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton.icon(
-                onPressed: _isProcessing ? null : _processAndSave,
-                icon: const Icon(Icons.check),
-                label: Text('Done (${_capturedImages.length})'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                ),
+              child: ModernButton(
+                onPressed: _isProcessing ? () {} : _processAndSave,
+                icon: Icons.check,
+                label: 'Done (${_capturedImages.length})',
+                backgroundColor: Colors.green,
+                width: 120,
+                height: 36,
               ),
             ),
         ],
@@ -598,32 +619,44 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                 children: [
                   const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text(_errorMessage!),
+                  Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.white),
+                  ),
                   const SizedBox(height: 16),
-                  ElevatedButton.icon(
+                  ModernButton(
                     onPressed: _pickFromGallery,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Pick from Gallery'),
+                    icon: Icons.photo_library,
+                    label: 'Pick from Gallery',
                   ),
                 ],
               ),
             )
           : !_isCameraInitialized
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : Column(
               children: [
                 // Camera preview
                 Expanded(
                   flex: 3,
                   child: _cameraController != null
-                      ? CameraPreview(_cameraController!)
-                      : const Center(child: CircularProgressIndicator()),
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: CameraPreview(_cameraController!),
+                        )
+                      : const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        ),
                 ),
                 // Captured images preview
                 if (_capturedImages.isNotEmpty)
                   Container(
                     height: 120,
-                    color: Colors.black87,
+                    color: Colors.black,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: _capturedImages.length,
@@ -636,18 +669,23 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                                 future: _capturedImages[index].readAsBytes(),
                                 builder: (context, snapshot) {
                                   if (snapshot.hasData) {
-                                    return Image.memory(
-                                      snapshot.data!,
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.memory(
+                                        snapshot.data!,
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
                                     );
                                   }
                                   return const SizedBox(
                                     width: 100,
                                     height: 100,
                                     child: Center(
-                                      child: CircularProgressIndicator(),
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.primary,
+                                      ),
                                     ),
                                   );
                                 },
@@ -660,11 +698,13 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                                 icon: const Icon(
                                   Icons.close,
                                   color: Colors.white,
+                                  size: 16,
                                 ),
                                 onPressed: () => _removeImage(index),
                                 style: IconButton.styleFrom(
                                   backgroundColor: Colors.red,
                                   padding: const EdgeInsets.all(4),
+                                  minimumSize: const Size(24, 24),
                                 ),
                               ),
                             ),
@@ -674,9 +714,12 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                     ),
                   ),
                 // Controls
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.black87,
+                GlassContainer(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  color: AppColors.surface,
+                  padding: const EdgeInsets.all(24),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -690,7 +733,12 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                       ),
                       FloatingActionButton(
                         onPressed: _isProcessing ? null : _captureImage,
-                        child: const Icon(Icons.camera, size: 32),
+                        backgroundColor: AppColors.primary,
+                        child: const Icon(
+                          Icons.camera,
+                          size: 32,
+                          color: Colors.white,
+                        ),
                       ),
                       IconButton(
                         onPressed: _capturedImages.isEmpty ? null : _retakeLast,
@@ -712,17 +760,19 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
     return Column(
       children: [
         // Header with instructions
-        Container(
+        GlassContainer(
+          borderRadius: BorderRadius.circular(16),
+          color: AppColors.primary.withValues(alpha: 0.1),
           padding: const EdgeInsets.all(16),
-          color: Colors.blue[50],
+          margin: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, color: Colors.blue),
+              const Icon(Icons.info_outline, color: AppColors.primary),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Select images from your computer to extract text using OCR',
-                  style: TextStyle(color: Colors.blue[900]),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
                 ),
               ),
             ],
@@ -739,29 +789,31 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                       Icon(
                         Icons.image_outlined,
                         size: 100,
-                        color: Colors.grey[400],
+                        color: Colors.white.withValues(alpha: 0.2),
                       ),
                       const SizedBox(height: 24),
                       Text(
                         'No images selected',
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         'Click the button below to select images',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
                       ),
                       const SizedBox(height: 32),
-                      ElevatedButton.icon(
+                      ModernButton(
                         onPressed: _pickFromGallery,
-                        icon: const Icon(Icons.add_photo_alternate),
-                        label: const Text('Select Images'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
-                          ),
-                        ),
+                        icon: Icons.add_photo_alternate,
+                        label: 'Select Images',
+                        width: 200,
+                        height: 48,
                       ),
                     ],
                   ),
@@ -779,7 +831,9 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.2),
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: ClipRRect(
@@ -796,7 +850,9 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                                   );
                                 }
                                 return const Center(
-                                  child: CircularProgressIndicator(),
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primary,
+                                  ),
                                 );
                               },
                             ),
@@ -806,11 +862,16 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                           top: 4,
                           right: 4,
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                             onPressed: () => _removeImage(index),
                             style: IconButton.styleFrom(
                               backgroundColor: Colors.red,
                               padding: const EdgeInsets.all(4),
+                              minimumSize: const Size(24, 24),
                             ),
                           ),
                         ),
@@ -820,59 +881,33 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                 ),
         ),
 
-        // Bottom action bar
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 4,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              if (_capturedImages.isNotEmpty) ...[
-                Text(
-                  '${_capturedImages.length} image(s) selected',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const Spacer(),
-                OutlinedButton.icon(
+        // Bottom controls for web
+        if (_capturedImages.isNotEmpty)
+          GlassContainer(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            color: AppColors.surface,
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ModernButton(
                   onPressed: _pickFromGallery,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add More'),
+                  icon: Icons.add_photo_alternate,
+                  label: 'Add More',
+                  backgroundColor: Colors.transparent,
+                  textColor: Colors.white,
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _isProcessing ? null : _processAndSave,
-                  icon: _isProcessing
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.check),
-                  label: const Text('Process OCR'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
+                const SizedBox(width: 16),
+                ModernButton(
+                  onPressed: _isProcessing ? () {} : _processAndSave,
+                  icon: Icons.check,
+                  label: 'Process Images',
+                  backgroundColor: AppColors.primary,
+                  width: 180,
                 ),
               ],
-            ],
+            ),
           ),
-        ),
       ],
     );
   }

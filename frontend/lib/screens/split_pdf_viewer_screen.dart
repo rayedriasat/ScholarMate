@@ -6,6 +6,9 @@ import '../models/drive_file.dart';
 import '../services/pdf_viewer_manager.dart';
 import '../widgets/connectivity_indicator.dart';
 import '../widgets/pdf_file_picker_dialog.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../theme/app_colors.dart';
 
 /// Split-screen PDF viewer for comparing two PDFs side-by-side (Web only)
 class SplitPdfViewerScreen extends StatefulWidget {
@@ -235,31 +238,22 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
     return Column(
       children: [
         // Pane header
-        Container(
+        GlassContainer(
+          borderRadius: BorderRadius.zero,
+          color: AppColors.surface,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.grey[850]
-                : Colors.grey[100],
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[700]!
-                    : Colors.grey[300]!,
-              ),
-            ),
+          border: Border(
+            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black87,
+                    color: Colors.white,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -269,9 +263,7 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                   'Page $currentPage of $totalPages',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[400]
-                        : Colors.grey[600],
+                    color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
             ],
@@ -293,19 +285,12 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
         ),
         // Pane controls
         if (pdfBytes != null)
-          Container(
+          GlassContainer(
+            borderRadius: BorderRadius.zero,
+            color: AppColors.surface,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[850]
-                  : Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[700]!
-                      : Colors.grey[300]!,
-                ),
-              ),
+            border: Border(
+              top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -314,11 +299,7 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                   icon: Icon(
                     Icons.chevron_left,
                     size: 20,
-                    color: currentPage > 1
-                        ? (Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white
-                              : Colors.black87)
-                        : Colors.grey,
+                    color: currentPage > 1 ? Colors.white : Colors.white24,
                   ),
                   onPressed: currentPage > 1
                       ? () => controller.previousPage()
@@ -326,12 +307,10 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                   tooltip: 'Previous page',
                 ),
                 IconButton(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.zoom_out,
                     size: 20,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black87,
+                    color: Colors.white,
                   ),
                   onPressed: () {
                     final newZoom = (controller.zoomLevel - 0.25).clamp(
@@ -344,12 +323,10 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                   tooltip: 'Zoom out',
                 ),
                 IconButton(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.fit_screen,
                     size: 20,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black87,
+                    color: Colors.white,
                   ),
                   onPressed: () {
                     controller.zoomLevel = 1.0;
@@ -358,12 +335,10 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                   tooltip: 'Fit to width',
                 ),
                 IconButton(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.zoom_in,
                     size: 20,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black87,
+                    color: Colors.white,
                   ),
                   onPressed: () {
                     final newZoom = (controller.zoomLevel + 0.25).clamp(
@@ -380,10 +355,8 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                     Icons.chevron_right,
                     size: 20,
                     color: currentPage < totalPages
-                        ? (Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white
-                              : Colors.black87)
-                        : Colors.grey,
+                        ? Colors.white
+                        : Colors.white24,
                   ),
                   onPressed: currentPage < totalPages
                       ? () => controller.nextPage()
@@ -413,9 +386,9 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(color: AppColors.primary),
             SizedBox(height: 16),
-            Text('Loading PDF...'),
+            Text('Loading PDF...', style: TextStyle(color: Colors.white)),
           ],
         ),
       );
@@ -430,18 +403,19 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Failed to load PDF',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 error,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               ),
             ],
           ),
@@ -454,18 +428,25 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.picture_as_pdf, size: 64, color: Colors.grey[400]),
+            Icon(
+              Icons.picture_as_pdf,
+              size: 64,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
             const SizedBox(height: 16),
             Text(
               isLeftPane ? 'No PDF loaded' : 'No second PDF loaded',
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
             ),
             if (onLoadPdf != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton.icon(
+              ModernButton(
                 onPressed: onLoadPdf,
-                icon: const Icon(Icons.cloud),
-                label: const Text('Select PDF from Drive'),
+                icon: Icons.cloud,
+                label: 'Select PDF from Drive',
               ),
             ],
           ],
@@ -496,7 +477,6 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
   }
 
   Widget _buildDivider() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return MouseRegion(
       cursor: SystemMouseCursors.resizeColumn,
       child: GestureDetector(
@@ -521,12 +501,12 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
         child: Container(
           width: 8,
           color: _isDraggingDivider
-              ? Colors.blue[300]
-              : (isDark ? Colors.grey[800] : Colors.grey[300]),
+              ? AppColors.primary.withValues(alpha: 0.5)
+              : Colors.black,
           child: Center(
             child: Container(
               width: 2,
-              color: isDark ? Colors.grey[600] : Colors.grey[400],
+              color: Colors.white.withValues(alpha: 0.3),
             ),
           ),
         ),
@@ -539,19 +519,24 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
     // Only allow on web
     if (!kIsWeb) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Split View')),
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          title: const Text('Split View'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
         body: const Center(
           child: Padding(
             padding: EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.web, size: 64, color: Colors.grey),
+                Icon(Icons.web, size: 64, color: Colors.white24),
                 SizedBox(height: 16),
                 Text(
                   'Split-screen PDF viewer is only available on web',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ],
             ),
@@ -561,8 +546,15 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Split PDF Viewer'),
+        title: const Text(
+          'Split PDF Viewer',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           // Connectivity indicator
           const Padding(
@@ -571,7 +563,8 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
           ),
           // Sync controls
           PopupMenuButton<String>(
-            icon: const Icon(Icons.sync),
+            icon: const Icon(Icons.sync, color: Colors.white),
+            color: AppColors.surface,
             tooltip: 'Sync Options',
             onSelected: (value) {
               switch (value) {
@@ -596,9 +589,13 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                           ? Icons.check_box
                           : Icons.check_box_outline_blank,
                       size: 20,
+                      color: Colors.white,
                     ),
                     const SizedBox(width: 12),
-                    const Text('Sync Scroll'),
+                    const Text(
+                      'Sync Scroll',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -611,9 +608,13 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                           ? Icons.check_box
                           : Icons.check_box_outline_blank,
                       size: 20,
+                      color: Colors.white,
                     ),
                     const SizedBox(width: 12),
-                    const Text('Sync Zoom'),
+                    const Text(
+                      'Sync Zoom',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -626,9 +627,13 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                           ? Icons.check_box
                           : Icons.check_box_outline_blank,
                       size: 20,
+                      color: Colors.white,
                     ),
                     const SizedBox(width: 12),
-                    const Text('Sync Page Navigation'),
+                    const Text(
+                      'Sync Page Navigation',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -637,7 +642,7 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
           // Close right pane
           if (_rightPdfBytes != null)
             IconButton(
-              icon: const Icon(Icons.close),
+              icon: const Icon(Icons.close, color: Colors.white),
               onPressed: _closeRightPane,
               tooltip: 'Close right pane',
             ),

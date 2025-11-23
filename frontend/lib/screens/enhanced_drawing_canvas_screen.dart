@@ -7,6 +7,9 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import '../models/drawing_note.dart';
 import '../services/drawing_storage_service.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../theme/app_colors.dart';
 
 enum DrawingTool { pen, eraser, text, select, image }
 
@@ -209,13 +212,7 @@ class _EnhancedDrawingCanvasScreenState
           strokeWidth: _strokeWidth,
         );
 
-        debugPrint(
-          'Adding stroke with ${stroke.points.length} points to page $_currentPageIndex',
-        );
         _currentPage.strokes.add(stroke);
-        debugPrint('Page now has ${_currentPage.strokes.length} strokes');
-        debugPrint('Note has ${_note.pages.length} pages');
-
         _undoStacks[_currentPageIndex].clear();
         _updateNote();
       }
@@ -240,14 +237,26 @@ class _EnhancedDrawingCanvasScreenState
       builder: (context) {
         final textController = TextEditingController();
         return AlertDialog(
-          title: const Text('Add Text Note'),
+          backgroundColor: AppColors.surface,
+          title: const Text(
+            'Add Text Note',
+            style: TextStyle(color: Colors.white),
+          ),
           content: TextField(
             controller: textController,
             autofocus: true,
             maxLines: 3,
+            style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
               hintText: 'Enter your text...',
+              hintStyle: TextStyle(color: Colors.white38),
               border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
             ),
           ),
           actions: [
@@ -255,7 +264,7 @@ class _EnhancedDrawingCanvasScreenState
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            ModernButton(
               onPressed: () {
                 if (textController.text.isNotEmpty) {
                   setState(() {
@@ -265,19 +274,15 @@ class _EnhancedDrawingCanvasScreenState
                       text: textController.text,
                       color: _currentColor,
                     );
-                    debugPrint(
-                      'Adding text note "${textNote.text}" to page $_currentPageIndex',
-                    );
                     _currentPage.textNotes.add(textNote);
-                    debugPrint(
-                      'Page now has ${_currentPage.textNotes.length} text notes',
-                    );
                     _updateNote();
                   });
                 }
                 Navigator.pop(context);
               },
-              child: const Text('Add'),
+              label: 'Add',
+              width: 80,
+              height: 36,
             ),
           ],
         );
@@ -382,12 +387,25 @@ class _EnhancedDrawingCanvasScreenState
       builder: (context) {
         final textController = TextEditingController(text: note.text);
         return AlertDialog(
-          title: const Text('Edit Text Note'),
+          backgroundColor: AppColors.surface,
+          title: const Text(
+            'Edit Text Note',
+            style: TextStyle(color: Colors.white),
+          ),
           content: TextField(
             controller: textController,
             autofocus: true,
             maxLines: 3,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
+            ),
           ),
           actions: [
             TextButton(
@@ -405,7 +423,7 @@ class _EnhancedDrawingCanvasScreenState
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            ModernButton(
               onPressed: () {
                 setState(() {
                   note.text = textController.text;
@@ -413,7 +431,9 @@ class _EnhancedDrawingCanvasScreenState
                 });
                 Navigator.pop(context);
               },
-              child: const Text('Save'),
+              label: 'Save',
+              width: 80,
+              height: 36,
             ),
           ],
         );
@@ -429,21 +449,36 @@ class _EnhancedDrawingCanvasScreenState
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Image Options'),
+              backgroundColor: AppColors.surface,
+              title: const Text(
+                'Image Options',
+                style: TextStyle(color: Colors.white),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Scale: ${(scale * 100).round()}%'),
-                  Slider(
-                    value: scale,
-                    min: 0.1,
-                    max: 2.0,
-                    divisions: 19,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        scale = value;
-                      });
-                    },
+                  Text(
+                    'Scale: ${(scale * 100).round()}%',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  SliderTheme(
+                    data: SliderThemeData(
+                      activeTrackColor: AppColors.primary,
+                      inactiveTrackColor: Colors.white24,
+                      thumbColor: Colors.white,
+                      overlayColor: AppColors.primary.withValues(alpha: 0.2),
+                    ),
+                    child: Slider(
+                      value: scale,
+                      min: 0.1,
+                      max: 2.0,
+                      divisions: 19,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          scale = value;
+                        });
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -463,7 +498,7 @@ class _EnhancedDrawingCanvasScreenState
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton(
+                ModernButton(
                   onPressed: () {
                     setState(() {
                       final index = _currentPage.images.indexOf(image);
@@ -481,7 +516,9 @@ class _EnhancedDrawingCanvasScreenState
                     });
                     Navigator.pop(context);
                   },
-                  child: const Text('Apply'),
+                  label: 'Apply',
+                  width: 80,
+                  height: 36,
                 ),
               ],
             );
@@ -492,7 +529,6 @@ class _EnhancedDrawingCanvasScreenState
   }
 
   void _updateNote() {
-    // Update the note's title and timestamp without recreating the object
     final newTitle = _titleController.text.isEmpty
         ? 'Untitled Note'
         : _titleController.text;
@@ -544,16 +580,18 @@ class _EnhancedDrawingCanvasScreenState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Page'),
+        backgroundColor: AppColors.surface,
+        title: const Text('Delete Page', style: TextStyle(color: Colors.white)),
         content: Text(
           'Are you sure you want to delete page ${_currentPageIndex + 1}?',
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ModernButton(
             onPressed: () {
               setState(() {
                 _note.pages.removeAt(_currentPageIndex);
@@ -565,8 +603,10 @@ class _EnhancedDrawingCanvasScreenState
               });
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            label: 'Delete',
+            backgroundColor: Colors.red,
+            width: 80,
+            height: 36,
           ),
         ],
       ),
@@ -577,14 +617,18 @@ class _EnhancedDrawingCanvasScreenState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear Page'),
-        content: const Text('Are you sure you want to clear this page?'),
+        backgroundColor: AppColors.surface,
+        title: const Text('Clear Page', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Are you sure you want to clear this page?',
+          style: TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ModernButton(
             onPressed: () {
               setState(() {
                 _currentPage.strokes.clear();
@@ -595,8 +639,10 @@ class _EnhancedDrawingCanvasScreenState
               });
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Clear'),
+            label: 'Clear',
+            backgroundColor: Colors.red,
+            width: 80,
+            height: 36,
           ),
         ],
       ),
@@ -607,7 +653,11 @@ class _EnhancedDrawingCanvasScreenState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Pick a color'),
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Pick a color',
+          style: TextStyle(color: Colors.white),
+        ),
         content: SingleChildScrollView(
           child: ColorPicker(
             pickerColor: _currentColor,
@@ -616,12 +666,16 @@ class _EnhancedDrawingCanvasScreenState
                 _currentColor = color;
               });
             },
+            labelTypes: const [],
+            pickerAreaHeightPercent: 0.8,
           ),
         ),
         actions: [
-          ElevatedButton(
+          ModernButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Done'),
+            label: 'Done',
+            width: 80,
+            height: 36,
           ),
         ],
       ),
@@ -634,7 +688,6 @@ class _EnhancedDrawingCanvasScreenState
     });
 
     try {
-      // Validate note data before saving
       if (_note.pages.isEmpty) {
         throw Exception('Note must have at least one page');
       }
@@ -645,15 +698,6 @@ class _EnhancedDrawingCanvasScreenState
 
       _updateNote();
 
-      // Add debug information
-      debugPrint('Saving note: ${_note.id} with ${_note.pages.length} pages');
-      for (int i = 0; i < _note.pages.length; i++) {
-        final page = _note.pages[i];
-        debugPrint(
-          'Page $i: ${page.strokes.length} strokes, ${page.textNotes.length} text notes, ${page.images.length} images',
-        );
-      }
-
       await _storageService.saveNote(_note);
 
       if (mounted) {
@@ -661,26 +705,12 @@ class _EnhancedDrawingCanvasScreenState
           const SnackBar(content: Text('Note saved successfully')),
         );
       }
-    } catch (e, stackTrace) {
-      debugPrint('Error saving note: $e');
-      debugPrint('Stack trace: $stackTrace');
-
+    } catch (e) {
       if (mounted) {
-        String errorMessage = 'Error saving note';
-        if (e.toString().contains('TypeError')) {
-          errorMessage = 'Data format error - please try creating a new note';
-        } else if (e.toString().contains('Connection')) {
-          errorMessage = 'Network error - note saved locally only';
-        } else {
-          errorMessage =
-              'Error saving note: ${e.toString().split(':').last.trim()}';
-        }
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(label: 'Retry', onPressed: _saveNote),
+            content: Text('Error saving note: $e'),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -699,29 +729,23 @@ class _EnhancedDrawingCanvasScreenState
     try {
       _updateNote();
 
-      // Capture each page as an image
       final pageImages = <Uint8List>[];
 
       for (int i = 0; i < _note.pages.length; i++) {
-        // Navigate to the page
         await _pageController.animateToPage(
           i,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
 
-        // Wait for the page to render
         await Future.delayed(const Duration(milliseconds: 500));
 
-        // Capture the page as image
         final imageBytes = await _screenshotController.capture();
         if (imageBytes != null) {
           pageImages.add(imageBytes);
-          debugPrint('Captured page $i as image (${imageBytes.length} bytes)');
         }
       }
 
-      // Navigate back to current page
       await _pageController.animateToPage(
         _currentPageIndex,
         duration: const Duration(milliseconds: 300),
@@ -732,7 +756,6 @@ class _EnhancedDrawingCanvasScreenState
         throw Exception('No pages could be captured');
       }
 
-      // Create PDF from images
       final driveFile = await _storageService.exportNoteToPDFFromImages(
         _note.title,
         pageImages,
@@ -767,15 +790,26 @@ class _EnhancedDrawingCanvasScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: SizedBox(
-          width: 200,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: GlassContainer(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.white.withValues(alpha: 0.1),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: TextField(
             controller: _titleController,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
             decoration: const InputDecoration(
               border: InputBorder.none,
               hintText: 'Note title',
+              hintStyle: TextStyle(color: Colors.white38),
             ),
             onChanged: (value) => _updateNote(),
           ),
@@ -785,14 +819,19 @@ class _EnhancedDrawingCanvasScreenState
             icon: const Icon(Icons.undo),
             onPressed: _currentPage.strokes.isEmpty ? null : _undo,
             tooltip: 'Undo',
+            color: Colors.white,
+            disabledColor: Colors.white24,
           ),
           IconButton(
             icon: const Icon(Icons.redo),
             onPressed: _undoStacks[_currentPageIndex].isEmpty ? null : _redo,
             tooltip: 'Redo',
+            color: Colors.white,
+            disabledColor: Colors.white24,
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            color: AppColors.surface,
             onSelected: (value) {
               switch (value) {
                 case 'clear_page':
@@ -811,9 +850,9 @@ class _EnhancedDrawingCanvasScreenState
                 value: 'clear_page',
                 child: Row(
                   children: [
-                    Icon(Icons.clear),
+                    Icon(Icons.cleaning_services, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Clear Page'),
+                    Text('Clear Page', style: TextStyle(color: Colors.white)),
                   ],
                 ),
               ),
@@ -821,9 +860,9 @@ class _EnhancedDrawingCanvasScreenState
                 value: 'delete_page',
                 child: Row(
                   children: [
-                    Icon(Icons.delete_outline),
+                    Icon(Icons.delete, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Delete Page'),
+                    Text('Delete Page', style: TextStyle(color: Colors.white)),
                   ],
                 ),
               ),
@@ -831,9 +870,12 @@ class _EnhancedDrawingCanvasScreenState
                 value: 'export_pdf',
                 child: Row(
                   children: [
-                    Icon(Icons.picture_as_pdf),
+                    Icon(Icons.picture_as_pdf, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Export as PDF'),
+                    Text(
+                      'Export as PDF',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -844,9 +886,12 @@ class _EnhancedDrawingCanvasScreenState
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
                   )
-                : const Icon(Icons.save),
+                : const Icon(Icons.save, color: AppColors.primary),
             onPressed: _isSaving ? null : _saveNote,
             tooltip: 'Save',
           ),
@@ -855,68 +900,65 @@ class _EnhancedDrawingCanvasScreenState
       body: Column(
         children: [
           _buildToolbar(),
-          _buildPageNavigation(),
           Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: _note.pages.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPageIndex = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                return Screenshot(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Screenshot(
                   controller: _screenshotController,
                   child: Container(
-                    color: _note.pages[index].backgroundColor,
-                    child: GestureDetector(
-                      key: _canvasKey,
-                      onPanStart: _onPanStart,
-                      onPanUpdate: _onPanUpdate,
-                      onPanEnd: _onPanEnd,
-                      child: CustomPaint(
-                        painter: EnhancedDrawingPainter(
-                          page: _note.pages[index],
-                          currentStroke: index == _currentPageIndex
-                              ? _currentStroke
-                              : [],
-                          currentColor: _currentColor,
-                          strokeWidth: _strokeWidth,
-                          selectedItem: index == _currentPageIndex
-                              ? _selectedItem
-                              : null,
-                          eraserPosition: index == _currentPageIndex
-                              ? _eraserPosition
-                              : null,
-                          isErasing: _currentTool == DrawingTool.eraser,
-                          imageCache: _imageCache,
-                        ),
-                        size: Size.infinite,
-                      ),
+                    color: Colors.white,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: _note.pages.length,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentPageIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        return GestureDetector(
+                          key: index == _currentPageIndex ? _canvasKey : null,
+                          onPanStart: _onPanStart,
+                          onPanUpdate: _onPanUpdate,
+                          onPanEnd: _onPanEnd,
+                          child: CustomPaint(
+                            painter: EnhancedDrawingPainter(
+                              strokes: _note.pages[index].strokes,
+                              currentStroke: _currentStroke,
+                              currentColor: _currentColor,
+                              strokeWidth: _strokeWidth,
+                              textNotes: _note.pages[index].textNotes,
+                              images: _note.pages[index].images,
+                              imageCache: _imageCache,
+                              selectedItem: _selectedItem,
+                              eraserPosition: _eraserPosition,
+                              isErasing: _currentTool == DrawingTool.eraser,
+                            ),
+                            size: Size.infinite,
+                          ),
+                        );
+                      },
                     ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ),
+          _buildPageControls(),
         ],
       ),
     );
   }
 
   Widget _buildToolbar() {
-    return Container(
+    return GlassContainer(
+      borderRadius: BorderRadius.zero,
+      color: AppColors.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      border: Border(
+        bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -957,7 +999,7 @@ class _EnhancedDrawingCanvasScreenState
               onTap: () => setState(() => _currentTool = DrawingTool.select),
             ),
             const SizedBox(width: 16),
-            const VerticalDivider(),
+            Container(height: 24, width: 1, color: Colors.white24),
             const SizedBox(width: 16),
             _buildColorButton(),
             const SizedBox(width: 16),
@@ -968,78 +1010,15 @@ class _EnhancedDrawingCanvasScreenState
     );
   }
 
-  Widget _buildPageNavigation() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: _currentPageIndex > 0
-                ? () {
-                    setState(() {
-                      _currentPageIndex--;
-                      _pageController.animateToPage(
-                        _currentPageIndex,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    });
-                  }
-                : null,
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                'Page ${_currentPageIndex + 1} of ${_note.pages.length}',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: _currentPageIndex < _note.pages.length - 1
-                ? () {
-                    setState(() {
-                      _currentPageIndex++;
-                      _pageController.animateToPage(
-                        _currentPageIndex,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    });
-                  }
-                : null,
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _addNewPage,
-            tooltip: 'Add Page',
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildToolButton({
     required IconData icon,
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
     return Material(
       color: isSelected
-          ? theme.colorScheme.primaryContainer
+          ? AppColors.primary.withValues(alpha: 0.2)
           : Colors.transparent,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
@@ -1052,18 +1031,14 @@ class _EnhancedDrawingCanvasScreenState
             children: [
               Icon(
                 icon,
-                color: isSelected
-                    ? theme.colorScheme.onPrimaryContainer
-                    : theme.colorScheme.onSurface,
+                color: isSelected ? AppColors.primary : Colors.white70,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isSelected
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurface,
+                  color: isSelected ? AppColors.primary : Colors.white70,
                 ),
               ),
             ],
@@ -1088,11 +1063,14 @@ class _EnhancedDrawingCanvasScreenState
               decoration: BoxDecoration(
                 color: _currentColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey, width: 2),
+                border: Border.all(color: Colors.white54, width: 2),
               ),
             ),
             const SizedBox(height: 4),
-            const Text('Color', style: TextStyle(fontSize: 12)),
+            const Text(
+              'Color',
+              style: TextStyle(fontSize: 12, color: Colors.white70),
+            ),
           ],
         ),
       ),
@@ -1105,65 +1083,165 @@ class _EnhancedDrawingCanvasScreenState
       children: [
         SizedBox(
           width: 150,
-          child: Slider(
-            value: _strokeWidth,
-            min: 1,
-            max: 20,
-            divisions: 19,
-            label: _strokeWidth.round().toString(),
-            onChanged: (value) {
-              setState(() {
-                _strokeWidth = value;
-              });
-            },
+          child: SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: Colors.white24,
+              thumbColor: Colors.white,
+              overlayColor: AppColors.primary.withValues(alpha: 0.2),
+            ),
+            child: Slider(
+              value: _strokeWidth,
+              min: 1,
+              max: 20,
+              divisions: 19,
+              label: _strokeWidth.round().toString(),
+              onChanged: (value) {
+                setState(() {
+                  _strokeWidth = value;
+                });
+              },
+            ),
           ),
         ),
         Text(
           'Width: ${_strokeWidth.round()}',
-          style: const TextStyle(fontSize: 12),
+          style: const TextStyle(fontSize: 12, color: Colors.white70),
         ),
       ],
+    );
+  }
+
+  Widget _buildPageControls() {
+    return GlassContainer(
+      borderRadius: BorderRadius.zero,
+      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      border: Border(
+        top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left, color: Colors.white),
+            onPressed: _currentPageIndex > 0
+                ? () {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                : null,
+          ),
+          Text(
+            'Page ${_currentPageIndex + 1} of ${_note.pages.length}',
+            style: const TextStyle(color: Colors.white),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, color: Colors.white),
+            onPressed: _currentPageIndex < _note.pages.length - 1
+                ? () {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                : null,
+          ),
+          const SizedBox(width: 16),
+          ModernButton(
+            onPressed: _addNewPage,
+            icon: Icons.add,
+            label: 'New Page',
+            width: 120,
+            height: 36,
+          ),
+        ],
+      ),
     );
   }
 }
 
 class EnhancedDrawingPainter extends CustomPainter {
-  final NotePage page;
+  final List<DrawingStroke> strokes;
   final List<Offset> currentStroke;
   final Color currentColor;
   final double strokeWidth;
+  final List<TextNote> textNotes;
+  final List<CanvasImage> images;
+  final Map<String, ui.Image> imageCache;
   final dynamic selectedItem;
   final Offset? eraserPosition;
   final bool isErasing;
-  final Map<String, ui.Image> imageCache;
 
   EnhancedDrawingPainter({
-    required this.page,
+    required this.strokes,
     required this.currentStroke,
     required this.currentColor,
     required this.strokeWidth,
+    required this.textNotes,
+    required this.images,
+    required this.imageCache,
     this.selectedItem,
     this.eraserPosition,
     this.isErasing = false,
-    this.imageCache = const {},
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw all elements in z-order (oldest to newest)
-    final elementsInZOrder = page.allElementsInZOrder;
+    // Draw images first (bottom layer)
+    for (final image in images) {
+      if (imageCache.containsKey(image.id)) {
+        final uiImage = imageCache[image.id]!;
+        final srcRect = Rect.fromLTWH(
+          0,
+          0,
+          uiImage.width.toDouble(),
+          uiImage.height.toDouble(),
+        );
+        final dstRect = Rect.fromLTWH(
+          image.position.dx,
+          image.position.dy,
+          image.width * image.scale,
+          image.height * image.scale,
+        );
+        canvas.drawImageRect(uiImage, srcRect, dstRect, Paint());
 
-    for (final element in elementsInZOrder) {
-      if (element is DrawingStroke) {
-        _drawStroke(canvas, element);
-      } else if (element is CanvasImage) {
-        _drawImage(canvas, element);
-      } else if (element is TextNote) {
-        _drawTextNote(canvas, element);
+        // Draw selection box if selected
+        if (image == selectedItem) {
+          canvas.drawRect(
+            dstRect,
+            Paint()
+              ..color = Colors.blue.withValues(alpha: 0.2)
+              ..style = PaintingStyle.fill,
+          );
+          canvas.drawRect(
+            dstRect,
+            Paint()
+              ..color = Colors.blue
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2,
+          );
+        }
       }
     }
 
-    // Draw current stroke on top of everything
+    // Draw completed strokes
+    for (final stroke in strokes) {
+      final paint = Paint()
+        ..color = stroke.color
+        ..strokeWidth = stroke.strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+
+      for (int i = 0; i < stroke.points.length - 1; i++) {
+        canvas.drawLine(stroke.points[i], stroke.points[i + 1], paint);
+      }
+    }
+
+    // Draw current stroke (only for pen tool)
     if (!isErasing && currentStroke.length > 1) {
       final paint = Paint()
         ..color = currentColor
@@ -1177,8 +1255,9 @@ class EnhancedDrawingPainter extends CustomPainter {
       }
     }
 
-    // Draw eraser cursor on top of everything
+    // Draw eraser cursor
     if (isErasing && eraserPosition != null) {
+      // Draw outer circle (eraser boundary)
       canvas.drawCircle(
         eraserPosition!,
         strokeWidth * 2,
@@ -1187,6 +1266,40 @@ class EnhancedDrawingPainter extends CustomPainter {
           ..style = PaintingStyle.fill,
       );
 
+      // Draw eraser icon in the center
+      final iconSize = strokeWidth * 2;
+
+      // Draw a simple eraser shape (rectangle with rounded corners)
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: eraserPosition!,
+            width: iconSize * 0.6,
+            height: iconSize * 0.4,
+          ),
+          const Radius.circular(2),
+        ),
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill,
+      );
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: eraserPosition!,
+            width: iconSize * 0.6,
+            height: iconSize * 0.4,
+          ),
+          const Radius.circular(2),
+        ),
+        Paint()
+          ..color = Colors.red
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
+
+      // Draw outer circle border
       canvas.drawCircle(
         eraserPosition!,
         strokeWidth * 2,
@@ -1196,142 +1309,47 @@ class EnhancedDrawingPainter extends CustomPainter {
           ..strokeWidth = 2,
       );
     }
-  }
 
-  void _drawStroke(Canvas canvas, DrawingStroke stroke) {
-    final paint = Paint()
-      ..color = stroke.color
-      ..strokeWidth = stroke.strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-
-    for (int i = 0; i < stroke.points.length - 1; i++) {
-      canvas.drawLine(stroke.points[i], stroke.points[i + 1], paint);
-    }
-  }
-
-  void _drawImage(Canvas canvas, CanvasImage image) {
-    final imageRect = Rect.fromLTWH(
-      image.position.dx,
-      image.position.dy,
-      image.width * image.scale,
-      image.height * image.scale,
-    );
-
-    // Draw the actual image if available in cache
-    final cachedImage = imageCache[image.id];
-    if (cachedImage != null) {
-      canvas.drawImageRect(
-        cachedImage,
-        Rect.fromLTWH(
-          0,
-          0,
-          cachedImage.width.toDouble(),
-          cachedImage.height.toDouble(),
-        ),
-        imageRect,
-        Paint(),
-      );
-    } else {
-      // Draw placeholder while image loads
-      canvas.drawRect(
-        imageRect,
-        Paint()
-          ..color = Colors.grey.withValues(alpha: 0.3)
-          ..style = PaintingStyle.fill,
-      );
-      canvas.drawRect(
-        imageRect,
-        Paint()
-          ..color = Colors.grey
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
-      );
-
-      // Draw loading icon
-      final iconSize = (imageRect.width * 0.3).clamp(16.0, 48.0);
-      final iconRect = Rect.fromCenter(
-        center: imageRect.center,
-        width: iconSize,
-        height: iconSize,
-      );
-
+    // Draw text notes
+    for (final note in textNotes) {
       final textPainter = TextPainter(
-        text: const TextSpan(text: '🖼️', style: TextStyle(fontSize: 24)),
+        text: TextSpan(
+          text: note.text,
+          style: TextStyle(
+            color: note.color,
+            fontSize: note.fontSize,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         textDirection: TextDirection.ltr,
-      )..layout();
-
-      textPainter.paint(
-        canvas,
-        Offset(
-          iconRect.center.dx - textPainter.width / 2,
-          iconRect.center.dy - textPainter.height / 2,
-        ),
       );
+      textPainter.layout();
+
+      // Draw selection box if selected
+      if (note == selectedItem) {
+        final rect = Rect.fromLTWH(
+          note.position.dx - 4,
+          note.position.dy - 4,
+          textPainter.width + 8,
+          textPainter.height + 8,
+        );
+        canvas.drawRect(
+          rect,
+          Paint()
+            ..color = Colors.blue.withValues(alpha: 0.2)
+            ..style = PaintingStyle.fill,
+        );
+        canvas.drawRect(
+          rect,
+          Paint()
+            ..color = Colors.blue
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1,
+        );
+      }
+
+      textPainter.paint(canvas, note.position);
     }
-
-    // Draw selection box if selected
-    if (image == selectedItem) {
-      final selectionRect = Rect.fromLTWH(
-        image.position.dx - 4,
-        image.position.dy - 4,
-        (image.width * image.scale) + 8,
-        (image.height * image.scale) + 8,
-      );
-      canvas.drawRect(
-        selectionRect,
-        Paint()
-          ..color = Colors.blue.withValues(alpha: 0.3)
-          ..style = PaintingStyle.fill,
-      );
-      canvas.drawRect(
-        selectionRect,
-        Paint()
-          ..color = Colors.blue
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2,
-      );
-    }
-  }
-
-  void _drawTextNote(Canvas canvas, TextNote note) {
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: note.text,
-        style: TextStyle(
-          color: note.color,
-          fontSize: note.fontSize,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    // Draw selection box if selected
-    if (note == selectedItem) {
-      final rect = Rect.fromLTWH(
-        note.position.dx - 4,
-        note.position.dy - 4,
-        textPainter.width + 8,
-        textPainter.height + 8,
-      );
-      canvas.drawRect(
-        rect,
-        Paint()
-          ..color = Colors.blue.withValues(alpha: 0.3)
-          ..style = PaintingStyle.fill,
-      );
-      canvas.drawRect(
-        rect,
-        Paint()
-          ..color = Colors.blue
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2,
-      );
-    }
-
-    textPainter.paint(canvas, note.position);
   }
 
   @override

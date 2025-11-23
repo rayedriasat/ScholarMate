@@ -267,8 +267,8 @@ class ScholarMateApp extends StatelessWidget {
           return MaterialApp(
             title: 'ScholarMate',
             debugShowCheckedModeBanner: false,
-            theme: SimpleThemeService.lightTheme,
-            darkTheme: SimpleThemeService.darkTheme,
+            theme: themeService.lightTheme,
+            darkTheme: themeService.darkTheme,
             themeMode: themeService.themeMode,
             home: const AppInitializer(),
             routes: {'/search': (context) => const AdvancedSearchScreen()},

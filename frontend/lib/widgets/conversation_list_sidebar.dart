@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../database/database.dart';
+import '../theme/app_colors.dart';
+import 'ui/glass_container.dart';
+import 'ui/modern_button.dart';
+import 'ui/modern_text_field.dart';
 
 /// Sidebar widget for displaying chat conversation history
 class ConversationListSidebar extends StatelessWidget {
@@ -28,9 +32,8 @@ class ConversationListSidebar extends StatelessWidget {
     return Container(
       width: 280,
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
         border: Border(
-          right: BorderSide(color: Theme.of(context).dividerColor),
+          right: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
       ),
       child: Column(
@@ -40,18 +43,16 @@ class ConversationListSidebar extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Theme.of(context).dividerColor),
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
               ),
             ),
             child: SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: ModernButton(
                 onPressed: onNewConversation,
-                icon: const Icon(Icons.add),
-                label: const Text('New Chat'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+                icon: Icons.add,
+                label: 'New Chat',
+                height: 40,
               ),
             ),
           ),
@@ -59,10 +60,13 @@ class ConversationListSidebar extends StatelessWidget {
           // Conversation list
           Expanded(
             child: isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  )
                 : conversations.isEmpty
                 ? _buildEmptyState(context)
                 : ListView.builder(
+                    padding: const EdgeInsets.all(12),
                     itemCount: conversations.length,
                     itemBuilder: (context, index) {
                       final conversation = conversations[index];
@@ -92,20 +96,26 @@ class ConversationListSidebar extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey[400]),
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 48,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
             const SizedBox(height: 16),
             Text(
               'No conversations yet',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Start a new chat to begin',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.4),
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -144,73 +154,90 @@ class _ConversationListItem extends StatelessWidget {
         ? timeFormat.format(conversation.updatedAt)
         : dateFormat.format(conversation.updatedAt);
 
-    return Material(
-      color: isSelected
-          ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-          : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      conversation.title,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GlassContainer(
+        padding: EdgeInsets.zero,
+        borderRadius: BorderRadius.circular(12),
+        color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : null,
+        border: Border.all(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.5)
+              : Colors.transparent,
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        conversation.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 4),
+                      Text(
+                        dateText,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert,
+                    size: 18,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                  color: AppColors.surface,
+                  onSelected: (value) {
+                    if (value == 'rename') {
+                      _showRenameDialog(context);
+                    } else if (value == 'delete') {
+                      _showDeleteConfirmation(context);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'rename',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 18, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text('Rename', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      dateText,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 18, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Delete', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, size: 20, color: Colors.grey[600]),
-                onSelected: (value) {
-                  if (value == 'rename') {
-                    _showRenameDialog(context);
-                  } else if (value == 'delete') {
-                    _showDeleteConfirmation(context);
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'rename',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 20),
-                        SizedBox(width: 8),
-                        Text('Rename'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 20, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -223,22 +250,18 @@ class _ConversationListItem extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rename Conversation'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Title',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
-          maxLength: 100,
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Rename Conversation',
+          style: TextStyle(color: Colors.white),
         ),
+        content: ModernTextField(controller: controller, hintText: 'Title'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () {
               final newTitle = controller.text.trim();
               if (newTitle.isNotEmpty) {
@@ -257,24 +280,26 @@ class _ConversationListItem extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Conversation'),
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Delete Conversation',
+          style: TextStyle(color: Colors.white),
+        ),
         content: const Text(
           'Are you sure you want to delete this conversation? This action cannot be undone.',
+          style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () {
               onDelete();
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],

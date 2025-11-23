@@ -15,6 +15,9 @@ import '../services/sharing_service.dart';
 import '../widgets/collaboration_panel.dart';
 import '../widgets/collaboration_cursor.dart';
 import '../widgets/annotation_toolbar.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../theme/app_colors.dart';
 
 // Share Session ID Dialog widget
 class ShareSessionDialog extends StatelessWidget {
@@ -25,19 +28,26 @@ class ShareSessionDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Share Session ID'),
+      backgroundColor: AppColors.surface,
+      title: const Text(
+        'Share Session ID',
+        style: TextStyle(color: Colors.white),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Share this Session ID with others to collaborate:'),
+          const Text(
+            'Share this Session ID with others to collaborate:',
+            style: TextStyle(color: Colors.white70),
+          ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
             child: SelectableText(
               sessionId,
@@ -45,6 +55,7 @@ class ShareSessionDialog extends StatelessWidget {
                 fontFamily: 'monospace',
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -54,7 +65,10 @@ class ShareSessionDialog extends StatelessWidget {
             '1. Going to Files → Menu (⋮)\n'
             '2. Selecting "Join Collaboration"\n'
             '3. Entering this Session ID',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.5),
+            ),
           ),
         ],
       ),
@@ -63,7 +77,7 @@ class ShareSessionDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           child: const Text('Close'),
         ),
-        ElevatedButton.icon(
+        ModernButton(
           onPressed: () {
             // Copy to clipboard
             Clipboard.setData(ClipboardData(text: sessionId));
@@ -71,8 +85,10 @@ class ShareSessionDialog extends StatelessWidget {
               const SnackBar(content: Text('Session ID copied to clipboard')),
             );
           },
-          icon: const Icon(Icons.copy, size: 18),
-          label: const Text('Copy ID'),
+          icon: Icons.copy,
+          label: 'Copy ID',
+          width: 120,
+          height: 36,
         ),
       ],
     );
@@ -230,11 +246,15 @@ class _CollaborativePdfViewerScreenState
                   context: context,
                   barrierDismissible: false,
                   builder: (context) => AlertDialog(
+                    backgroundColor: AppColors.surface,
                     title: Row(
                       children: [
                         Icon(Icons.share, color: Colors.orange[700]),
                         const SizedBox(width: 8),
-                        const Text('Share First'),
+                        const Text(
+                          'Share First',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ],
                     ),
                     content: Column(
@@ -243,48 +263,58 @@ class _CollaborativePdfViewerScreenState
                       children: [
                         const Text(
                           'To start a collaboration session, you need to share this PDF with collaborators first.',
-                          style: TextStyle(fontSize: 14),
+                          style: TextStyle(fontSize: 14, color: Colors.white),
                         ),
                         const SizedBox(height: 16),
                         const Text(
                           'Steps:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '1. Go back to the file list',
-                          style: TextStyle(color: Colors.grey[700]),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
                         ),
                         Text(
                           '2. Click the ⋮ menu on the PDF',
-                          style: TextStyle(color: Colors.grey[700]),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
                         ),
                         Text(
                           '3. Select "Share file"',
-                          style: TextStyle(color: Colors.grey[700]),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
                         ),
                         Text(
                           '4. Add collaborators with Gmail addresses',
-                          style: TextStyle(color: Colors.grey[700]),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
                         ),
                         Text(
                           '5. Then start the collaboration session',
-                          style: TextStyle(color: Colors.grey[700]),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
                         ),
                       ],
                     ),
                     actions: [
-                      ElevatedButton.icon(
+                      ModernButton(
                         onPressed: () {
                           Navigator.pop(context); // Close dialog
                           Navigator.pop(context); // Go back to file list
                         },
-                        icon: const Icon(Icons.arrow_back),
-                        label: const Text('Go Back to Share'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                        ),
+                        icon: Icons.arrow_back,
+                        label: 'Go Back to Share',
+                        backgroundColor: Colors.orange,
                       ),
                     ],
                   ),
@@ -539,7 +569,11 @@ class _CollaborativePdfViewerScreenState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Collaboration Annotations'),
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Collaboration Annotations',
+          style: TextStyle(color: Colors.white),
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -552,14 +586,23 @@ class _CollaborativePdfViewerScreenState
                   backgroundColor: annotation.userColor,
                   radius: 12,
                 ),
-                title: Text(annotation.userName),
+                title: Text(
+                  annotation.userName,
+                  style: const TextStyle(color: Colors.white),
+                ),
                 subtitle: Text(
                   '${annotation.annotationType} on page ${annotation.pageNumber}',
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
                 ),
                 trailing: Text(
                   _formatTime(annotation.createdAt),
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
                 ),
                 onTap: () {
                   // Jump to page
@@ -677,25 +720,40 @@ class _CollaborativePdfViewerScreenState
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Loading...')),
-        body: const Center(child: CircularProgressIndicator()),
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          title: const Text(
+            'Loading...',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
     }
 
     if (_error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          title: const Text('Error', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text(_error!),
+              Text(_error!, style: const TextStyle(color: Colors.white)),
               const SizedBox(height: 16),
-              ElevatedButton(
+              ModernButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Go Back'),
+                label: 'Go Back',
               ),
             ],
           ),
@@ -704,7 +762,16 @@ class _CollaborativePdfViewerScreenState
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.fileName)),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: Text(
+          widget.fileName,
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Column(
         children: [
           // Collaboration panel with refresh button
@@ -714,25 +781,26 @@ class _CollaborativePdfViewerScreenState
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CollaborationPanel(
-                    session: _session!,
-                    onLeave: _leaveSession,
-                    onShare: _showShareDialog,
+                  GlassContainer(
+                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.surface,
+                    child: CollaborationPanel(
+                      session: _session!,
+                      onLeave: _leaveSession,
+                      onShare: _showShareDialog,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   // Refresh annotations button
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: ElevatedButton.icon(
+                    child: ModernButton(
                       onPressed: _refreshAnnotations,
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: const Text('Refresh to See Latest Annotations'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
+                      icon: Icons.refresh,
+                      label: 'Refresh to See Latest Annotations',
+                      backgroundColor: AppColors.primary,
+                      height: 48,
                     ),
                   ),
                 ],
@@ -762,7 +830,12 @@ class _CollaborativePdfViewerScreenState
                           onAnnotationRemoved: _onAnnotationRemoved,
                         )
                       else
-                        const Center(child: Text('Loading PDF...')),
+                        const Center(
+                          child: Text(
+                            'Loading PDF...',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
 
                       // Other users' cursors
                       if (_session != null)
@@ -786,33 +859,29 @@ class _CollaborativePdfViewerScreenState
           ),
 
           // Annotation toolbar
-          AnnotationToolbar(
-            selectedMode: _annotationMode,
-            selectedColor: _annotationColor,
-            onModeChanged: (mode) {
-              setState(() {
-                _annotationMode = mode;
-                _pdfController.annotationMode = mode;
-              });
-            },
-            onColorChanged: (color) {
-              setState(() {
-                _annotationColor = color;
-                _pdfController.annotationSettings.highlight.color = color;
-                _pdfController.annotationSettings.underline.color = color;
-                _pdfController.annotationSettings.strikethrough.color = color;
-                _pdfController.annotationSettings.squiggly.color = color;
-              });
-            },
+          GlassContainer(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            color: AppColors.surface,
+            child: AnnotationToolbar(
+              selectedMode: _annotationMode,
+              selectedColor: _annotationColor,
+              onModeChanged: (mode) {
+                setState(() {
+                  _annotationMode = mode;
+                  _pdfController.annotationMode = mode;
+                });
+              },
+              onColorChanged: (color) {
+                setState(() {
+                  _annotationColor = color;
+                  // Note: Syncfusion doesn't support dynamic color change for new annotations easily
+                  // We would need to update controller settings
+                });
+              },
+            ),
           ),
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _pdfController.dispose();
-    super.dispose();
   }
 }

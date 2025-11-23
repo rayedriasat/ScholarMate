@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../theme/app_theme.dart';
+import '../theme/app_colors.dart';
 
-/// Simple theme service without complex theming
+/// Simple theme service with custom accent color support
 class SimpleThemeService extends ChangeNotifier {
   static const String _themeKey = 'app_theme_mode';
+  static const String _accentColorKey = 'app_accent_color';
 
   ThemeMode _themeMode = ThemeMode.system;
+  Color _accentColor = AppColors.primary;
   SharedPreferences? _prefs;
 
   ThemeMode get themeMode => _themeMode;
+  Color get accentColor => _accentColor;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
   bool get isLightMode => _themeMode == ThemeMode.light;
   bool get isSystemMode => _themeMode == ThemeMode.system;
@@ -23,18 +28,34 @@ class SimpleThemeService extends ChangeNotifier {
   Future<void> _loadTheme() async {
     final themeIndex = _prefs?.getInt(_themeKey) ?? 0;
     _themeMode = ThemeMode.values[themeIndex];
+
+    final accentColorValue = _prefs?.getInt(_accentColorKey);
+    if (accentColorValue != null) {
+      _accentColor = Color(accentColorValue);
+    }
+
     notifyListeners();
   }
 
   /// Save theme to shared preferences
   Future<void> _saveTheme() async {
     await _prefs?.setInt(_themeKey, _themeMode.index);
+    await _prefs?.setInt(_accentColorKey, _accentColor.value);
   }
 
   /// Set theme mode
   Future<void> setThemeMode(ThemeMode mode) async {
     if (_themeMode != mode) {
       _themeMode = mode;
+      await _saveTheme();
+      notifyListeners();
+    }
+  }
+
+  /// Set accent color
+  Future<void> setAccentColor(Color color) async {
+    if (_accentColor != color) {
+      _accentColor = color;
       await _saveTheme();
       notifyListeners();
     }
@@ -56,24 +77,12 @@ class SimpleThemeService extends ChangeNotifier {
   }
 
   /// Get light theme data
-  static ThemeData get lightTheme {
-    return ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF6366F1),
-        brightness: Brightness.light,
-      ),
-      useMaterial3: true,
-    );
+  ThemeData get lightTheme {
+    return AppTheme.getLightTheme(_accentColor);
   }
 
   /// Get dark theme data
-  static ThemeData get darkTheme {
-    return ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF6366F1),
-        brightness: Brightness.dark,
-      ),
-      useMaterial3: true,
-    );
+  ThemeData get darkTheme {
+    return AppTheme.getDarkTheme(_accentColor);
   }
 }

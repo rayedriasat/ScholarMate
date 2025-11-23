@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/drive_file.dart';
+import '../theme/app_colors.dart';
+import 'ui/glass_container.dart';
+import 'ui/modern_button.dart';
 
 /// Panel for selecting source files for AI chat
 class SourceSelectionPanel extends StatelessWidget {
@@ -30,9 +33,8 @@ class SourceSelectionPanel extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             border: Border(
-              bottom: BorderSide(color: Theme.of(context).dividerColor),
+              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
             ),
           ),
           child: Column(
@@ -40,21 +42,20 @@ class SourceSelectionPanel extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.filter_list,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                  const Icon(Icons.filter_list, color: AppColors.primary),
                   const SizedBox(width: 8),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'Source Selection',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(Icons.refresh, color: Colors.white70),
                     onPressed: onRefresh,
                     tooltip: 'Refresh files',
                   ),
@@ -63,32 +64,31 @@ class SourceSelectionPanel extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '${selectedFileIds.length} of ${availableFiles.length} selected',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 12,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: ModernButton(
                       onPressed: onSelectAll,
-                      icon: const Icon(Icons.check_box, size: 18),
-                      label: const Text('Select All'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
+                      icon: Icons.check_box,
+                      label: 'Select All',
+                      variant: ModernButtonVariant.outline,
+                      height: 36,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: ModernButton(
                       onPressed: onClearAll,
-                      icon: const Icon(Icons.clear, size: 18),
-                      label: const Text('Clear All'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
+                      icon: Icons.clear,
+                      label: 'Clear All',
+                      variant: ModernButtonVariant.outline,
+                      height: 36,
                     ),
                   ),
                 ],
@@ -100,7 +100,9 @@ class SourceSelectionPanel extends StatelessWidget {
         // File list
         Expanded(
           child: isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
               : availableFiles.isEmpty
               ? _buildEmptyState(context)
               : ListView.builder(
@@ -122,20 +124,26 @@ class SourceSelectionPanel extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.folder_open, size: 48, color: Colors.grey[400]),
+          Icon(
+            Icons.folder_open,
+            size: 48,
+            color: Colors.white.withValues(alpha: 0.2),
+          ),
           const SizedBox(height: 16),
           Text(
             'No PDF files found',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withValues(alpha: 0.6),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Upload PDFs to use as sources',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.4),
+            ),
           ),
         ],
       ),
@@ -143,36 +151,52 @@ class SourceSelectionPanel extends StatelessWidget {
   }
 
   Widget _buildFileItem(BuildContext context, DriveFile file, bool isSelected) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-      elevation: isSelected ? 2 : 0,
-      color: isSelected
-          ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-          : null,
-      child: CheckboxListTile(
-        value: isSelected,
-        onChanged: (_) => onToggleFile(file.id),
-        title: Text(
-          file.name,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GlassContainer(
+        padding: EdgeInsets.zero,
+        borderRadius: BorderRadius.circular(12),
+        color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : null,
+        border: Border.all(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.1),
+        ),
+        child: CheckboxListTile(
+          value: isSelected,
+          onChanged: (_) => onToggleFile(file.id),
+          title: Text(
+            file.name,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              color: Colors.white,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+          subtitle: file.size != null
+              ? Text(
+                  _formatFileSize(file.size!),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                )
+              : null,
+          secondary: Icon(
+            Icons.picture_as_pdf,
+            color: isSelected ? AppColors.primary : Colors.white54,
+          ),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
+          ),
+          checkColor: Colors.white,
+          activeColor: AppColors.primary,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
         ),
-        subtitle: file.size != null
-            ? Text(
-                _formatFileSize(file.size!),
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              )
-            : null,
-        secondary: Icon(
-          Icons.picture_as_pdf,
-          color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
-        ),
-        controlAffinity: ListTileControlAffinity.leading,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
     );
   }

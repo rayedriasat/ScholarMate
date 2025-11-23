@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/drive_file.dart';
+import '../theme/app_colors.dart';
+import 'ui/glass_container.dart';
 
-/// Breadcrumb navigation for folder hierarchy
+/// Modern breadcrumb navigation for folder hierarchy
 class BreadcrumbNavigation extends StatelessWidget {
   final List<DriveFile> path;
   final Function(DriveFile) onNavigate;
@@ -14,18 +16,16 @@ class BreadcrumbNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
 
-    return Container(
+    return GlassContainer(
+      width: double.infinity,
+      borderRadius: BorderRadius.circular(12),
       padding: EdgeInsets.symmetric(
         horizontal: 16,
-        vertical: isSmallScreen ? 4 : 8,
+        vertical: isSmallScreen ? 8 : 12,
       ),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        border: Border(bottom: BorderSide(color: theme.dividerColor, width: 1)),
-      ),
+      opacity: 0.05,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -39,23 +39,23 @@ class BreadcrumbNavigation extends StatelessWidget {
                 child: Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: isSmallScreen ? 2 : 6,
+                    vertical: isSmallScreen ? 4 : 6,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.home,
+                      const Icon(
+                        Icons.home_filled,
                         size: 18,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: AppColors.primary,
                       ),
                       if (!isSmallScreen) ...[
-                        const SizedBox(width: 6),
-                        Text(
+                        const SizedBox(width: 8),
+                        const Text(
                           'ScholarMate',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
                         ),
@@ -74,7 +74,7 @@ class BreadcrumbNavigation extends StatelessWidget {
                   Icon(
                     Icons.chevron_right,
                     size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: Colors.white.withValues(alpha: 0.3),
                   ),
                   Material(
                     color: Colors.transparent,
@@ -84,17 +84,17 @@ class BreadcrumbNavigation extends StatelessWidget {
                       child: Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: isSmallScreen ? 2 : 6,
+                          vertical: isSmallScreen ? 4 : 6,
                         ),
                         child: Text(
                           _truncateName(folder.name, isSmallScreen),
                           style: TextStyle(
                             color: isLast
-                                ? theme.colorScheme.onSurface
-                                : theme.colorScheme.primary,
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.7),
                             fontWeight: isLast
-                                ? FontWeight.w600
-                                : FontWeight.w500,
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             fontSize: 14,
                           ),
                         ),

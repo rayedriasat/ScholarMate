@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/pdf_metadata.dart';
 import '../services/metadata_service.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../widgets/ui/modern_text_field.dart';
+import '../theme/app_colors.dart';
 
 class CitationGeneratorScreen extends StatefulWidget {
   final MetadataService metadataService;
@@ -223,11 +227,20 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Citation Generator'),
+        title: const Text(
+          'Citation Generator',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(text: 'Auto', icon: Icon(Icons.auto_awesome, size: 20)),
             Tab(text: 'Manual', icon: Icon(Icons.edit, size: 20)),
@@ -248,27 +261,23 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Info card
-          Card(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Generate formatted citations from DOI, ISBN, PubMed ID, arXiv ID, or URL',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
+          GlassContainer(
+            borderRadius: BorderRadius.circular(16),
+            color: AppColors.primary.withValues(alpha: 0.1),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: AppColors.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Generate formatted citations from DOI, ISBN, PubMed ID, arXiv ID, or URL',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
@@ -280,63 +289,66 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Identifier type dropdown
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedType,
-                  decoration: const InputDecoration(
-                    labelText: 'Identifier Type',
-                    border: OutlineInputBorder(),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
-                  items: _identifierTypes.map((type) {
-                    return DropdownMenuItem(
-                      value: type['value'],
-                      child: Text(type['label']!),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedType = value!;
-                      _identifierController.clear();
-                      _citation = null;
-                      _error = null;
-                    });
-                  },
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedType,
+                      isExpanded: true,
+                      dropdownColor: AppColors.surface,
+                      style: const TextStyle(color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.white70,
+                      ),
+                      items: _identifierTypes.map((type) {
+                        return DropdownMenuItem(
+                          value: type['value'],
+                          child: Text(type['label']!),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedType = value!;
+                          _identifierController.clear();
+                          _citation = null;
+                          _error = null;
+                        });
+                      },
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
 
                 // Identifier input
-                TextFormField(
+                ModernTextField(
                   controller: _identifierController,
-                  decoration: InputDecoration(
-                    labelText:
-                        '${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['label']} (${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['hint']})',
-                    border: const OutlineInputBorder(),
-                  ),
+                  hintText:
+                      '${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['label']} (${_identifierTypes.firstWhere((t) => t['value'] == _selectedType)['hint']})',
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter an identifier';
                     }
                     return null;
                   },
-                  onFieldSubmitted: (_) => _generateCitation(),
+                  onSubmitted: (_) => _generateCitation(),
                 ),
                 const SizedBox(height: 24),
 
                 // Generate button
-                ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _generateCitation,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.auto_awesome),
-                  label: Text(
-                    _isLoading ? 'Generating...' : 'Generate Citations',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.all(16),
-                  ),
+                ModernButton(
+                  onPressed: _isLoading ? () {} : _generateCitation,
+                  icon: _isLoading ? null : Icons.auto_awesome,
+                  label: _isLoading ? 'Generating...' : 'Generate Citations',
+                  width: double.infinity,
+                  height: 50,
                 ),
               ],
             ),
@@ -345,27 +357,21 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
           // Error message
           if (_error != null) ...[
             const SizedBox(height: 24),
-            Card(
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Theme.of(context).colorScheme.onErrorContainer,
+            GlassContainer(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.red.withValues(alpha: 0.1),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -375,7 +381,11 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             const SizedBox(height: 32),
             const Text(
               'Generated Citations',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -423,53 +433,59 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Info card
-            Card(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.edit,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Manually enter citation details for any source type',
-                        style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                        ),
+            GlassContainer(
+              borderRadius: BorderRadius.circular(16),
+              color: AppColors.primary.withValues(alpha: 0.1),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.edit, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Manually enter citation details for any source type',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 24),
 
             // Source type dropdown
-            DropdownButtonFormField<String>(
-              initialValue: _manualSourceType,
-              decoration: const InputDecoration(
-                labelText: 'Source Type',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.category),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
-              items: _sourceTypes.map((type) {
-                return DropdownMenuItem(
-                  value: type['value'],
-                  child: Text(type['label']!),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _manualSourceType = value!;
-                  _clearManualForm();
-                });
-              },
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _manualSourceType,
+                  isExpanded: true,
+                  dropdownColor: AppColors.surface,
+                  style: const TextStyle(color: Colors.white),
+                  icon: const Icon(
+                    Icons.arrow_drop_down,
+                    color: Colors.white70,
+                  ),
+                  items: _sourceTypes.map((type) {
+                    return DropdownMenuItem(
+                      value: type['value'],
+                      child: Text(type['label']!),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _manualSourceType = value!;
+                      _clearManualForm();
+                    });
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -482,33 +498,22 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: ModernButton(
                     onPressed: _clearManualForm,
-                    icon: const Icon(Icons.clear),
-                    label: const Text('Clear'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                    ),
+                    icon: Icons.clear,
+                    label: 'Clear',
+                    backgroundColor: Colors.transparent,
+                    textColor: Colors.white,
+                    // borderColor: Colors.white24, // Removed as it is not supported
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _generateManualCitation,
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.auto_awesome),
-                    label: Text(
-                      _isLoading ? 'Generating...' : 'Generate Citations',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                    ),
+                  child: ModernButton(
+                    onPressed: _isLoading ? () {} : _generateManualCitation,
+                    icon: _isLoading ? null : Icons.auto_awesome,
+                    label: _isLoading ? 'Generating...' : 'Generate Citations',
                   ),
                 ),
               ],
@@ -517,29 +522,21 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             // Error message
             if (_error != null) ...[
               const SizedBox(height: 24),
-              Card(
-                color: Theme.of(context).colorScheme.errorContainer,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: Theme.of(context).colorScheme.onErrorContainer,
+              GlassContainer(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.red.withValues(alpha: 0.1),
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: Colors.red),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onErrorContainer,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -549,7 +546,11 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
               const SizedBox(height: 32),
               const Text(
                 'Generated Citations',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -588,13 +589,10 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
 
     // Common fields for all types
     fields.addAll([
-      TextFormField(
+      ModernTextField(
         controller: _manualTitleController,
-        decoration: const InputDecoration(
-          labelText: 'Title *',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.title),
-        ),
+        hintText: 'Title *',
+        prefixIcon: Icons.title,
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
             return 'Title is required';
@@ -603,14 +601,10 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
         },
       ),
       const SizedBox(height: 16),
-      TextFormField(
+      ModernTextField(
         controller: _manualAuthorsController,
-        decoration: const InputDecoration(
-          labelText: 'Authors/Editors *',
-          hintText: 'Separate multiple authors with commas',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.person),
-        ),
+        hintText: 'Authors/Editors * (Separate with commas)',
+        prefixIcon: Icons.person,
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
             return 'At least one author is required';
@@ -619,14 +613,10 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
         },
       ),
       const SizedBox(height: 16),
-      TextFormField(
+      ModernTextField(
         controller: _manualYearController,
-        decoration: const InputDecoration(
-          labelText: 'Publication Year *',
-          hintText: 'e.g., 2024',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.calendar_today),
-        ),
+        hintText: 'Publication Year * (e.g., 2024)',
+        prefixIcon: Icons.calendar_today,
         keyboardType: TextInputType.number,
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
@@ -646,13 +636,10 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
     switch (_manualSourceType) {
       case 'journal_article':
         fields.addAll([
-          TextFormField(
+          ModernTextField(
             controller: _manualJournalController,
-            decoration: const InputDecoration(
-              labelText: 'Journal Name *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.book),
-            ),
+            hintText: 'Journal Name *',
+            prefixIcon: Icons.book,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Journal name is required';
@@ -664,58 +651,41 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
           Row(
             children: [
               Expanded(
-                child: TextFormField(
+                child: ModernTextField(
                   controller: _manualVolumeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Volume',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Volume',
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: TextFormField(
+                child: ModernTextField(
                   controller: _manualIssueController,
-                  decoration: const InputDecoration(
-                    labelText: 'Issue',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Issue',
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          ModernTextField(
             controller: _manualPagesController,
-            decoration: const InputDecoration(
-              labelText: 'Pages',
-              hintText: 'e.g., 123-145',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.pages),
-            ),
+            hintText: 'Pages (e.g., 123-145)',
+            prefixIcon: Icons.pages,
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          ModernTextField(
             controller: _manualDoiController,
-            decoration: const InputDecoration(
-              labelText: 'DOI (optional)',
-              hintText: 'e.g., 10.1234/example',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.link),
-            ),
+            hintText: 'DOI (optional)',
+            prefixIcon: Icons.link,
           ),
         ]);
         break;
 
       case 'book':
         fields.addAll([
-          TextFormField(
+          ModernTextField(
             controller: _manualPublisherController,
-            decoration: const InputDecoration(
-              labelText: 'Publisher *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.business),
-            ),
+            hintText: 'Publisher *',
+            prefixIcon: Icons.business,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Publisher is required';
@@ -724,27 +694,20 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             },
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          ModernTextField(
             controller: _manualIsbnController,
-            decoration: const InputDecoration(
-              labelText: 'ISBN (optional)',
-              hintText: 'e.g., 978-0-123456-78-9',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.numbers),
-            ),
+            hintText: 'ISBN (optional)',
+            prefixIcon: Icons.numbers,
           ),
         ]);
         break;
 
       case 'website':
         fields.addAll([
-          TextFormField(
+          ModernTextField(
             controller: _manualWebsiteNameController,
-            decoration: const InputDecoration(
-              labelText: 'Website Name *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.language),
-            ),
+            hintText: 'Website Name *',
+            prefixIcon: Icons.language,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Website name is required';
@@ -753,14 +716,10 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             },
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          ModernTextField(
             controller: _manualUrlController,
-            decoration: const InputDecoration(
-              labelText: 'URL *',
-              hintText: 'https://example.com',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.link),
-            ),
+            hintText: 'URL *',
+            prefixIcon: Icons.link,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'URL is required';
@@ -769,27 +728,20 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             },
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          ModernTextField(
             controller: _manualAccessDateController,
-            decoration: const InputDecoration(
-              labelText: 'Access Date',
-              hintText: 'e.g., January 15, 2024',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.event),
-            ),
+            hintText: 'Access Date (e.g., January 15, 2024)',
+            prefixIcon: Icons.event,
           ),
         ]);
         break;
 
       case 'conference_paper':
         fields.addAll([
-          TextFormField(
+          ModernTextField(
             controller: _manualJournalController,
-            decoration: const InputDecoration(
-              labelText: 'Conference Name *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.event),
-            ),
+            hintText: 'Conference Name *',
+            prefixIcon: Icons.event,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Conference name is required';
@@ -798,261 +750,153 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
             },
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          ModernTextField(
+            controller: _manualPublisherController,
+            hintText: 'Publisher',
+            prefixIcon: Icons.business,
+          ),
+          const SizedBox(height: 16),
+          ModernTextField(
             controller: _manualPagesController,
-            decoration: const InputDecoration(
-              labelText: 'Pages',
-              hintText: 'e.g., 123-145',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.pages),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _manualDoiController,
-            decoration: const InputDecoration(
-              labelText: 'DOI (optional)',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.link),
-            ),
+            hintText: 'Pages',
+            prefixIcon: Icons.pages,
           ),
         ]);
         break;
 
-      case 'thesis':
+      default:
         fields.addAll([
-          TextFormField(
+          ModernTextField(
             controller: _manualPublisherController,
-            decoration: const InputDecoration(
-              labelText: 'Institution *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.school),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Institution is required';
-              }
-              return null;
-            },
+            hintText: 'Publisher/Institution',
+            prefixIcon: Icons.business,
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          ModernTextField(
             controller: _manualUrlController,
-            decoration: const InputDecoration(
-              labelText: 'URL (optional)',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.link),
-            ),
+            hintText: 'URL (optional)',
+            prefixIcon: Icons.link,
           ),
         ]);
-        break;
-
-      case 'report':
-        fields.addAll([
-          TextFormField(
-            controller: _manualPublisherController,
-            decoration: const InputDecoration(
-              labelText: 'Institution/Organization *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.business),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Institution is required';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _manualUrlController,
-            decoration: const InputDecoration(
-              labelText: 'URL (optional)',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.link),
-            ),
-          ),
-        ]);
-        break;
-
-      case 'newspaper':
-        fields.addAll([
-          TextFormField(
-            controller: _manualJournalController,
-            decoration: const InputDecoration(
-              labelText: 'Newspaper Name *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.newspaper),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Newspaper name is required';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _manualPagesController,
-            decoration: const InputDecoration(
-              labelText: 'Pages',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.pages),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _manualUrlController,
-            decoration: const InputDecoration(
-              labelText: 'URL (optional)',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.link),
-            ),
-          ),
-        ]);
-        break;
-
-      case 'other':
-        fields.addAll([
-          TextFormField(
-            controller: _manualPublisherController,
-            decoration: const InputDecoration(
-              labelText: 'Publisher/Source',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.business),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _manualUrlController,
-            decoration: const InputDecoration(
-              labelText: 'URL (optional)',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.link),
-            ),
-          ),
-        ]);
-        break;
     }
 
     return fields;
   }
 
   Widget _buildMetadataPreview(PDFMetadata metadata) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.article_outlined,
-                  color: Theme.of(context).colorScheme.primary,
+    return GlassContainer(
+      borderRadius: BorderRadius.circular(16),
+      color: Colors.white.withValues(alpha: 0.05),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.description, size: 20, color: Colors.white70),
+              const SizedBox(width: 8),
+              const Text(
+                'Source Details',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Source Information',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            if (metadata.title != null) ...[
-              _buildMetadataRow('Title', metadata.title!),
-              const SizedBox(height: 8),
+              ),
             ],
-            if (metadata.authors.isNotEmpty) ...[
-              _buildMetadataRow('Authors', metadata.formattedAuthors),
-              const SizedBox(height: 8),
-            ],
-            if (metadata.publicationYear != null) ...[
-              _buildMetadataRow('Year', metadata.publicationYear.toString()),
-              const SizedBox(height: 8),
-            ],
-            if (metadata.journal != null) ...[
-              _buildMetadataRow('Journal', metadata.journal!),
-              const SizedBox(height: 8),
-            ],
-            if (metadata.doi != null) ...[
-              _buildMetadataRow('DOI', metadata.doi!),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetadataRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            '$label:',
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).textTheme.bodySmall?.color,
-            ),
           ),
-        ),
-        Expanded(child: Text(value)),
-      ],
+          const SizedBox(height: 12),
+          if (metadata.title != null) ...[
+            Text(
+              metadata.title!,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
+          if (metadata.authors.isNotEmpty) ...[
+            Text(
+              metadata.authors.join(', '),
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 4),
+          ],
+          if (metadata.journal != null || metadata.publicationYear != null) ...[
+            Text(
+              [
+                if (metadata.journal != null) metadata.journal,
+                if (metadata.publicationYear != null)
+                  metadata.publicationYear.toString(),
+              ].join(' • '),
+              style: const TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Colors.white60,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
   Widget _buildCitationCard(
     String format,
-    String citation,
+    String text,
     IconData icon, {
     bool monospace = false,
   }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  format,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+    return GlassContainer(
+      borderRadius: BorderRadius.circular(16),
+      color: AppColors.surface,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    format,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.copy),
-                  onPressed: () => _copyToClipboard(citation, format),
-                  tooltip: 'Copy to clipboard',
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Theme.of(context).dividerColor),
+                ],
               ),
-              child: SelectableText(
-                citation,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: monospace ? 'monospace' : null,
-                  height: 1.5,
-                ),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 20, color: Colors.white70),
+                onPressed: () => _copyToClipboard(text, format),
+                tooltip: 'Copy to clipboard',
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: SelectableText(
+              text,
+              style: TextStyle(
+                fontFamily: monospace ? 'Courier New' : null,
+                fontSize: 14,
+                height: 1.5,
+                color: Colors.white,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

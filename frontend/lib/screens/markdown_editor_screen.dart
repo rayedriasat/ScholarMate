@@ -7,6 +7,9 @@ import '../models/markdown_note.dart';
 import '../models/drive_file.dart';
 import '../services/markdown_storage_service.dart';
 import '../services/drive_service.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../theme/app_colors.dart';
 
 /// Markdown editor screen with live preview
 class MarkdownEditorScreen extends StatefulWidget {
@@ -134,9 +137,14 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Unsaved Changes'),
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Unsaved Changes',
+          style: TextStyle(color: Colors.white),
+        ),
         content: const Text(
           'You have unsaved changes. What would you like to do?',
+          style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -147,9 +155,12 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
             onPressed: () => Navigator.of(context).pop('cancel'),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ModernButton(
             onPressed: () => Navigator.of(context).pop('save'),
-            child: const Text('Save'),
+            label: 'Save',
+            backgroundColor: AppColors.primary,
+            width: 80,
+            height: 36,
           ),
         ],
       ),
@@ -174,8 +185,9 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : null,
+        backgroundColor: isError ? Colors.red : AppColors.primary,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -237,9 +249,15 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
         }
       },
       child: Scaffold(
+        backgroundColor: Colors.black,
         appBar: AppBar(
-          title: Text(widget.existingNote != null ? 'Edit Note' : 'New Note'),
+          title: Text(
+            widget.existingNote != null ? 'Edit Note' : 'New Note',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.transparent,
           elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             if (_isModified)
               IconButton(
@@ -248,9 +266,12 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
                       )
-                    : const Icon(Icons.save),
+                    : const Icon(Icons.save, color: AppColors.primary),
                 tooltip: 'Save',
               ),
             IconButton(
@@ -259,19 +280,24 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
                   _isPreviewMode = !_isPreviewMode;
                 });
               },
-              icon: Icon(_isPreviewMode ? Icons.edit : Icons.visibility),
+              icon: Icon(
+                _isPreviewMode ? Icons.edit : Icons.visibility,
+                color: Colors.white,
+              ),
               tooltip: _isPreviewMode ? 'Edit' : 'Preview',
             ),
             PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+              color: AppColors.surface,
               onSelected: _handleMenuAction,
               itemBuilder: (context) => [
                 const PopupMenuItem(
                   value: 'export',
                   child: Row(
                     children: [
-                      Icon(Icons.download, size: 20),
+                      Icon(Icons.download, size: 20, color: Colors.white),
                       SizedBox(width: 8),
-                      Text('Export'),
+                      Text('Export', style: TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),
@@ -279,9 +305,9 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
                   value: 'stats',
                   child: Row(
                     children: [
-                      Icon(Icons.analytics, size: 20),
+                      Icon(Icons.analytics, size: 20, color: Colors.white),
                       SizedBox(width: 8),
-                      Text('Statistics'),
+                      Text('Statistics', style: TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),
@@ -291,31 +317,30 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
           bottom: _isPreviewMode
               ? null
               : PreferredSize(
-                  preferredSize: const Size.fromHeight(48),
+                  preferredSize: const Size.fromHeight(60),
                   child: _buildMarkdownToolbar(theme),
                 ),
         ),
         body: Column(
           children: [
             // Title input
-            Container(
+            GlassContainer(
+              borderRadius: BorderRadius.zero,
+              color: AppColors.surface,
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
+              border: Border(
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: TextField(
                 controller: _titleController,
                 focusNode: _titleFocusNode,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
                 decoration: const InputDecoration(
                   hintText: 'Note title...',
+                  hintStyle: TextStyle(color: Colors.white38),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -334,49 +359,66 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
   }
 
   Widget _buildMarkdownToolbar(ThemeData theme) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.2),
-          ),
-        ),
+    return GlassContainer(
+      borderRadius: BorderRadius.zero,
+      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      border: Border(
+        top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
-      child: Row(
-        children: [
-          _buildToolbarButton(Icons.format_bold, 'Bold', () {
-            _insertMarkdownSyntax('**{}**', placeholder: 'bold text');
-          }),
-          _buildToolbarButton(Icons.format_italic, 'Italic', () {
-            _insertMarkdownSyntax('*{}*', placeholder: 'italic text');
-          }),
-          _buildToolbarButton(Icons.format_strikethrough, 'Strikethrough', () {
-            _insertMarkdownSyntax('~~{}~~', placeholder: 'strikethrough');
-          }),
-          const VerticalDivider(),
-          _buildToolbarButton(Icons.title, 'Heading', () {
-            _insertMarkdownSyntax('# {}', placeholder: 'Heading');
-          }),
-          _buildToolbarButton(Icons.format_list_bulleted, 'List', () {
-            _insertMarkdownSyntax('- {}', placeholder: 'List item');
-          }),
-          _buildToolbarButton(Icons.format_list_numbered, 'Numbered List', () {
-            _insertMarkdownSyntax('1. {}', placeholder: 'List item');
-          }),
-          const VerticalDivider(),
-          _buildToolbarButton(Icons.link, 'Link', () {
-            _insertMarkdownSyntax('[{}](url)', placeholder: 'link text');
-          }),
-          _buildToolbarButton(Icons.code, 'Code', () {
-            _insertMarkdownSyntax('`{}`', placeholder: 'code');
-          }),
-          _buildToolbarButton(Icons.format_quote, 'Quote', () {
-            _insertMarkdownSyntax('> {}', placeholder: 'quote');
-          }),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildToolbarButton(Icons.format_bold, 'Bold', () {
+              _insertMarkdownSyntax('**{}**', placeholder: 'bold text');
+            }),
+            _buildToolbarButton(Icons.format_italic, 'Italic', () {
+              _insertMarkdownSyntax('*{}*', placeholder: 'italic text');
+            }),
+            _buildToolbarButton(
+              Icons.format_strikethrough,
+              'Strikethrough',
+              () {
+                _insertMarkdownSyntax('~~{}~~', placeholder: 'strikethrough');
+              },
+            ),
+            Container(
+              height: 24,
+              width: 1,
+              color: Colors.white24,
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            _buildToolbarButton(Icons.title, 'Heading', () {
+              _insertMarkdownSyntax('# {}', placeholder: 'Heading');
+            }),
+            _buildToolbarButton(Icons.format_list_bulleted, 'List', () {
+              _insertMarkdownSyntax('- {}', placeholder: 'List item');
+            }),
+            _buildToolbarButton(
+              Icons.format_list_numbered,
+              'Numbered List',
+              () {
+                _insertMarkdownSyntax('1. {}', placeholder: 'List item');
+              },
+            ),
+            Container(
+              height: 24,
+              width: 1,
+              color: Colors.white24,
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            _buildToolbarButton(Icons.link, 'Link', () {
+              _insertMarkdownSyntax('[{}](url)', placeholder: 'link text');
+            }),
+            _buildToolbarButton(Icons.code, 'Code', () {
+              _insertMarkdownSyntax('`{}`', placeholder: 'code');
+            }),
+            _buildToolbarButton(Icons.format_quote, 'Quote', () {
+              _insertMarkdownSyntax('> {}', placeholder: 'quote');
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -386,18 +428,23 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
     String tooltip,
     VoidCallback onPressed,
   ) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 20),
-      tooltip: tooltip,
-      padding: const EdgeInsets.all(4),
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20, color: Colors.white),
+        tooltip: tooltip,
+        padding: const EdgeInsets.all(8),
+        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+        style: IconButton.styleFrom(
+          hoverColor: Colors.white.withValues(alpha: 0.1),
+          highlightColor: Colors.white.withValues(alpha: 0.2),
+        ),
+      ),
     );
   }
 
   Widget _buildEditor() {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.all(16),
       child: TextField(
@@ -406,20 +453,19 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
         maxLines: null,
         expands: true,
         textAlignVertical: TextAlignVertical.top,
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
           hintText: 'Write your markdown here...',
-          hintStyle: TextStyle(
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-          ),
+          hintStyle: TextStyle(color: Colors.white38),
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
         ),
-        style: TextStyle(
+        style: const TextStyle(
           fontFamily: 'monospace',
           fontSize: 16,
-          color: theme.colorScheme.onSurface,
+          color: Colors.white,
           height: 1.5,
         ),
+        cursorColor: AppColors.primary,
       ),
     );
   }
@@ -427,7 +473,8 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
   Widget _buildPreview() {
     final theme = Theme.of(context);
 
-    return Padding(
+    return Container(
+      color: Colors.black,
       padding: const EdgeInsets.all(16),
       child: Markdown(
         data: _contentController.text.isEmpty
@@ -445,34 +492,29 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
         : _contentController.text.trim().split(RegExp(r'\s+')).length;
     final charCount = _contentController.text.length;
 
-    return Container(
+    return GlassContainer(
+      borderRadius: BorderRadius.zero,
+      color: AppColors.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.2),
-          ),
-        ),
+      border: Border(
+        top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
           Text(
             '$wordCount words • $charCount characters',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
           ),
           const Spacer(),
           if (_isModified)
             Row(
               children: [
-                Icon(Icons.circle, size: 8, color: theme.colorScheme.primary),
+                const Icon(Icons.circle, size: 8, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Text(
                   'Modified',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.primary,
+                    color: AppColors.primary,
                   ),
                 ),
               ],
@@ -509,20 +551,25 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Export Note to Drive'),
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Export Note to Drive',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Export "${_currentNote!.title}" as a markdown file to your Google Drive?',
+              style: const TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 16),
             Text(
               'The file will be saved in your Drive files section.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.white70),
             ),
           ],
         ),
@@ -531,9 +578,12 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ModernButton(
             onPressed: () => Navigator.of(context).pop('export'),
-            child: const Text('Export to Drive'),
+            label: 'Export to Drive',
+            icon: Icons.cloud_upload,
+            width: 160,
+            height: 36,
           ),
         ],
       ),
@@ -625,7 +675,11 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Note Statistics'),
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Note Statistics',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -653,8 +707,14 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(color: Colors.white70)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
         ],
       ),
     );
@@ -667,41 +727,36 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
 
   /// Build a custom markdown style sheet that properly handles dark mode
   MarkdownStyleSheet _buildMarkdownStyleSheet(ThemeData theme) {
-    final isDark = theme.brightness == Brightness.dark;
-
     return MarkdownStyleSheet(
       // Text styles with proper colors for dark mode
-      p: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurface,
-        height: 1.6,
-      ),
+      p: theme.textTheme.bodyMedium?.copyWith(color: Colors.white, height: 1.6),
       h1: theme.textTheme.headlineLarge?.copyWith(
-        color: theme.colorScheme.onSurface,
+        color: Colors.white,
         fontWeight: FontWeight.bold,
         height: 1.4,
       ),
       h2: theme.textTheme.headlineMedium?.copyWith(
-        color: theme.colorScheme.onSurface,
+        color: Colors.white,
         fontWeight: FontWeight.bold,
         height: 1.4,
       ),
       h3: theme.textTheme.headlineSmall?.copyWith(
-        color: theme.colorScheme.onSurface,
+        color: Colors.white,
         fontWeight: FontWeight.bold,
         height: 1.4,
       ),
       h4: theme.textTheme.titleLarge?.copyWith(
-        color: theme.colorScheme.onSurface,
+        color: Colors.white,
         fontWeight: FontWeight.bold,
         height: 1.4,
       ),
       h5: theme.textTheme.titleMedium?.copyWith(
-        color: theme.colorScheme.onSurface,
+        color: Colors.white,
         fontWeight: FontWeight.bold,
         height: 1.4,
       ),
       h6: theme.textTheme.titleSmall?.copyWith(
-        color: theme.colorScheme.onSurface,
+        color: Colors.white,
         fontWeight: FontWeight.bold,
         height: 1.4,
       ),
@@ -710,59 +765,45 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
       code: TextStyle(
         fontFamily: 'monospace',
         fontSize: 14,
-        color: theme.colorScheme.onSurface,
-        backgroundColor: isDark
-            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.8)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        color: AppColors.primary,
+        backgroundColor: Colors.white.withValues(alpha: 0.1),
       ),
       codeblockDecoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.8)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
 
       // Blockquote styles
       blockquote: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
+        color: Colors.white70,
         fontStyle: FontStyle.italic,
         height: 1.6,
       ),
       blockquoteDecoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5)
-            : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.3),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(4),
-        border: Border(
-          left: BorderSide(color: theme.colorScheme.primary, width: 4),
-        ),
+        border: Border(left: BorderSide(color: AppColors.primary, width: 4)),
       ),
 
       // List styles
-      listBullet: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurface,
-      ),
+      listBullet: theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
 
       // Link styles
       a: TextStyle(
-        color: theme.colorScheme.primary,
+        color: AppColors.primary,
         decoration: TextDecoration.underline,
-        decorationColor: theme.colorScheme.primary.withValues(alpha: 0.6),
+        decorationColor: AppColors.primary.withValues(alpha: 0.6),
       ),
 
       // Table styles
       tableHead: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurface,
+        color: Colors.white,
         fontWeight: FontWeight.bold,
       ),
-      tableBody: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurface,
-      ),
+      tableBody: theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
       tableBorder: TableBorder.all(
-        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+        color: Colors.white.withValues(alpha: 0.2),
         width: 1,
       ),
       tableHeadAlign: TextAlign.left,
@@ -771,27 +812,16 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
       // Horizontal rule
       horizontalRuleDecoration: BoxDecoration(
         border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.3),
-            width: 1,
-          ),
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1),
         ),
       ),
 
       // Strong and emphasis
-      strong: TextStyle(
-        color: theme.colorScheme.onSurface,
-        fontWeight: FontWeight.bold,
-      ),
-      em: TextStyle(
-        color: theme.colorScheme.onSurface,
-        fontStyle: FontStyle.italic,
-      ),
+      strong: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      em: const TextStyle(color: Colors.white, fontStyle: FontStyle.italic),
 
       // Checkbox styles
-      checkbox: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurface,
-      ),
+      checkbox: theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
 
       // Text alignment
       textAlign: WrapAlignment.start,

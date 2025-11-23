@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/api_key.dart';
 import '../services/api_key_service.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../widgets/ui/modern_text_field.dart';
+import '../theme/app_colors.dart';
 
 class ApiKeyManagementScreen extends StatefulWidget {
   final String userId;
@@ -86,19 +90,26 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete API Key'),
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Delete API Key',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Text(
           'Are you sure you want to delete the ${key.provider} key?',
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ModernButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            label: 'Delete',
+            backgroundColor: Colors.red,
+            width: 80,
+            height: 36,
           ),
         ],
       ),
@@ -139,14 +150,26 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('API Key Management'),
+        title: const Text(
+          'API Key Management',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _loadData,
+          ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : _error != null
           ? Center(
               child: Column(
@@ -154,17 +177,19 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
                 children: [
                   const Icon(Icons.error, size: 48, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Error: $_error'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: const Text('Retry'),
+                  Text(
+                    'Error: $_error',
+                    style: const TextStyle(color: Colors.white),
                   ),
+                  const SizedBox(height: 16),
+                  ModernButton(onPressed: _loadData, label: 'Retry'),
                 ],
               ),
             )
           : RefreshIndicator(
               onRefresh: _loadData,
+              color: AppColors.primary,
+              backgroundColor: AppColors.surface,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -180,12 +205,16 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
                     children: [
                       Text(
                         'Your API Keys',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleLarge?.copyWith(color: Colors.white),
                       ),
-                      FilledButton.icon(
+                      ModernButton(
                         onPressed: _showAddKeyDialog,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Key'),
+                        icon: Icons.add,
+                        label: 'Add Key',
+                        width: 120,
+                        height: 36,
                       ),
                     ],
                   ),
@@ -198,91 +227,113 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddKeyDialog,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
   Widget _buildUsageStatsSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Usage Statistics (Last 30 Days)',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 16),
-            ..._stats.map(
-              (stat) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        stat.provider.toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+    return GlassContainer(
+      borderRadius: BorderRadius.circular(16),
+      color: AppColors.surface,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Usage Statistics (Last 30 Days)',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 16),
+          ..._stats.map(
+            (stat) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      stat.provider.toUpperCase(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
                       ),
                     ),
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${stat.totalRequests} requests'),
-                          Text('${stat.totalTokens} tokens'),
-                        ],
-                      ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${stat.totalRequests} requests',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        Text(
+                          '${stat.totalTokens} tokens',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('\$${stat.totalCost.toStringAsFixed(4)}'),
-                          Text(
-                            '${stat.successRate.toStringAsFixed(1)}% success',
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '\$${stat.totalCost.toStringAsFixed(4)}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        Text(
+                          '${stat.successRate.toStringAsFixed(1)}% success',
+                          style: TextStyle(
+                            color: stat.successRate > 90
+                                ? Colors.green
+                                : Colors.orange,
+                            fontSize: 12,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          children: [
-            const Icon(Icons.key_off, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text('No API Keys', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            const Text(
-              'Add your first API key to start using custom AI providers',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: _showAddKeyDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('Add API Key'),
-            ),
-          ],
-        ),
+    return GlassContainer(
+      borderRadius: BorderRadius.circular(16),
+      color: AppColors.surface,
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          const Icon(Icons.key_off, size: 64, color: Colors.white24),
+          const SizedBox(height: 16),
+          Text(
+            'No API Keys',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Add your first API key to start using custom AI providers',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 16),
+          ModernButton(
+            onPressed: _showAddKeyDialog,
+            icon: Icons.add,
+            label: 'Add API Key',
+          ),
+        ],
       ),
     );
   }
@@ -300,21 +351,38 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
       ),
     );
 
-    return Card(
+    return GlassContainer(
+      borderRadius: BorderRadius.circular(16),
+      color: AppColors.surface,
       margin: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.zero,
       child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(
-          backgroundColor: key.isActive ? Colors.green : Colors.grey,
+          backgroundColor: key.isActive
+              ? Colors.green.withValues(alpha: 0.2)
+              : Colors.grey.withValues(alpha: 0.2),
           child: Text(
             provider.displayName[0],
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: key.isActive ? Colors.green : Colors.grey),
           ),
         ),
-        title: Text(provider.displayName),
+        title: Text(
+          provider.displayName,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Key: ${key.maskedKey}'),
+            const SizedBox(height: 4),
+            Text(
+              'Key: ${key.maskedKey}',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 4),
             Row(
               children: [
                 Icon(
@@ -327,33 +395,48 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
                   key.isValidated ? 'Validated' : 'Not validated',
                   style: TextStyle(
                     color: key.isValidated ? Colors.green : Colors.orange,
+                    fontSize: 12,
                   ),
                 ),
                 const SizedBox(width: 16),
-                Text('Priority: ${key.priority}'),
+                Text(
+                  'Priority: ${key.priority}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
               ],
             ),
             if (key.validationError != null)
-              Text(
-                'Error: ${key.validationError}',
-                style: const TextStyle(color: Colors.red, fontSize: 12),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Error: ${key.validationError}',
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
               ),
           ],
         ),
         trailing: PopupMenuButton(
+          icon: const Icon(Icons.more_vert, color: Colors.white),
+          color: AppColors.surface,
           itemBuilder: (context) => [
             PopupMenuItem(
               child: ListTile(
-                leading: Icon(key.isActive ? Icons.pause : Icons.play_arrow),
-                title: Text(key.isActive ? 'Deactivate' : 'Activate'),
+                leading: Icon(
+                  key.isActive ? Icons.pause : Icons.play_arrow,
+                  color: Colors.white,
+                ),
+                title: Text(
+                  key.isActive ? 'Deactivate' : 'Activate',
+                  style: const TextStyle(color: Colors.white),
+                ),
                 contentPadding: EdgeInsets.zero,
               ),
               onTap: () => _toggleKeyActive(key),
             ),
             PopupMenuItem(
               child: const ListTile(
-                leading: Icon(Icons.edit),
-                title: Text('Edit'),
+                leading: Icon(Icons.edit, color: Colors.white),
+                title: Text('Edit', style: TextStyle(color: Colors.white)),
                 contentPadding: EdgeInsets.zero,
               ),
               onTap: () => _showEditKeyDialog(key),
@@ -440,7 +523,8 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add API Key'),
+      backgroundColor: AppColors.surface,
+      title: const Text('Add API Key', style: TextStyle(color: Colors.white)),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -449,28 +533,48 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Provider Selection
-              DropdownButtonFormField<ProviderConfig>(
-                initialValue: _selectedProvider,
-                decoration: const InputDecoration(
-                  labelText: 'Provider',
-                  border: OutlineInputBorder(),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                 ),
-                items: widget.providers.map((provider) {
-                  return DropdownMenuItem(
-                    value: provider,
-                    child: Text(provider.displayName),
-                  );
-                }).toList(),
-                onChanged: (value) => setState(() => _selectedProvider = value),
-                validator: (value) =>
-                    value == null ? 'Please select a provider' : null,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButtonFormField<ProviderConfig>(
+                    value: _selectedProvider,
+                    decoration: const InputDecoration(
+                      labelText: 'Provider',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      border: InputBorder.none,
+                    ),
+                    dropdownColor: AppColors.surface,
+                    style: const TextStyle(color: Colors.white),
+                    icon: const Icon(
+                      Icons.arrow_drop_down,
+                      color: Colors.white70,
+                    ),
+                    items: widget.providers.map((provider) {
+                      return DropdownMenuItem(
+                        value: provider,
+                        child: Text(provider.displayName),
+                      );
+                    }).toList(),
+                    onChanged: (value) =>
+                        setState(() => _selectedProvider = value),
+                    validator: (value) =>
+                        value == null ? 'Please select a provider' : null,
+                  ),
+                ),
               ),
 
               if (_selectedProvider != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   'Format: ${_selectedProvider!.apiKeyFormat}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
                 TextButton.icon(
                   onPressed: () async {
@@ -488,19 +592,15 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
               const SizedBox(height: 16),
 
               // API Key Input
-              TextFormField(
+              ModernTextField(
                 controller: _keyController,
-                decoration: InputDecoration(
-                  labelText: 'API Key',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureKey ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () => setState(() => _obscureKey = !_obscureKey),
-                  ),
-                ),
+                hintText: 'API Key',
                 obscureText: _obscureKey,
+                suffixIcon: _obscureKey
+                    ? Icons.visibility
+                    : Icons.visibility_off,
+                onSuffixIconPressed: () =>
+                    setState(() => _obscureKey = !_obscureKey),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter an API key';
@@ -512,13 +612,9 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
               const SizedBox(height: 16),
 
               // Priority
-              TextFormField(
+              ModernTextField(
                 initialValue: _priority.toString(),
-                decoration: const InputDecoration(
-                  labelText: 'Priority (higher = preferred)',
-                  border: OutlineInputBorder(),
-                  helperText: '0-100, higher values are preferred',
-                ),
+                hintText: 'Priority (0-100)',
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (value) => _priority = int.tryParse(value) ?? 0,
@@ -530,11 +626,17 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
               CheckboxListTile(
                 value: _validate,
                 onChanged: (value) => setState(() => _validate = value ?? true),
-                title: const Text('Validate key before saving'),
+                title: const Text(
+                  'Validate key before saving',
+                  style: TextStyle(color: Colors.white),
+                ),
                 subtitle: const Text(
                   'Test the key with a lightweight API call',
+                  style: TextStyle(color: Colors.white70),
                 ),
                 contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.primary,
+                checkColor: Colors.white,
               ),
             ],
           ),
@@ -545,15 +647,11 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _saving ? null : _saveKey,
-          child: _saving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Save'),
+        ModernButton(
+          onPressed: _saving ? () {} : _saveKey,
+          label: _saving ? 'Saving...' : 'Save',
+          width: 80,
+          height: 36,
         ),
       ],
     );
@@ -619,19 +717,19 @@ class _EditApiKeyDialogState extends State<EditApiKeyDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Edit ${widget.apiKey.provider.toUpperCase()} Key'),
+      backgroundColor: AppColors.surface,
+      title: Text(
+        'Edit ${widget.apiKey.provider.toUpperCase()} Key',
+        style: const TextStyle(color: Colors.white),
+      ),
       content: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
+            ModernTextField(
               initialValue: _priority.toString(),
-              decoration: const InputDecoration(
-                labelText: 'Priority',
-                border: OutlineInputBorder(),
-                helperText: 'Higher values are preferred (0-100)',
-              ),
+              hintText: 'Priority (0-100)',
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               onChanged: (value) => _priority = int.tryParse(value) ?? 0,
@@ -644,15 +742,11 @@ class _EditApiKeyDialogState extends State<EditApiKeyDialog> {
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _saving ? null : _updateKey,
-          child: _saving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Update'),
+        ModernButton(
+          onPressed: _saving ? () {} : _updateKey,
+          label: _saving ? 'Updating...' : 'Update',
+          width: 80,
+          height: 36,
         ),
       ],
     );

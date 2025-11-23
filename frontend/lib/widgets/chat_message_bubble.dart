@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 import 'package:intl/intl.dart';
+import '../theme/app_colors.dart';
+import 'ui/glass_container.dart';
 
 /// Widget for displaying a chat message bubble
 class ChatMessageBubble extends StatelessWidget {
@@ -18,7 +20,6 @@ class ChatMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
-    final theme = Theme.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -29,9 +30,16 @@ class ChatMessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
-            CircleAvatar(
-              backgroundColor: theme.primaryColor,
-              child: const Icon(Icons.smart_toy, color: Colors.white),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.5),
+                ),
+              ),
+              child: const Icon(Icons.smart_toy, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 8),
           ],
@@ -41,26 +49,26 @@ class ChatMessageBubble extends StatelessWidget {
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isUser ? theme.primaryColor : theme.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                GlassContainer(
+                  padding: const EdgeInsets.all(16),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(20),
+                    topRight: const Radius.circular(20),
+                    bottomLeft: Radius.circular(isUser ? 20 : 4),
+                    bottomRight: Radius.circular(isUser ? 4 : 20),
+                  ),
+                  color: isUser
+                      ? AppColors.primary.withValues(alpha: 0.8)
+                      : Colors.white.withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                   child: Text(
                     message.content,
-                    style: TextStyle(
-                      color: isUser
-                          ? Colors.white
-                          : theme.textTheme.bodyLarge?.color,
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 15,
+                      height: 1.4,
                     ),
                   ),
                 ),
@@ -72,8 +80,8 @@ class ChatMessageBubble extends StatelessWidget {
                   children: [
                     Text(
                       _formatTimestamp(message.timestamp),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 11,
                       ),
                     ),
@@ -91,23 +99,28 @@ class ChatMessageBubble extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
+                              color: AppColors.secondary.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.secondary.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
                             ),
-                            child: Row(
+                            child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   Icons.save_alt,
-                                  size: 14,
-                                  color: theme.colorScheme.onPrimaryContainer,
+                                  size: 12,
+                                  color: AppColors.secondary,
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: 4),
                                 Text(
                                   'Save',
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    color: theme.colorScheme.onPrimaryContainer,
+                                    fontSize: 10,
+                                    color: AppColors.secondary,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -137,9 +150,14 @@ class ChatMessageBubble extends StatelessWidget {
           ),
           if (isUser) ...[
             const SizedBox(width: 8),
-            CircleAvatar(
-              backgroundColor: Colors.grey[300],
-              child: Icon(Icons.person, color: Colors.grey[700]),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 20),
             ),
           ],
         ],
@@ -148,14 +166,6 @@ class ChatMessageBubble extends StatelessWidget {
   }
 
   Widget _buildCitationChip(BuildContext context, Citation citation) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    // Use theme-aware colors for better contrast in both light and dark modes
-    final backgroundColor = colorScheme.primaryContainer;
-    final textColor = colorScheme.onPrimaryContainer;
-    final borderColor = colorScheme.outline.withValues(alpha: 0.5);
-
     return Tooltip(
       message:
           'Click to open ${citation.fileName} at page ${citation.pageNumber}',
@@ -165,28 +175,32 @@ class ChatMessageBubble extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: backgroundColor,
+            color: AppColors.accent.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.picture_as_pdf, size: 14, color: textColor),
+              const Icon(
+                Icons.picture_as_pdf,
+                size: 14,
+                color: AppColors.accent,
+              ),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   '${citation.fileName} (p. ${citation.pageNumber})',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: textColor,
+                    color: AppColors.accent,
                     fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(Icons.open_in_new, size: 12, color: textColor),
+              const Icon(Icons.open_in_new, size: 12, color: AppColors.accent),
             ],
           ),
         ),

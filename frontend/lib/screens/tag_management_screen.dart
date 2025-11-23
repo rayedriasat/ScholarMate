@@ -5,6 +5,9 @@ import '../services/tag_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/tag_create_dialog.dart';
 import '../widgets/tag_edit_dialog.dart';
+import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/modern_button.dart';
+import '../theme/app_colors.dart';
 
 /// Screen for managing tags
 class TagManagementScreen extends StatefulWidget {
@@ -141,20 +144,24 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Tag'),
+        backgroundColor: AppColors.surface,
+        title: const Text('Delete Tag', style: TextStyle(color: Colors.white)),
         content: Text(
           'Are you sure you want to delete "${tag.name}"?\n\n'
           'This will remove the tag from ${tag.documentCount} document(s).',
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ModernButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            label: 'Delete',
+            backgroundColor: Colors.red,
+            width: 80,
+            height: 36,
           ),
         ],
       ),
@@ -191,11 +198,15 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Manage Tags'),
+        title: const Text('Manage Tags', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: _loadTags,
             tooltip: 'Refresh',
           ),
@@ -204,14 +215,17 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: _createTag,
-        child: const Icon(Icons.add),
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
 
     if (_error != null) {
@@ -221,9 +235,9 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Error: $_error'),
+            Text('Error: $_error', style: const TextStyle(color: Colors.white)),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _loadTags, child: const Text('Retry')),
+            ModernButton(onPressed: _loadTags, label: 'Retry'),
           ],
         ),
       );
@@ -234,19 +248,22 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.label_outline, size: 48, color: Colors.grey),
+            const Icon(Icons.label_outline, size: 48, color: Colors.white24),
             const SizedBox(height: 16),
-            const Text('No tags yet'),
+            const Text(
+              'No tags yet',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
             const SizedBox(height: 8),
             const Text(
               'Create tags to organize your documents',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
+            ModernButton(
               onPressed: _createTag,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Tag'),
+              icon: Icons.add,
+              label: 'Create Tag',
             ),
           ],
         ),
@@ -258,26 +275,43 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
       itemCount: _tags.length,
       itemBuilder: (context, index) {
         final tag = _tags[index];
-        return Card(
+        return GlassContainer(
+          borderRadius: BorderRadius.circular(16),
+          color: AppColors.surface,
           margin: const EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.zero,
           child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
             leading: Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
                 color: _parseColor(tag.color),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _parseColor(tag.color).withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.label, color: Colors.white),
+              child: const Icon(Icons.label, color: Colors.white, size: 20),
             ),
             title: Text(
               tag.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             subtitle: Text(
               '${tag.documentCount} document${tag.documentCount == 1 ? '' : 's'}',
+              style: const TextStyle(color: Colors.white70),
             ),
             trailing: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+              color: AppColors.surface,
               onSelected: (value) {
                 if (value == 'edit') {
                   _editTag(tag);
@@ -290,9 +324,9 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                   value: 'edit',
                   child: Row(
                     children: [
-                      Icon(Icons.edit, size: 20),
+                      Icon(Icons.edit, size: 20, color: Colors.white),
                       SizedBox(width: 8),
-                      Text('Rename'),
+                      Text('Rename', style: TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),
