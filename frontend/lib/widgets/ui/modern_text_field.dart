@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../theme/app_colors.dart';
 
 class ModernTextField extends StatefulWidget {
   final TextEditingController? controller;
@@ -49,8 +48,10 @@ class _ModernTextFieldState extends State<ModernTextField> {
         if (widget.labelText != null) ...[
           Text(
             widget.labelText!,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -66,18 +67,20 @@ class _ModernTextFieldState extends State<ModernTextField> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _isFocused
-                    ? AppColors.primary
-                    : Colors.white.withValues(alpha: 0.1),
+                    ? Theme.of(context).primaryColor
+                    : Theme.of(context).dividerColor,
                 width: 1.5,
               ),
               boxShadow: _isFocused
                   ? [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -90,24 +93,28 @@ class _ModernTextFieldState extends State<ModernTextField> {
               obscureText: widget.obscureText,
               keyboardType: widget.keyboardType,
               inputFormatters: widget.inputFormatters,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               validator: widget.validator,
               onFieldSubmitted: widget.onSubmitted,
               onChanged: widget.onChanged,
               decoration: InputDecoration(
                 hintText: widget.hintText,
-                hintStyle: TextStyle(color: Colors.grey[600]),
+                hintStyle: TextStyle(color: Theme.of(context).hintColor),
                 prefixIcon: widget.prefixIcon != null
                     ? Icon(
                         widget.prefixIcon,
-                        color: _isFocused ? AppColors.primary : Colors.grey,
+                        color: _isFocused
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey,
                       )
                     : null,
                 suffixIcon: widget.suffixIcon != null
                     ? IconButton(
                         icon: Icon(
                           widget.suffixIcon,
-                          color: _isFocused ? AppColors.primary : Colors.grey,
+                          color: _isFocused
+                              ? Theme.of(context).primaryColor
+                              : Colors.grey,
                         ),
                         onPressed: widget.onSuffixIconPressed,
                       )

@@ -77,11 +77,7 @@ class _AppNavigationState extends State<AppNavigation> {
       body: Stack(
         children: [
           // Background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: AppColors.surfaceGradient,
-            ),
-          ),
+          Container(color: Theme.of(context).scaffoldBackgroundColor),
 
           // Content
           Column(
@@ -244,9 +240,11 @@ class _AppNavigationState extends State<AppNavigation> {
       height: 72,
       blur: 20,
       opacity: 0.1,
-      color: AppColors.surface.withValues(alpha: 0.8),
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      border: Border.all(
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -287,7 +285,7 @@ class _AppNavigationState extends State<AppNavigation> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.1)
+              ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
@@ -296,7 +294,11 @@ class _AppNavigationState extends State<AppNavigation> {
           children: [
             Icon(
               isSelected ? (item.activeIcon ?? item.icon) : item.icon,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              color: isSelected
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
               size: 24,
             ),
           ],
@@ -311,12 +313,18 @@ class _AppNavigationState extends State<AppNavigation> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(
+          'Settings',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: MediaQuery.of(context).size.width < 800
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 onPressed: () => setState(() => _showSettings = false),
               )
             : null,
@@ -354,7 +362,7 @@ class _AppNavigationState extends State<AppNavigation> {
                         backgroundImage: NetworkImage(user.photoUrl!),
                       )
                     : CircleAvatar(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: Theme.of(context).primaryColor,
                         child: Text(
                           user.displayName?.substring(0, 1).toUpperCase() ??
                               user.email.substring(0, 1).toUpperCase(),
@@ -363,15 +371,21 @@ class _AppNavigationState extends State<AppNavigation> {
                       ),
                 title: Text(
                   user.displayName ?? 'User',
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
                 subtitle: Text(
                   user.email,
-                  style: TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              const Divider(color: Colors.white10),
+              Divider(color: Theme.of(context).dividerColor),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
                 title: const Text(
@@ -402,13 +416,14 @@ class _AppNavigationState extends State<AppNavigation> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: Theme.of(context).primaryColor,
             ),
           ),
         ),
         GlassContainer(
           width: double.infinity,
           opacity: 0.05,
+          color: Theme.of(context).cardColor.withValues(alpha: 0.5),
           child: Column(children: children),
         ),
       ],
@@ -422,7 +437,10 @@ class _AppNavigationState extends State<AppNavigation> {
       borderRadius: BorderRadius.zero,
       blur: 20,
       opacity: 0.05,
-      border: const Border(bottom: BorderSide(color: Colors.white10, width: 1)),
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
+      border: Border(
+        bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+      ),
       child: Row(
         children: [
           const SizedBox(width: 24),
@@ -436,11 +454,13 @@ class _AppNavigationState extends State<AppNavigation> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
+                  color: Theme.of(context).primaryColor,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -453,12 +473,12 @@ class _AppNavigationState extends State<AppNavigation> {
             ),
           ),
           const SizedBox(width: 16),
-          const Text(
+          Text(
             'ScholarMate',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
 
@@ -518,12 +538,14 @@ class _AppNavigationState extends State<AppNavigation> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primary.withValues(alpha: 0.1)
+                    ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 border: isSelected
                     ? Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.2),
                       )
                     : null,
               ),
@@ -533,8 +555,10 @@ class _AppNavigationState extends State<AppNavigation> {
                   Icon(
                     isSelected ? (item.activeIcon ?? item.icon) : item.icon,
                     color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                        ? Theme.of(context).primaryColor
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -542,8 +566,10 @@ class _AppNavigationState extends State<AppNavigation> {
                     item.label,
                     style: TextStyle(
                       color: isSelected
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
+                          ? Theme.of(context).primaryColor
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
                       fontWeight: isSelected
                           ? FontWeight.w600
                           : FontWeight.normal,
@@ -567,17 +593,24 @@ class _AppNavigationState extends State<AppNavigation> {
         SwitchListTile(
           secondary: Icon(
             isDark ? Icons.dark_mode : Icons.light_mode,
-            color: AppColors.primary,
+            color: Theme.of(context).primaryColor,
           ),
-          title: const Text('Dark Mode', style: TextStyle(color: Colors.white)),
+          title: Text(
+            'Dark Mode',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          ),
           subtitle: Text(
             themeService.isSystemMode
                 ? 'System default'
                 : (isDark ? 'Enabled' : 'Disabled'),
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
           ),
           value: isDark && !themeService.isSystemMode,
-          activeColor: AppColors.primary,
+          activeColor: Theme.of(context).primaryColor,
           onChanged: (value) {
             if (value) {
               themeService.setDarkTheme();
@@ -588,22 +621,29 @@ class _AppNavigationState extends State<AppNavigation> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         if (!themeService.isSystemMode) ...[
-          const Divider(height: 1, color: Colors.white10),
+          Divider(height: 1, color: Theme.of(context).dividerColor),
           ListTile(
-            leading: Icon(Icons.brightness_auto, color: AppColors.primary),
-            title: const Text(
+            leading: Icon(
+              Icons.brightness_auto,
+              color: Theme.of(context).primaryColor,
+            ),
+            title: Text(
               'Use System Theme',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
             subtitle: Text(
               'Follow system dark/light mode',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             onTap: () => themeService.setSystemTheme(),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           ),
         ],
-        const Divider(height: 1, color: Colors.white10),
+        Divider(height: 1, color: Theme.of(context).dividerColor),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -611,7 +651,12 @@ class _AppNavigationState extends State<AppNavigation> {
             children: [
               Text(
                 'Accent Color',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -629,7 +674,7 @@ class _AppNavigationState extends State<AppNavigation> {
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: themeService.accentColor == color
-                                ? Colors.white
+                                ? Theme.of(context).colorScheme.onSurface
                                 : Colors.transparent,
                             width: 2,
                           ),

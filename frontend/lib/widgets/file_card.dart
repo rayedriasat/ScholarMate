@@ -4,7 +4,7 @@ import '../models/drive_file.dart';
 import '../models/tag.dart';
 import '../services/cache_service.dart';
 import '../services/tag_service.dart';
-import '../theme/app_colors.dart';
+
 import 'ui/glass_container.dart';
 import 'file_context_menu.dart';
 import 'tag_chip.dart';
@@ -130,12 +130,16 @@ class _FileCardState extends State<FileCard>
             blur: 10,
             opacity: widget.isSelected ? 0.15 : (_isHovered ? 0.1 : 0.05),
             color: widget.isSelected
-                ? AppColors.primary.withValues(alpha: 0.1)
-                : (_isHovered ? Colors.white.withValues(alpha: 0.08) : null),
+                ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+                : (_isHovered
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.08)
+                      : Theme.of(context).cardColor.withValues(alpha: 0.5)),
             border: Border.all(
               color: widget.isSelected
-                  ? AppColors.primary.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.1),
+                  ? Theme.of(context).primaryColor.withValues(alpha: 0.5)
+                  : Theme.of(context).dividerColor.withValues(alpha: 0.1),
               width: 1,
             ),
             child: Column(
@@ -163,7 +167,9 @@ class _FileCardState extends State<FileCard>
                                       color: Colors.green,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: AppColors.surface,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surface,
                                         width: 2,
                                       ),
                                     ),
@@ -187,10 +193,10 @@ class _FileCardState extends State<FileCard>
                         children: [
                           Text(
                             widget.file.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -200,7 +206,9 @@ class _FileCardState extends State<FileCard>
                             Text(
                               _getFileTypeLabel(),
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.5),
                                 fontSize: 12,
                               ),
                             ),
@@ -209,7 +217,11 @@ class _FileCardState extends State<FileCard>
                       ),
                     ),
                     if (widget.file.isShared)
-                      Icon(Icons.people, size: 16, color: AppColors.accent),
+                      Icon(
+                        Icons.people,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
                     const SizedBox(width: 8),
                     FileContextMenu(
                       file: widget.file,
@@ -250,24 +262,40 @@ class _FileCardState extends State<FileCard>
                 Row(
                   children: [
                     if (!widget.file.isFolder && widget.file.size != null) ...[
-                      Icon(Icons.storage, size: 14, color: Colors.white54),
+                      Icon(
+                        Icons.storage,
+                        size: 14,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.54),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         widget.file.formattedSize,
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.54),
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(width: 16),
                     ],
-                    Icon(Icons.access_time, size: 14, color: Colors.white54),
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.54),
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         _formatDate(widget.file.modifiedTime),
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.54),
                           fontSize: 12,
                         ),
                       ),

@@ -51,6 +51,10 @@ class AppTheme {
         bodyColor: const Color(0xFF0F172A),
         displayColor: const Color(0xFF0F172A),
       ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFFE2E8F0), // Slate 200
+        thickness: 1,
+      ),
     );
   }
 }

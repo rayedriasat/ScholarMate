@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_colors.dart';
 
 enum ModernButtonVariant { primary, secondary, ghost, outline }
 
@@ -62,16 +61,16 @@ class _ModernButtonState extends State<ModernButton>
 
     switch (widget.variant) {
       case ModernButtonVariant.primary:
-        return AppColors.primary;
+        return Theme.of(context).primaryColor;
       case ModernButtonVariant.secondary:
-        return AppColors.secondary;
+        return Theme.of(context).colorScheme.secondary;
       case ModernButtonVariant.ghost:
         return _isHovered
-            ? Colors.white.withValues(alpha: 0.1)
+            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)
             : Colors.transparent;
       case ModernButtonVariant.outline:
         return _isHovered
-            ? AppColors.primary.withValues(alpha: 0.1)
+            ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
             : Colors.transparent;
     }
   }
@@ -83,18 +82,20 @@ class _ModernButtonState extends State<ModernButton>
     switch (widget.variant) {
       case ModernButtonVariant.primary:
       case ModernButtonVariant.secondary:
-        return Colors.white;
+        return Theme.of(context).colorScheme.onPrimary;
       case ModernButtonVariant.ghost:
-        return AppColors.textPrimary;
+        return Theme.of(context).colorScheme.onSurface;
       case ModernButtonVariant.outline:
-        return AppColors.primary;
+        return Theme.of(context).primaryColor;
     }
   }
 
   BoxBorder? _getBorder() {
     if (widget.variant == ModernButtonVariant.outline) {
       return Border.all(
-        color: widget.onPressed == null ? Colors.grey : AppColors.primary,
+        color: widget.onPressed == null
+            ? Colors.grey
+            : Theme.of(context).primaryColor,
         width: 1.5,
       );
     }
@@ -108,7 +109,7 @@ class _ModernButtonState extends State<ModernButton>
         widget.backgroundColor == null) {
       return [
         BoxShadow(
-          color: AppColors.primary.withValues(alpha: 0.3),
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
           blurRadius: 12,
           offset: const Offset(0, 4),
         ),
@@ -120,7 +121,7 @@ class _ModernButtonState extends State<ModernButton>
         widget.backgroundColor == null) {
       return [
         BoxShadow(
-          color: AppColors.secondary.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
           blurRadius: 12,
           offset: const Offset(0, 4),
         ),
@@ -158,7 +159,14 @@ class _ModernButtonState extends State<ModernButton>
                   widget.variant == ModernButtonVariant.primary &&
                       widget.onPressed != null &&
                       widget.backgroundColor == null
-                  ? AppColors.primaryGradient
+                  ? LinearGradient(
+                      colors: [
+                        Theme.of(context).primaryColor,
+                        Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
                   : null,
             ),
             child: Row(
