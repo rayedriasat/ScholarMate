@@ -155,7 +155,12 @@
 
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Redesign file explorer screen
+- [x] 8. Redesign file explorer screen
+
+
+
+
+
   - Create modern file grid view with glass cards
   - Create modern file list view with glass cards
   - Add file thumbnails with rounded corners and shadows
@@ -175,7 +180,12 @@
   - Test empty state displays correctly
   - _Requirements: 8.1, 8.2, 8.3, 8.5, 8.7, 8.8_
 
-- [ ] 9. Redesign PDF viewer screen
+- [x] 9. Redesign PDF viewer screen
+
+
+
+
+
   - Create floating glass toolbar with auto-hide on scroll
   - Add modern page navigation slider and input
   - Implement zoom controls with smooth animation
