@@ -226,21 +226,19 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark ? AppColors.background : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Citation Generator',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.transparent,
+        title: const Text('Citation Generator'),
+        backgroundColor: isDark ? AppColors.surface : null,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: isDark ? AppColors.textSecondary : Colors.grey,
           tabs: const [
             Tab(text: 'Auto', icon: Icon(Icons.auto_awesome, size: 20)),
             Tab(text: 'Manual', icon: Icon(Icons.edit, size: 20)),
@@ -273,7 +271,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                   child: Text(
                     'Generate formatted citations from DOI, ISBN, PubMed ID, arXiv ID, or URL',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -302,11 +300,15 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                     child: DropdownButton<String>(
                       value: _selectedType,
                       isExpanded: true,
-                      dropdownColor: AppColors.surface,
-                      style: const TextStyle(color: Colors.white),
-                      icon: const Icon(
+                      dropdownColor: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.surface
+                          : null,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      icon: Icon(
                         Icons.arrow_drop_down,
-                        color: Colors.white70,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                       items: _identifierTypes.map((type) {
                         return DropdownMenuItem(
@@ -384,7 +386,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 16),
@@ -445,7 +447,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                     child: Text(
                       'Manually enter citation details for any source type',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -466,11 +468,15 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                 child: DropdownButton<String>(
                   value: _manualSourceType,
                   isExpanded: true,
-                  dropdownColor: AppColors.surface,
-                  style: const TextStyle(color: Colors.white),
-                  icon: const Icon(
+                  dropdownColor: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.surface
+                      : null,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  icon: Icon(
                     Icons.arrow_drop_down,
-                    color: Colors.white70,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                   items: _sourceTypes.map((type) {
                     return DropdownMenuItem(
@@ -503,8 +509,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                     icon: Icons.clear,
                     label: 'Clear',
                     backgroundColor: Colors.transparent,
-                    textColor: Colors.white,
-                    // borderColor: Colors.white24, // Removed as it is not supported
+                    textColor: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -549,7 +554,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -784,22 +789,30 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
   }
 
   Widget _buildMetadataPreview(PDFMetadata metadata) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GlassContainer(
       borderRadius: BorderRadius.circular(16),
-      color: Colors.white.withValues(alpha: 0.05),
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : Colors.black.withValues(alpha: 0.05),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.description, size: 20, color: Colors.white70),
+              Icon(
+                Icons.description,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Source Details',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -808,10 +821,10 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
           if (metadata.title != null) ...[
             Text(
               metadata.title!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
@@ -819,7 +832,9 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
           if (metadata.authors.isNotEmpty) ...[
             Text(
               metadata.authors.join(', '),
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 4),
           ],
@@ -830,9 +845,9 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                 if (metadata.publicationYear != null)
                   metadata.publicationYear.toString(),
               ].join(' • '),
-              style: const TextStyle(
+              style: TextStyle(
                 fontStyle: FontStyle.italic,
-                color: Colors.white60,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -847,9 +862,13 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
     IconData icon, {
     bool monospace = false,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GlassContainer(
       borderRadius: BorderRadius.circular(16),
-      color: AppColors.surface,
+      color: isDark 
+          ? AppColors.surface 
+          : Colors.white.withValues(alpha: 0.7),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -871,7 +890,11 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.copy, size: 20, color: Colors.white70),
+                icon: Icon(
+                  Icons.copy,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
                 onPressed: () => _copyToClipboard(text, format),
                 tooltip: 'Copy to clipboard',
               ),
@@ -892,7 +915,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
                 fontFamily: monospace ? 'Courier New' : null,
                 fontSize: 14,
                 height: 1.5,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),

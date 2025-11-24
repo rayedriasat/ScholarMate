@@ -141,15 +141,16 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
   }
 
   Future<void> _deleteTag(Tag tag) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('Delete Tag', style: TextStyle(color: Colors.white)),
+        backgroundColor: isDark ? AppColors.surface : null,
+        title: const Text('Delete Tag'),
         content: Text(
           'Are you sure you want to delete "${tag.name}"?\n\n'
           'This will remove the tag from ${tag.documentCount} document(s).',
-          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -197,16 +198,17 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark ? AppColors.background : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Manage Tags', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
+        title: const Text('Manage Tags'),
+        backgroundColor: isDark ? AppColors.surface : null,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(Icons.refresh),
             onPressed: _loadTags,
             tooltip: 'Refresh',
           ),
@@ -233,9 +235,12 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(Icons.error_outline, size: 48, color: Colors.red.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
-            Text('Error: $_error', style: const TextStyle(color: Colors.white)),
+            Text(
+              'Error: $_error',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
             const SizedBox(height: 16),
             ModernButton(onPressed: _loadTags, label: 'Retry'),
           ],
@@ -248,16 +253,25 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.label_outline, size: 48, color: Colors.white24),
+            Icon(
+              Icons.label_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No tags yet',
-              style: TextStyle(color: Colors.white, fontSize: 18),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 18,
+              ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Create tags to organize your documents',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 16),
             ModernButton(
@@ -275,9 +289,13 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
       itemCount: _tags.length,
       itemBuilder: (context, index) {
         final tag = _tags[index];
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        
         return GlassContainer(
           borderRadius: BorderRadius.circular(16),
-          color: AppColors.surface,
+          color: isDark 
+              ? AppColors.surface 
+              : Colors.white.withValues(alpha: 0.7),
           margin: const EdgeInsets.only(bottom: 12),
           padding: EdgeInsets.zero,
           child: ListTile(
@@ -300,18 +318,25 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
             ),
             title: Text(
               tag.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             subtitle: Text(
               '${tag.documentCount} document${tag.documentCount == 1 ? '' : 's'}',
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             trailing: PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white),
-              color: AppColors.surface,
+              icon: Icon(
+                Icons.more_vert,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.surface
+                  : Colors.white,
               onSelected: (value) {
                 if (value == 'edit') {
                   _editTag(tag);
@@ -320,13 +345,17 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'edit',
                   child: Row(
                     children: [
-                      Icon(Icons.edit, size: 20, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('Rename', style: TextStyle(color: Colors.white)),
+                      Icon(
+                        Icons.edit,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Rename'),
                     ],
                   ),
                 ),

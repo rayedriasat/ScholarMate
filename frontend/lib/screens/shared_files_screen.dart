@@ -198,16 +198,17 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (_canNavigateBack) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return PopScope(
+      canPop: !_canNavigateBack,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop && _canNavigateBack) {
           await _navigateBack();
-          return false;
         }
-        return true;
       },
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: isDark ? AppColors.background : Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text(
             _currentFolderId != null
@@ -215,11 +216,9 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       ? _navigationPath.last.name
                       : 'Folder'
                 : 'Shared with Me',
-            style: const TextStyle(color: Colors.white),
           ),
-          backgroundColor: Colors.transparent,
+          backgroundColor: isDark ? AppColors.surface : null,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
           leading: _canNavigateBack
               ? IconButton(
                   icon: const Icon(Icons.arrow_back),
@@ -239,9 +238,12 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
           children: [
             // Breadcrumb navigation when inside a folder
             if (_navigationPath.isNotEmpty)
-              BreadcrumbNavigation(
-                path: _navigationPath,
-                onNavigate: _navigateToFolder,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: BreadcrumbNavigation(
+                  path: _navigationPath,
+                  onNavigate: _navigateToFolder,
+                ),
               ),
             Expanded(child: _buildBody()),
           ],
@@ -262,18 +264,23 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            Icon(Icons.error_outline, size: 64, color: Colors.red.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Error loading files',
-              style: TextStyle(fontSize: 20, color: Colors.white),
+              style: TextStyle(
+                fontSize: 20,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 _error!,
-                style: const TextStyle(color: Colors.white70),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -302,20 +309,22 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
             Icon(
               Icons.folder_shared_outlined,
               size: 64,
-              color: Colors.white.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               'No shared files',
               style: TextStyle(
                 fontSize: 20,
-                color: Colors.white.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Files shared with you will appear here',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -332,10 +341,13 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
         itemBuilder: (context, index) {
           final fileInfo = _sharedFiles[index];
           final file = fileInfo.toDriveFile();
+          final isDark = Theme.of(context).brightness == Brightness.dark;
 
           return GlassContainer(
             borderRadius: BorderRadius.circular(16),
-            color: AppColors.surface,
+            color: isDark 
+                ? AppColors.surface 
+                : Colors.white.withValues(alpha: 0.7),
             margin: const EdgeInsets.only(bottom: 12),
             padding: EdgeInsets.zero,
             child: ListTile(
@@ -355,9 +367,9 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
               ),
               title: Text(
                 file.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               subtitle: Column(
@@ -389,7 +401,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                     'Shared by ${fileInfo.ownerName ?? fileInfo.ownerEmail ?? 'Unknown'}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   if (file.size != null) ...[
@@ -398,13 +410,16 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       file.formattedSize,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
                 ],
               ),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+              trailing: Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
               onTap: () => _openFile(fileInfo),
             ),
           );
@@ -422,20 +437,22 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
             Icon(
               Icons.folder_open_outlined,
               size: 64,
-              color: Colors.white.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               'Empty folder',
               style: TextStyle(
                 fontSize: 20,
-                color: Colors.white.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'This folder contains no files',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -451,10 +468,13 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
         itemCount: _currentFolderFiles.length,
         itemBuilder: (context, index) {
           final file = _currentFolderFiles[index];
+          final isDark = Theme.of(context).brightness == Brightness.dark;
 
           return GlassContainer(
             borderRadius: BorderRadius.circular(16),
-            color: AppColors.surface,
+            color: isDark 
+                ? AppColors.surface 
+                : Colors.white.withValues(alpha: 0.7),
             margin: const EdgeInsets.only(bottom: 12),
             padding: EdgeInsets.zero,
             child: ListTile(
@@ -474,9 +494,9 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
               ),
               title: Text(
                 file.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               subtitle: Column(
@@ -488,7 +508,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       'Modified ${_formatDate(file.modifiedTime!)}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -498,13 +518,16 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
                       file.formattedSize,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
                 ],
               ),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+              trailing: Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
               onTap: () => _openFileFromFolder(file),
             ),
           );

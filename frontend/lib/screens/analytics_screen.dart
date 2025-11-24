@@ -77,19 +77,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark ? AppColors.background : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Analytics & Insights',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.transparent,
+        title: const Text('Analytics & Insights'),
+        backgroundColor: isDark ? AppColors.surface : null,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(Icons.refresh),
             onPressed: _loadStats,
             tooltip: 'Refresh',
           ),
@@ -102,7 +100,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           : RefreshIndicator(
               onRefresh: _loadStats,
               color: AppColors.primary,
-              backgroundColor: AppColors.surface,
+              backgroundColor: isDark ? AppColors.surface : Colors.white,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -156,7 +154,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   // Activity heatmap
                   GlassContainer(
                     borderRadius: BorderRadius.circular(16),
-                    color: AppColors.surface,
+                    color: isDark 
+                        ? AppColors.surface 
+                        : Colors.white.withValues(alpha: 0.7),
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,11 +169,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               color: AppColors.primary,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Reading Activity (Last 30 Days)',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 16,
                               ),
                             ),
@@ -190,7 +190,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   // Top files
                   GlassContainer(
                     borderRadius: BorderRadius.circular(16),
-                    color: AppColors.surface,
+                    color: isDark 
+                        ? AppColors.surface 
+                        : Colors.white.withValues(alpha: 0.7),
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,11 +205,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               color: AppColors.primary,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Most Read Files',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 16,
                               ),
                             ),
@@ -215,12 +217,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                         const SizedBox(height: 16),
                         if (_topFiles.isEmpty)
-                          const Center(
+                          Center(
                             child: Padding(
-                              padding: EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(16),
                               child: Text(
                                 'No reading data yet',
-                                style: TextStyle(color: Colors.white70),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                ),
                               ),
                             ),
                           )
@@ -253,9 +257,13 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GlassContainer(
       borderRadius: BorderRadius.circular(16),
-      color: AppColors.surface,
+      color: isDark 
+          ? AppColors.surface 
+          : Colors.white.withValues(alpha: 0.7),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,17 +273,17 @@ class _StatCard extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 12,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 20,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -311,8 +319,11 @@ class _ActivityHeatmap extends StatelessWidget {
       children: days.map((date) {
         final seconds = activityData[date] ?? 0;
         final intensity = seconds / maxSeconds;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final color = seconds == 0
-            ? Colors.white.withValues(alpha: 0.1)
+            ? (isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.1))
             : AppColors.primary.withValues(alpha: (0.2 + (intensity * 0.8)));
 
         return Tooltip(
@@ -350,8 +361,8 @@ class _FileStatTile extends StatelessWidget {
               children: [
                 Text(
                   stats.fileId,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -361,7 +372,7 @@ class _FileStatTile extends StatelessWidget {
                 Text(
                   '${stats.formattedTime} • ${stats.uniquePagesRead} pages',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 12,
                   ),
                 ),

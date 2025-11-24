@@ -49,6 +49,10 @@ class AppNavigation extends StatefulWidget {
 class _AppNavigationState extends State<AppNavigation> {
   late int _selectedIndex;
   bool _showSettings = false;
+  bool _sidebarCollapsed = false;
+  double _sidebarWidth = 250;
+  static const double _minSidebarWidth = 60;
+  static const double _maxSidebarWidthPercent = 0.6;
 
   @override
   void initState() {
@@ -142,97 +146,183 @@ class _AppNavigationState extends State<AppNavigation> {
   }
 
   Widget _buildSidebar(BuildContext context) {
-    return GlassContainer(
-      width: 250, // Wider sidebar for labels
-      height: double.infinity,
-      borderRadius: BorderRadius.zero, // Rectangular sidebar
-      border: Border(
-        right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-      ),
-      color: Theme.of(
-        context,
-      ).cardColor, // Uses the semi-transparent card color
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 24),
-          // App logo and Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.school, color: Colors.white, size: 18),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'ScholarMate',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = screenWidth * _maxSidebarWidthPercent;
+    final effectiveWidth = _sidebarCollapsed ? _minSidebarWidth : _sidebarWidth.clamp(_minSidebarWidth, maxWidth);
+    
+    // Auto-collapse if width is too small (less than 150px)
+    final shouldShowCollapsed = _sidebarCollapsed || effectiveWidth < 150;
+
+    return Row(
+      children: [
+        SizedBox(
+          width: effectiveWidth,
+          child: GlassContainer(
+            width: effectiveWidth,
+            height: double.infinity,
+            borderRadius: BorderRadius.zero,
+            border: Border(
+              right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
             ),
-          ),
+            color: Theme.of(context).cardColor,
+            child: ClipRect(
+              child: OverflowBox(
+                alignment: Alignment.centerLeft,
+                maxWidth: effectiveWidth,
+                child: SizedBox(
+                  width: effectiveWidth,
+                  child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 24),
+              // App logo and Title with toggle button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: shouldShowCollapsed
+                    ? Center(
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.menu,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _sidebarCollapsed = false;
+                              if (_sidebarWidth < 150) {
+                                _sidebarWidth = 250; // Reset to default width
+                              }
+                            });
+                          },
+                          tooltip: 'Expand sidebar',
+                        ),
+                      )
+                    : Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              Icons.menu_open,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _sidebarCollapsed = true;
+                              });
+                            },
+                            tooltip: 'Collapse sidebar',
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.school, color: Colors.white, size: 18),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'ScholarMate',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
 
           const SizedBox(height: 32),
 
-          // Navigation items
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: 12, bottom: 8),
-                  child: Text(
-                    'LIBRARY',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                      letterSpacing: 1.0,
-                    ),
+              // Navigation items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  children: [
+                    if (!shouldShowCollapsed)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 12, bottom: 8),
+                        child: Text(
+                          'LIBRARY',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ),
+                    for (int i = 0; i < widget.items.length; i++)
+                      _buildSidebarItem(
+                        context,
+                        widget.items[i],
+                        i == _selectedIndex,
+                        () => _onItemTapped(i),
+                        shouldShowCollapsed,
+                      ),
+                  ],
+                ),
+              ),
+
+              // Settings section at bottom
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: _buildSidebarItem(
+                  context,
+                  NavigationItem(
+                    id: 'settings',
+                    icon: Icons.settings_outlined,
+                    activeIcon: Icons.settings,
+                    label: 'Settings',
+                    screen: Container(),
+                  ),
+                  _showSettings,
+                  _toggleSettings,
+                  shouldShowCollapsed,
+                ),
+              ),
+            ],
                   ),
                 ),
-                for (int i = 0; i < widget.items.length; i++)
-                  _buildSidebarItem(
-                    context,
-                    widget.items[i],
-                    i == _selectedIndex,
-                    () => _onItemTapped(i),
-                  ),
-              ],
-            ),
-          ),
-
-          // Settings section at bottom
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: _buildSidebarItem(
-              context,
-              NavigationItem(
-                id: 'settings',
-                icon: Icons.settings_outlined,
-                activeIcon: Icons.settings,
-                label: 'Settings',
-                screen: Container(),
               ),
-              _showSettings,
-              _toggleSettings,
             ),
           ),
-        ],
-      ),
+        ),
+        // Resize handle (always visible unless manually collapsed via button)
+        MouseRegion(
+          cursor: SystemMouseCursors.resizeColumn,
+          child: GestureDetector(
+            onPanUpdate: (details) {
+              setState(() {
+                final newWidth = (_sidebarWidth + details.delta.dx)
+                    .clamp(_minSidebarWidth, maxWidth);
+                _sidebarWidth = newWidth;
+                
+                // Auto-expand if dragging wider than threshold
+                if (newWidth >= 150 && _sidebarCollapsed) {
+                  _sidebarCollapsed = false;
+                }
+              });
+            },
+              child: Container(
+                width: 8,
+                color: Colors.transparent,
+                child: Center(
+                  child: Container(
+                    width: 2,
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -241,6 +331,7 @@ class _AppNavigationState extends State<AppNavigation> {
     NavigationItem item,
     bool isSelected,
     VoidCallback onTap,
+    bool forceCollapsed,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -249,41 +340,53 @@ class _AppNavigationState extends State<AppNavigation> {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(6),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isSelected ? (item.activeIcon ?? item.icon) : item.icon,
-                  color: isSelected
-                      ? Theme.of(context).primaryColor
-                      : Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  item.label,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Theme.of(context).primaryColor
-                        : Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.8),
-                    fontSize: 14,
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                  ),
-                ),
-              ],
+          child: Tooltip(
+            message: forceCollapsed ? item.label : '',
+            child: Container(
+              padding: forceCollapsed 
+                  ? const EdgeInsets.all(10)
+                  : const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: forceCollapsed
+                  ? Center(
+                      child: Icon(
+                        isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+                        color: isSelected
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        size: 20,
+                      ),
+                    )
+                  : Row(
+                      children: [
+                        Icon(
+                          isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+                          color: isSelected
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            item.label,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Theme.of(context).primaryColor
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                              fontSize: 14,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),
@@ -317,7 +420,7 @@ class _AppNavigationState extends State<AppNavigation> {
             ),
           ),
           value: isDark && !themeService.isSystemMode,
-          activeColor: Theme.of(context).primaryColor,
+          activeThumbColor: Theme.of(context).primaryColor,
           onChanged: (value) {
             if (value) {
               themeService.setDarkTheme();

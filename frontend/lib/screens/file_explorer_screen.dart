@@ -728,7 +728,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               Icons.more_vert,
               color: Theme.of(context).iconTheme.color,
             ),
-            color: Theme.of(context).cardColor,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surface
+                : Colors.white,
             onSelected: (value) {
               if (value == 'join_collaboration') {
                 Navigator.push(
@@ -1028,6 +1030,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                         child: PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert, size: 18),
                           padding: EdgeInsets.zero,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.surface
+                              : Colors.white,
                           onSelected: (value) {
                             if (value == 'rename') _showRenameDialog(file);
                             if (value == 'delete')
