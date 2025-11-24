@@ -198,7 +198,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Manage Tags', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,

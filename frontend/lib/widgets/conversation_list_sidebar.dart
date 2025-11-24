@@ -33,7 +33,9 @@ class ConversationListSidebar extends StatelessWidget {
       width: 280,
       decoration: BoxDecoration(
         border: Border(
-          right: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          right: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+          ),
         ),
       ),
       child: Column(
@@ -43,7 +45,9 @@ class ConversationListSidebar extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                ),
               ),
             ),
             child: SizedBox(
@@ -99,14 +103,18 @@ class ConversationListSidebar extends StatelessWidget {
             Icon(
               Icons.chat_bubble_outline,
               size: 48,
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.2),
             ),
             const SizedBox(height: 16),
             Text(
               'No conversations yet',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white.withValues(alpha: 0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 8),
@@ -114,7 +122,9 @@ class ConversationListSidebar extends StatelessWidget {
               'Start a new chat to begin',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.4),
               ),
               textAlign: TextAlign.center,
             ),
@@ -159,11 +169,13 @@ class _ConversationListItem extends StatelessWidget {
       child: GlassContainer(
         padding: EdgeInsets.zero,
         borderRadius: BorderRadius.circular(12),
-        color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : null,
+        color: isSelected
+            ? AppColors.primary.withValues(alpha: 0.1)
+            : Theme.of(context).cardColor,
         border: Border.all(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.5)
-              : Colors.transparent,
+              : Theme.of(context).dividerColor.withValues(alpha: 0.2),
         ),
         child: InkWell(
           onTap: onTap,
@@ -179,7 +191,7 @@ class _ConversationListItem extends StatelessWidget {
                       Text(
                         conversation.title,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -192,7 +204,9 @@ class _ConversationListItem extends StatelessWidget {
                       Text(
                         dateText,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.5),
                           fontSize: 11,
                         ),
                       ),
@@ -203,9 +217,11 @@ class _ConversationListItem extends StatelessWidget {
                   icon: Icon(
                     Icons.more_vert,
                     size: 18,
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
-                  color: AppColors.surface,
+                  color: Theme.of(context).cardColor,
                   onSelected: (value) {
                     if (value == 'rename') {
                       _showRenameDialog(context);
@@ -214,13 +230,22 @@ class _ConversationListItem extends StatelessWidget {
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'rename',
                       child: Row(
                         children: [
-                          Icon(Icons.edit, size: 18, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text('Rename', style: TextStyle(color: Colors.white)),
+                          Icon(
+                            Icons.edit,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Rename',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -250,10 +275,10 @@ class _ConversationListItem extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
           'Rename Conversation',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
         content: ModernTextField(controller: controller, hintText: 'Title'),
         actions: [
@@ -280,14 +305,18 @@ class _ConversationListItem extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
           'Delete Conversation',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to delete this conversation? This action cannot be undone.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
         ),
         actions: [
           TextButton(

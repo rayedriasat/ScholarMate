@@ -227,7 +227,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'Citation Generator',

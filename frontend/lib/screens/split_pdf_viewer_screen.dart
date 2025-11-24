@@ -502,7 +502,7 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
           width: 8,
           color: _isDraggingDivider
               ? AppColors.primary.withValues(alpha: 0.5)
-              : Colors.black,
+              : Theme.of(context).scaffoldBackgroundColor,
           child: Center(
             child: Container(
               width: 2,
@@ -519,7 +519,7 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
     // Only allow on web
     if (!kIsWeb) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: const Text('Split View'),
           backgroundColor: Colors.transparent,
@@ -546,7 +546,7 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'Split PDF Viewer',

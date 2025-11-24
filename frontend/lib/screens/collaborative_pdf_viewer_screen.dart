@@ -720,7 +720,7 @@ class _CollaborativePdfViewerScreenState
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: const Text(
             'Loading...',
@@ -737,7 +737,7 @@ class _CollaborativePdfViewerScreenState
 
     if (_error != null) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: const Text('Error', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.transparent,
@@ -762,7 +762,7 @@ class _CollaborativePdfViewerScreenState
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           widget.fileName,

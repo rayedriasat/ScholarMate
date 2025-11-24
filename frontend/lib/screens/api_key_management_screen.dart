@@ -150,7 +150,7 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'API Key Management',

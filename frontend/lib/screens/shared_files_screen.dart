@@ -207,7 +207,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
         return true;
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text(
             _currentFolderId != null

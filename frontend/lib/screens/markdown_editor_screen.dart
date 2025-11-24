@@ -249,7 +249,7 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text(
             widget.existingNote != null ? 'Edit Note' : 'New Note',
@@ -474,7 +474,7 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
     final theme = Theme.of(context);
 
     return Container(
-      color: Colors.black,
+      color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.all(16),
       child: Markdown(
         data: _contentController.text.isEmpty
