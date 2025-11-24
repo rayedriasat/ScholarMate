@@ -4,7 +4,6 @@ import '../models/markdown_note.dart';
 import '../services/drawing_storage_service.dart';
 import '../services/markdown_storage_service.dart';
 import '../theme/app_colors.dart';
-import '../widgets/ui/animated_background.dart';
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
 import 'enhanced_drawing_canvas_screen.dart';
@@ -226,16 +225,18 @@ class _NotesScreenState extends State<NotesScreen> {
           _selectedTab = index;
         });
       },
-      child: GlassContainer(
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        borderRadius: BorderRadius.circular(20),
-        color: isSelected
-            ? AppColors.primary.withValues(alpha: 0.2)
-            : Colors.white.withValues(alpha: 0.05),
-        border: Border.all(
+        decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.1),
+              ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+              : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).primaryColor.withValues(alpha: 0.5)
+                : Theme.of(context).dividerColor,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -243,8 +244,11 @@ class _NotesScreenState extends State<NotesScreen> {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
+                color: isSelected
+                    ? Theme.of(context).primaryColor
+                    : Theme.of(context).colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 13,
               ),
             ),
             if (count > 0) ...[
@@ -253,14 +257,16 @@ class _NotesScreenState extends State<NotesScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary
-                      : Colors.white.withValues(alpha: 0.2),
+                      ? Theme.of(context).primaryColor
+                      : Theme.of(context).disabledColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   count.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.onSurface,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -278,53 +284,12 @@ class _NotesScreenState extends State<NotesScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background
-          const Positioned.fill(child: AnimatedBackground()),
-
+          // Background - Removed as it's now global in AppNavigation
           Column(
             children: [
-              // Custom AppBar
-              GlassContainer(
-                height: 120,
-                borderRadius: BorderRadius.zero,
-                opacity: 0.1,
-                padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Notes',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            _isGridView ? Icons.view_list : Icons.grid_view,
-                            color: Colors.white,
-                          ),
-                          onPressed: _toggleView,
-                          tooltip: _isGridView ? 'List view' : 'Grid view',
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        _buildTabChip('All', 0, _getTotalNotesCount()),
-                        const SizedBox(width: 8),
-                        _buildTabChip('Markdown', 1, _markdownNotes.length),
-                        const SizedBox(width: 8),
-                        _buildTabChip('Drawing', 2, _drawingNotes.length),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              // Custom Toolbar
+              _buildToolbar(),
+              _buildFilterBar(),
 
               // Content
               Expanded(
@@ -392,17 +357,19 @@ class _NotesScreenState extends State<NotesScreen> {
                 ],
               ),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              ),
             ),
             child: Icon(icon, size: 64, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -410,7 +377,9 @@ class _NotesScreenState extends State<NotesScreen> {
             subtitle,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 16,
             ),
           ),
@@ -484,8 +453,10 @@ class _NotesScreenState extends State<NotesScreen> {
     return GlassContainer(
       padding: EdgeInsets.zero,
       borderRadius: BorderRadius.circular(16),
-      color: Colors.white.withValues(alpha: 0.05),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      color: Theme.of(context).cardColor,
+      border: Border.all(
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+      ),
       child: InkWell(
         onTap: () => _openMarkdownNote(note),
         borderRadius: BorderRadius.circular(16),
@@ -512,9 +483,9 @@ class _NotesScreenState extends State<NotesScreen> {
                   Expanded(
                     child: Text(
                       note.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 14,
                       ),
                       maxLines: 1,
@@ -533,7 +504,9 @@ class _NotesScreenState extends State<NotesScreen> {
                       Text(
                         note.content,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                           fontSize: 12,
                         ),
                         maxLines: 4,
@@ -545,7 +518,9 @@ class _NotesScreenState extends State<NotesScreen> {
                     Text(
                       '${note.wordCount} words',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.5),
                         fontSize: 10,
                       ),
                     ),
@@ -557,7 +532,9 @@ class _NotesScreenState extends State<NotesScreen> {
                 _formatDate(note.updatedAt),
                 style: TextStyle(
                   fontSize: 10,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
               ),
             ],
@@ -571,8 +548,10 @@ class _NotesScreenState extends State<NotesScreen> {
     return GlassContainer(
       padding: EdgeInsets.zero,
       borderRadius: BorderRadius.circular(16),
-      color: Colors.white.withValues(alpha: 0.05),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      color: Theme.of(context).cardColor,
+      border: Border.all(
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+      ),
       child: InkWell(
         onTap: () => _openDrawingNote(note),
         borderRadius: BorderRadius.circular(16),
@@ -599,9 +578,9 @@ class _NotesScreenState extends State<NotesScreen> {
                   Expanded(
                     child: Text(
                       note.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 14,
                       ),
                       maxLines: 1,
@@ -620,13 +599,17 @@ class _NotesScreenState extends State<NotesScreen> {
                       Icon(
                         Icons.image_outlined,
                         size: 48,
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.1),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         '${note.pages.length} page${note.pages.length != 1 ? 's' : ''}',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                           fontSize: 12,
                         ),
                       ),
@@ -639,7 +622,9 @@ class _NotesScreenState extends State<NotesScreen> {
                 _formatDate(note.updatedAt),
                 style: TextStyle(
                   fontSize: 10,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
               ),
             ],
@@ -795,6 +780,60 @@ class _NotesScreenState extends State<NotesScreen> {
         builder: (context) => MarkdownEditorScreen(existingNote: note),
       ),
     ).then((_) => _loadNotes());
+  }
+
+  Widget _buildToolbar() {
+    return GlassContainer(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      borderRadius: BorderRadius.zero,
+      border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+      color: Theme.of(context).cardColor,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Notes',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              _isGridView ? Icons.view_list : Icons.grid_view,
+              color: Theme.of(context).iconTheme.color,
+            ),
+            onPressed: _toggleView,
+            tooltip: _isGridView ? 'List view' : 'Grid view',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildTabChip('All', 0, _getTotalNotesCount()),
+          const SizedBox(width: 8),
+          _buildTabChip('Markdown', 1, _markdownNotes.length),
+          const SizedBox(width: 8),
+          _buildTabChip('Drawing', 2, _drawingNotes.length),
+        ],
+      ),
+    );
   }
 
   void _handleDrawingNoteAction(DrawingNote note, String action) {

@@ -33,10 +33,15 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? AppColors.background
+        : const Color(0xFFF0F9FF); // Light blue tint
+
     return Stack(
       children: [
         // Base background
-        Container(color: AppColors.background),
+        Container(color: backgroundColor),
 
         // Animated Orbs
         AnimatedBuilder(
@@ -45,9 +50,16 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
             return CustomPaint(
               painter: BackgroundPainter(
                 animationValue: _controller.value,
-                primary: AppColors.primary,
-                secondary: AppColors.secondary,
-                accent: AppColors.accent,
+                primary: isDark
+                    ? AppColors.primary
+                    : const Color(0xFF60A5FA), // Blue 400
+                secondary: isDark
+                    ? AppColors.secondary
+                    : const Color(0xFFF472B6), // Pink 400
+                accent: isDark
+                    ? AppColors.accent
+                    : const Color(0xFF2DD4BF), // Teal 400
+                isDark: isDark,
               ),
               size: Size.infinite,
             );
@@ -72,20 +84,23 @@ class BackgroundPainter extends CustomPainter {
   final Color primary;
   final Color secondary;
   final Color accent;
+  final bool isDark;
 
   BackgroundPainter({
     required this.animationValue,
     required this.primary,
     required this.secondary,
     required this.accent,
+    required this.isDark,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
+    final alphaMultiplier = isDark ? 1.0 : 0.6; // Softer colors for light mode
 
     // Orb 1 (Primary) - Top Left
-    paint.color = primary.withValues(alpha: 0.3);
+    paint.color = primary.withValues(alpha: 0.3 * alphaMultiplier);
     canvas.drawCircle(
       Offset(
         size.width * 0.2 + (sin(animationValue * 2 * pi) * 50),
@@ -96,7 +111,7 @@ class BackgroundPainter extends CustomPainter {
     );
 
     // Orb 2 (Secondary) - Bottom Right
-    paint.color = secondary.withValues(alpha: 0.2);
+    paint.color = secondary.withValues(alpha: 0.2 * alphaMultiplier);
     canvas.drawCircle(
       Offset(
         size.width * 0.8 - (cos(animationValue * 2 * pi) * 50),
@@ -107,7 +122,7 @@ class BackgroundPainter extends CustomPainter {
     );
 
     // Orb 3 (Accent) - Center/Moving
-    paint.color = accent.withValues(alpha: 0.15);
+    paint.color = accent.withValues(alpha: 0.15 * alphaMultiplier);
     canvas.drawCircle(
       Offset(
         size.width * 0.5 + (cos(animationValue * pi) * 100),
@@ -120,6 +135,7 @@ class BackgroundPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant BackgroundPainter oldDelegate) {
-    return oldDelegate.animationValue != animationValue;
+    return oldDelegate.animationValue != animationValue ||
+        oldDelegate.isDark != isDark;
   }
 }

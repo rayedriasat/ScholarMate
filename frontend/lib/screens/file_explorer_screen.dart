@@ -8,7 +8,7 @@ import '../services/sharing_service.dart';
 import '../services/indexing_service.dart';
 import '../services/metadata_service.dart';
 import '../theme/app_colors.dart';
-import '../widgets/file_card.dart';
+
 import '../widgets/breadcrumb_navigation.dart';
 import '../widgets/file_upload_widget.dart';
 // import '../widgets/tag_selection_dialog.dart';
@@ -603,8 +603,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         children: [
           Column(
             children: [
-              // Custom AppBar
-              _buildAppBar(isSmallScreen),
+              // Custom Toolbar
+              _buildToolbar(isSmallScreen),
 
               // Breadcrumbs
               Padding(
@@ -615,7 +615,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // File List
               Expanded(
@@ -634,7 +634,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       )
                     : _files.isEmpty
                     ? _buildEmptyState()
-                    : _buildFileList(),
+                    : _buildFileTable(),
               ),
             ],
           ),
@@ -650,126 +650,147 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     );
   }
 
-  Widget _buildAppBar(bool isSmallScreen) {
-    return GlassContainer(
-      height: isSmallScreen ? 60 : 80,
-      borderRadius: BorderRadius.zero,
-      opacity: 0.1,
+  Widget _buildToolbar(bool isSmallScreen) {
+    return Container(
+      height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: SafeArea(
-        child: Row(
-          children: [
-            if (_canNavigateBack)
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: _navigateBack,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
+      ),
+      child: Row(
+        children: [
+          if (_canNavigateBack)
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: Theme.of(context).iconTheme.color,
               ),
-            const Text(
-              'Files',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              onPressed: _navigateBack,
             ),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.search, color: Colors.white),
-              onPressed: () => Navigator.pushNamed(context, '/search'),
+          const SizedBox(width: 8),
+          Text(
+            'Library',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              onPressed: _refresh,
+          ),
+          const Spacer(),
+          // Search Bar
+          Container(
+            width: isSmallScreen ? 150 : 300,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
-            IconButton(
-              icon: const Icon(Icons.analytics_outlined, color: Colors.white),
-              onPressed: _showIndexingProgressPanel,
-              tooltip: 'Indexing Progress',
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white),
-              color: AppColors.surface,
-              onSelected: (value) {
-                if (value == 'join_collaboration') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const JoinCollaborationScreen(),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Icon(Icons.search, size: 18, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      hintText: 'Search...',
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
                     ),
-                  );
-                } else if (value == 'manage_tags') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TagManagementScreen(),
-                    ),
-                  ).then((_) => _loadFiles());
-                } else if (value == 'shared_with_me') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SharedFilesScreen(),
-                    ),
-                  );
-                } else if (value == 'citations') {
-                  final metadataService = context.read<MetadataService>();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CitationGeneratorScreen(
-                        metadataService: metadataService,
-                      ),
-                    ),
-                  );
-                } else if (value == 'analytics') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AnalyticsScreen(),
-                    ),
-                  );
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'join_collaboration',
-                  child: Text(
-                    'Join Collaboration',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'shared_with_me',
-                  child: Text(
-                    'Shared with Me',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'manage_tags',
-                  child: Text(
-                    'Manage Tags',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'citations',
-                  child: Text(
-                    'Citation Generator',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'analytics',
-                  child: Text(
-                    'Analytics',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(fontSize: 14),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            icon: Icon(Icons.refresh, color: Theme.of(context).iconTheme.color),
+            onPressed: _refresh,
+            tooltip: 'Refresh',
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.analytics_outlined,
+              color: Theme.of(context).iconTheme.color,
+            ),
+            onPressed: _showIndexingProgressPanel,
+            tooltip: 'Indexing Progress',
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert,
+              color: Theme.of(context).iconTheme.color,
+            ),
+            color: Theme.of(context).cardColor,
+            onSelected: (value) {
+              if (value == 'join_collaboration') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const JoinCollaborationScreen(),
+                  ),
+                );
+              } else if (value == 'manage_tags') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TagManagementScreen(),
+                  ),
+                ).then((_) => _loadFiles());
+              } else if (value == 'shared_with_me') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SharedFilesScreen(),
+                  ),
+                );
+              } else if (value == 'citations') {
+                final metadataService = context.read<MetadataService>();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CitationGeneratorScreen(
+                      metadataService: metadataService,
+                    ),
+                  ),
+                );
+              } else if (value == 'analytics') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AnalyticsScreen(),
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'join_collaboration',
+                child: Text('Join Collaboration'),
+              ),
+              const PopupMenuItem(
+                value: 'shared_with_me',
+                child: Text('Shared with Me'),
+              ),
+              const PopupMenuItem(
+                value: 'manage_tags',
+                child: Text('Manage Tags'),
+              ),
+              const PopupMenuItem(
+                value: 'citations',
+                child: Text('Citation Generator'),
+              ),
+              const PopupMenuItem(value: 'analytics', child: Text('Analytics')),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -804,50 +825,266 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     );
   }
 
-  Widget _buildFileList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _files.length,
-      itemBuilder: (context, index) {
-        final file = _files[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: FileCard(
-            file: file,
-            isSelected: _selectedFiles.contains(file.id),
-            onTap: () {
-              if (_selectedFiles.isNotEmpty) {
-                _toggleFileSelection(file.id);
-              } else if (file.isFolder) {
-                _navigateToFolder(file);
-              } else {
-                // Open file viewer
-                if (file.isPdf) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PdfViewerScreen(file: file),
-                    ),
-                  );
-                } else if (file.isMarkdown) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MarkdownViewerScreen(file: file),
-                    ),
-                  );
-                }
-              }
-            },
-            onLongPress: () => _toggleFileSelection(file.id),
-            onRename: () => _showRenameDialog(file),
-            onDelete: () => _showDeleteConfirmation(file),
-            onShare: () => _shareFile(file),
-            onReindex: () => _reindexFile(file),
+  Widget _buildFileTable() {
+    return Column(
+      children: [
+        // Table Header
+        Container(
+          height: 40,
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Theme.of(context).dividerColor),
+            ),
+            color: Theme.of(context).cardColor.withValues(alpha: 0.5),
           ),
-        );
-      },
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              // Icon column
+              const SizedBox(width: 40),
+              // Name column
+              Expanded(
+                flex: 3,
+                child: InkWell(
+                  onTap: () => _handleSort(FileSortOption.name),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Name',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (_sortOption == FileSortOption.name)
+                        Icon(
+                          _sortAscending
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          size: 14,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              // Date column
+              Expanded(
+                flex: 1,
+                child: InkWell(
+                  onTap: () => _handleSort(FileSortOption.date),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Date Modified',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (_sortOption == FileSortOption.date)
+                        Icon(
+                          _sortAscending
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          size: 14,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              // Size column
+              SizedBox(
+                width: 100,
+                child: InkWell(
+                  onTap: () => _handleSort(FileSortOption.size),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Size',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (_sortOption == FileSortOption.size)
+                        Icon(
+                          _sortAscending
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          size: 14,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 48), // Actions space
+            ],
+          ),
+        ),
+        // Table Body
+        Expanded(
+          child: ListView.builder(
+            itemCount: _files.length,
+            itemBuilder: (context, index) {
+              final file = _files[index];
+              final isSelected = _selectedFiles.contains(file.id);
+
+              return InkWell(
+                onTap: () {
+                  if (_selectedFiles.isNotEmpty) {
+                    _toggleFileSelection(file.id);
+                  } else if (file.isFolder) {
+                    _navigateToFolder(file);
+                  } else {
+                    // Open file viewer
+                    if (file.isPdf) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PdfViewerScreen(file: file),
+                        ),
+                      );
+                    } else if (file.isMarkdown) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              MarkdownViewerScreen(file: file),
+                        ),
+                      );
+                    }
+                  }
+                },
+                onLongPress: () => _toggleFileSelection(file.id),
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+                        : (index % 2 == 0
+                              ? Theme.of(
+                                  context,
+                                ).cardColor.withValues(alpha: 0.3)
+                              : Colors.transparent),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).dividerColor.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 16),
+                      // Icon
+                      Icon(
+                        file.isFolder
+                            ? Icons.folder
+                            : (file.isPdf
+                                  ? Icons.picture_as_pdf
+                                  : Icons.insert_drive_file),
+                        color: file.isFolder
+                            ? Colors.blue
+                            : (file.isPdf ? Colors.red : Colors.grey),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 16),
+                      // Name
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          file.name,
+                          style: const TextStyle(fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Date
+                      Expanded(
+                        flex: 1,
+                        child: Text(
+                          _formatDate(file.modifiedTime),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
+                        ),
+                      ),
+                      // Size
+                      SizedBox(
+                        width: 100,
+                        child: Text(
+                          file.isFolder ? '--' : file.formattedSize,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
+                        ),
+                      ),
+                      // Actions
+                      SizedBox(
+                        width: 48,
+                        child: PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, size: 18),
+                          padding: EdgeInsets.zero,
+                          onSelected: (value) {
+                            if (value == 'rename') _showRenameDialog(file);
+                            if (value == 'delete')
+                              _showDeleteConfirmation(file);
+                            if (value == 'share') _shareFile(file);
+                            if (value == 'reindex') _reindexFile(file);
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'rename',
+                              child: Text('Rename'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'share',
+                              child: Text('Share'),
+                            ),
+                            if (file.isPdf)
+                              const PopupMenuItem(
+                                value: 'reindex',
+                                child: Text('Reindex'),
+                              ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Text(
+                                'Delete',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
+  }
+
+  void _handleSort(FileSortOption option) {
+    setState(() {
+      if (_sortOption == option) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortOption = option;
+        _sortAscending = true;
+      }
+    });
+    _loadFiles();
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '-';
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   Widget _buildFAB() {

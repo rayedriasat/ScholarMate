@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/drive_file.dart';
-import '../theme/app_colors.dart';
-import 'ui/glass_container.dart';
 
 /// Modern breadcrumb navigation for folder hierarchy
 class BreadcrumbNavigation extends StatelessWidget {
@@ -17,15 +15,13 @@ class BreadcrumbNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    final theme = Theme.of(context);
 
-    return GlassContainer(
-      width: double.infinity,
-      borderRadius: BorderRadius.circular(12),
+    return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: isSmallScreen ? 8 : 12,
+        horizontal: 0,
+        vertical: isSmallScreen ? 4 : 8,
       ),
-      opacity: 0.05,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -44,17 +40,17 @@ class BreadcrumbNavigation extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.home_filled,
                         size: 18,
-                        color: AppColors.primary,
+                        color: theme.primaryColor,
                       ),
                       if (!isSmallScreen) ...[
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'ScholarMate',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: theme.colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -74,7 +70,7 @@ class BreadcrumbNavigation extends StatelessWidget {
                   Icon(
                     Icons.chevron_right,
                     size: 16,
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
                   Material(
                     color: Colors.transparent,
@@ -90,8 +86,10 @@ class BreadcrumbNavigation extends StatelessWidget {
                           _truncateName(folder.name, isSmallScreen),
                           style: TextStyle(
                             color: isLast
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.7),
+                                ? theme.primaryColor
+                                : theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
                             fontWeight: isLast
                                 ? FontWeight.bold
                                 : FontWeight.normal,

@@ -4,7 +4,9 @@ import '../services/auth_service.dart';
 import '../services/simple_theme_service.dart';
 import '../theme/app_colors.dart';
 import 'ui/glass_container.dart';
+import 'ui/animated_background.dart';
 import 'api_key_settings_tile.dart';
+import '../services/config_service.dart';
 
 /// Navigation item model
 class NavigationItem {
@@ -76,40 +78,63 @@ class _AppNavigationState extends State<AppNavigation> {
       extendBody: true, // Important for floating bottom bar
       body: Stack(
         children: [
-          // Background
-          Container(color: Theme.of(context).scaffoldBackgroundColor),
+          // Global Background
+          const Positioned.fill(child: AnimatedBackground()),
 
-          // Content
-          Column(
+          // Background - Needs to be at the bottom of the stack to span the whole screen
+          // We rely on the Scaffold's background color being transparent (set in AppTheme)
+          // But if we want the AnimatedBackground to be global, it should be here or in main.dart
+          // Assuming main.dart or a parent widget provides the background, or we can add it here if needed.
+          // For now, we'll assume the transparent scaffold allows the background from Notes/Chat screens to show?
+          // Wait, the user wants the sidebar to be glassy. That means the background must be BEHIND the sidebar.
+          // So the background must be at the root of the Scaffold body.
+
+          // However, individual screens (Notes, Chat) also have their own backgrounds?
+          // If we want a unified background, we should probably remove it from individual screens or
+          // make the sidebar overlay the content?
+          // The Zotero layout usually has a persistent sidebar.
+
+          // Let's assume the individual screens provide the background for now,
+          // BUT for the sidebar to be glassy over "something", that "something" needs to be behind it.
+          // If the sidebar is in a Row, it's next to the content.
+          // To make it look "glassy" over a background, the background should span the whole Row.
+
+          // Let's wrap the Row in a Container with the background color/image if needed,
+          // or just rely on the parent.
+          Row(
             children: [
-              // Top bar for web/desktop
-              if (isWideScreen) _buildTopBar(context),
+              // Persistent Sidebar for web/desktop
+              if (isWideScreen) _buildSidebar(context),
 
-              // Main content
+              // Main content area
               Expanded(
-                child: Row(
+                child: Stack(
                   children: [
-                    // Sidebar is now replaced by TopBar for wide screens
-                    // if (isWideScreen) _buildSidebar(context),
-                    Expanded(
-                      child: _showSettings
-                          ? _buildSettingsScreen(context)
-                          : widget.items[_selectedIndex].screen,
+                    // Content
+                    Column(
+                      children: [
+                        // Main content
+                        Expanded(
+                          child: _showSettings
+                              ? _buildSettingsScreen(context)
+                              : widget.items[_selectedIndex].screen,
+                        ),
+                      ],
                     ),
+
+                    // Floating Bottom Navigation for mobile
+                    if (!isWideScreen)
+                      Positioned(
+                        bottom: 24,
+                        left: 24,
+                        right: 24,
+                        child: _buildFloatingBottomNav(context),
+                      ),
                   ],
                 ),
               ),
             ],
           ),
-
-          // Floating Bottom Navigation for mobile
-          if (!isWideScreen)
-            Positioned(
-              bottom: 24,
-              left: 24,
-              right: 24,
-              child: _buildFloatingBottomNav(context),
-            ),
         ],
       ),
       floatingActionButton: _showSettings ? null : widget.floatingActionButton,
@@ -118,49 +143,67 @@ class _AppNavigationState extends State<AppNavigation> {
 
   Widget _buildSidebar(BuildContext context) {
     return GlassContainer(
-      width: 80,
+      width: 250, // Wider sidebar for labels
       height: double.infinity,
-      borderRadius: BorderRadius.zero,
-      blur: 20,
-      opacity: 0.05,
-      border: const Border(right: BorderSide(color: Colors.white10, width: 1)),
+      borderRadius: BorderRadius.zero, // Rectangular sidebar
+      border: Border(
+        right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+      ),
+      color: Theme.of(
+        context,
+      ).cardColor, // Uses the semi-transparent card color
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 24),
-          // App logo
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _onItemTapped(0),
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+          // App logo and Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.school, color: Colors.white, size: 18),
+                  ),
                 ),
-                child: const Center(
-                  child: Icon(Icons.school, color: Colors.white, size: 24),
+                const SizedBox(width: 12),
+                Text(
+                  'ScholarMate',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
 
-          const SizedBox(height: 48),
+          const SizedBox(height: 32),
 
           // Navigation items
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               children: [
+                const Padding(
+                  padding: EdgeInsets.only(left: 12, bottom: 8),
+                  child: Text(
+                    'LIBRARY',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
                 for (int i = 0; i < widget.items.length; i++)
                   _buildSidebarItem(
                     context,
@@ -174,7 +217,7 @@ class _AppNavigationState extends State<AppNavigation> {
 
           // Settings section at bottom
           Padding(
-            padding: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.all(12),
             child: _buildSidebarItem(
               context,
               NavigationItem(
@@ -200,383 +243,47 @@ class _AppNavigationState extends State<AppNavigation> {
     VoidCallback onTap,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Tooltip(
-        message: item.label,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary.withValues(alpha: 0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: isSelected
-                    ? Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                      )
-                    : null,
-              ),
-              child: Icon(
-                isSelected ? (item.activeIcon ?? item.icon) : item.icon,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                size: 24,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFloatingBottomNav(BuildContext context) {
-    return GlassContainer(
-      height: 72,
-      blur: 20,
-      opacity: 0.1,
-      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(
-        color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          for (int i = 0; i < widget.items.length; i++)
-            _buildBottomNavItem(
-              context,
-              widget.items[i],
-              i == _selectedIndex,
-              () => _onItemTapped(i),
-            ),
-          _buildBottomNavItem(
-            context,
-            NavigationItem(
-              id: 'settings',
-              icon: Icons.settings_outlined,
-              activeIcon: Icons.settings,
-              label: 'Settings',
-              screen: Container(),
-            ),
-            _showSettings,
-            _toggleSettings,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavItem(
-    BuildContext context,
-    NavigationItem item,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
               color: isSelected
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
-              size: 24,
+                  ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsScreen(BuildContext context) {
-    final user = context.watch<AuthService>().currentUser;
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(
-          'Settings',
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: MediaQuery.of(context).size.width < 800
-            ? IconButton(
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-                onPressed: () => setState(() => _showSettings = false),
-              )
-            : null,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          // Appearance section
-          _buildSettingsSection(context, 'Appearance', [
-            _buildThemeToggle(context),
-          ]),
-
-          const SizedBox(height: 24),
-
-          // AI & API Keys section
-          if (user != null)
-            _buildSettingsSection(context, 'AI & API Keys', [
-              ApiKeySettingsTile(
-                userId: user.id,
-                baseUrl: const String.fromEnvironment(
-                  'API_BASE_URL',
-                  defaultValue: 'http://localhost:8000',
-                ),
-              ),
-            ]),
-
-          const SizedBox(height: 24),
-
-          // Account section
-          if (user != null)
-            _buildSettingsSection(context, 'Account', [
-              ListTile(
-                leading: user.photoUrl != null
-                    ? CircleAvatar(
-                        backgroundImage: NetworkImage(user.photoUrl!),
-                      )
-                    : CircleAvatar(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        child: Text(
-                          user.displayName?.substring(0, 1).toUpperCase() ??
-                              user.email.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                title: Text(
-                  user.displayName ?? 'User',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                subtitle: Text(
-                  user.email,
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              Divider(color: Theme.of(context).dividerColor),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text(
-                  'Sign Out',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () => _handleSignOut(context),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-            ]),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsSection(
-    BuildContext context,
-    String title,
-    List<Widget> children,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-        ),
-        GlassContainer(
-          width: double.infinity,
-          opacity: 0.05,
-          color: Theme.of(context).cardColor.withValues(alpha: 0.5),
-          child: Column(children: children),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTopBar(BuildContext context) {
-    return GlassContainer(
-      width: double.infinity,
-      height: 80,
-      borderRadius: BorderRadius.zero,
-      blur: 20,
-      opacity: 0.05,
-      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
-      border: Border(
-        bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 24),
-          // App logo
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _onItemTapped(0),
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(Icons.school, color: Colors.white, size: 24),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            'ScholarMate',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-
-          const Spacer(),
-
-          // Navigation items
-          Row(
-            children: [
-              for (int i = 0; i < widget.items.length; i++)
-                _buildTopBarItem(
-                  context,
-                  widget.items[i],
-                  i == _selectedIndex,
-                  () => _onItemTapped(i),
-                ),
-            ],
-          ),
-
-          const Spacer(),
-
-          // Settings button
-          _buildTopBarItem(
-            context,
-            NavigationItem(
-              id: 'settings',
-              icon: Icons.settings_outlined,
-              activeIcon: Icons.settings,
-              label: 'Settings',
-              screen: Container(),
-            ),
-            _showSettings,
-            _toggleSettings,
-          ),
-          const SizedBox(width: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopBarItem(
-    BuildContext context,
-    NavigationItem item,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Tooltip(
-        message: item.label,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: isSelected
-                    ? Border.all(
-                        color: Theme.of(
+            child: Row(
+              children: [
+                Icon(
+                  isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+                  color: isSelected
+                      ? Theme.of(context).primaryColor
+                      : Theme.of(
                           context,
-                        ).primaryColor.withValues(alpha: 0.2),
-                      )
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  item.label,
+                  style: TextStyle(
                     color: isSelected
                         ? Theme.of(context).primaryColor
                         : Theme.of(
                             context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                    size: 20,
+                          ).colorScheme.onSurface.withValues(alpha: 0.8),
+                    fontSize: 14,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    item.label,
-                    style: TextStyle(
-                      color: isSelected
-                          ? Theme.of(context).primaryColor
-                          : Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -745,5 +452,209 @@ class _AppNavigationState extends State<AppNavigation> {
         }
       }
     }
+  }
+
+  Widget _buildSettingsScreen(BuildContext context) {
+    final user = context.read<AuthService>().currentUser;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Settings',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // User Profile Section
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: Theme.of(context).primaryColor,
+                  child: Text(
+                    user?.email.substring(0, 1).toUpperCase() ?? 'U',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.email ?? 'User',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Free Plan',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                OutlinedButton(
+                  onPressed: () => _handleSignOut(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                  child: const Text('Sign Out'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Appearance Section
+          Text(
+            'Appearance',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: _buildThemeToggle(context),
+          ),
+          const SizedBox(height: 24),
+
+          // API Keys Section
+          Text(
+            'API Configuration',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: Column(
+              children: [
+                ApiKeySettingsTile(
+                  userId: user?.id ?? '',
+                  baseUrl: ConfigService().apiBaseUrl,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingBottomNav(BuildContext context) {
+    return GlassContainer(
+      height: 70,
+      borderRadius: BorderRadius.circular(35),
+      blur: 20,
+      opacity: 0.1,
+      border: Border.all(
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+        width: 1,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          for (int i = 0; i < widget.items.length; i++)
+            _buildBottomNavItem(
+              context,
+              widget.items[i],
+              i == _selectedIndex,
+              () => _onItemTapped(i),
+            ),
+          _buildBottomNavItem(
+            context,
+            NavigationItem(
+              id: 'settings',
+              icon: Icons.settings_outlined,
+              activeIcon: Icons.settings,
+              label: 'Settings',
+              screen: Container(),
+            ),
+            _showSettings,
+            _toggleSettings,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavItem(
+    BuildContext context,
+    NavigationItem item,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+            color: isSelected
+                ? Theme.of(context).primaryColor
+                : Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+            size: 24,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            item.label,
+            style: TextStyle(
+              color: isSelected
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

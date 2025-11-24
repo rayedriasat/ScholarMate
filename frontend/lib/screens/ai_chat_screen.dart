@@ -19,7 +19,6 @@ import '../widgets/conversation_list_sidebar.dart';
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
 import '../widgets/ui/modern_text_field.dart';
-import '../widgets/ui/animated_background.dart';
 import 'pdf_viewer_screen.dart';
 
 /// AI Chat screen with RAG and source selection
@@ -587,9 +586,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     final content = Stack(
       children: [
-        // Background
-        if (!widget.isEmbedded)
-          const Positioned.fill(child: AnimatedBackground()),
+        // Background - Removed as it's now global in AppNavigation
         if (widget.isEmbedded)
           Container(color: Theme.of(context).scaffoldBackgroundColor),
 
@@ -783,39 +780,47 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   Widget _buildAppBar(bool isWideScreen) {
     return GlassContainer(
-      height: 70,
-      borderRadius: BorderRadius.zero,
-      opacity: 0.1,
+      height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: SafeArea(
-        child: Row(
-          children: [
-            if (widget.preselectedFileId != null || widget.folderName != null)
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              )
-            else if (isWideScreen)
-              IconButton(
-                icon: Icon(
-                  _showConversationList ? Icons.close : Icons.menu,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _showConversationList = !_showConversationList;
-                  });
-                },
-              )
-            else
-              Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(Icons.menu, color: Colors.white),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
+      borderRadius: BorderRadius.zero,
+      border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+      color: Theme.of(context).cardColor,
+      child: Row(
+        children: [
+          if (widget.preselectedFileId != null || widget.folderName != null)
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: Theme.of(context).iconTheme.color,
               ),
-            const SizedBox(width: 8),
-            Column(
+              onPressed: () => Navigator.pop(context),
+            )
+          else if (isWideScreen)
+            IconButton(
+              icon: Icon(
+                _showConversationList ? Icons.close : Icons.menu,
+                color: Theme.of(context).iconTheme.color,
+              ),
+              onPressed: () {
+                setState(() {
+                  _showConversationList = !_showConversationList;
+                });
+              },
+            )
+          else
+            Builder(
+              builder: (context) => IconButton(
+                icon: Icon(
+                  Icons.menu,
+                  color: Theme.of(context).iconTheme.color,
+                ),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+            ),
+          const SizedBox(width: 8),
+          Expanded(
+            // Added Expanded to prevent overflow
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -835,11 +840,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
                             )
                             .title
                       : 'AI Chat',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
+                  overflow: TextOverflow.ellipsis, // Handle long titles
                 ),
                 if (widget.preselectedFileId != null &&
                     widget.preselectedFileName != null)
@@ -848,61 +854,67 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.normal,
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
               ],
             ),
-            const Spacer(),
-            if (_currentConversationId != null)
-              IconButton(
-                icon: const Icon(Icons.add, color: Colors.white),
-                onPressed: _startNewConversation,
-                tooltip: 'New Chat',
-              ),
+          ),
+          // Spacer(), // Removed Spacer as Expanded takes available space
+          if (_currentConversationId != null)
             IconButton(
+              icon: Icon(Icons.add, color: Theme.of(context).iconTheme.color),
+              onPressed: _startNewConversation,
+              tooltip: 'New Chat',
+            ),
+          IconButton(
+            icon: Icon(
+              _showSourcePanel ? Icons.close : Icons.filter_list,
+              color: Theme.of(context).iconTheme.color,
+            ),
+            onPressed: () {
+              if (isWideScreen) {
+                setState(() {
+                  _showSourcePanel = !_showSourcePanel;
+                });
+              } else {
+                _showSourceSelectionBottomSheet();
+              }
+            },
+            tooltip: 'Source Selection',
+          ),
+          if (_conversations.isNotEmpty)
+            PopupMenuButton<String>(
               icon: Icon(
-                _showSourcePanel ? Icons.close : Icons.filter_list,
-                color: Colors.white,
+                Icons.more_vert,
+                color: Theme.of(context).iconTheme.color,
               ),
-              onPressed: () {
-                if (isWideScreen) {
-                  setState(() {
-                    _showSourcePanel = !_showSourcePanel;
-                  });
-                } else {
-                  _showSourceSelectionBottomSheet();
+              color: Theme.of(context).cardColor,
+              onSelected: (value) {
+                if (value == 'clear_all') {
+                  _clearAllConversations();
                 }
               },
-              tooltip: 'Source Selection',
-            ),
-            if (_conversations.isNotEmpty)
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
-                color: AppColors.surface,
-                onSelected: (value) {
-                  if (value == 'clear_all') {
-                    _clearAllConversations();
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'clear_all',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_sweep, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text(
-                          'Clear All Conversations',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ],
-                    ),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'clear_all',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_sweep, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text(
+                        'Clear All Conversations',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-          ],
-        ),
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }
@@ -976,7 +988,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 ? Icons.picture_as_pdf
                 : Icons.chat_bubble_outline,
             size: 64,
-            color: Colors.white.withValues(alpha: 0.2),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.2),
           ),
           const SizedBox(height: 16),
           Text(
@@ -985,10 +999,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 : widget.preselectedFileId != null
                 ? 'Chat with PDF'
                 : 'Start a conversation',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -999,7 +1013,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       widget.preselectedFileName != null
                 ? 'Ask questions about "${widget.preselectedFileName}"'
                 : 'Ask questions about your documents',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1008,11 +1026,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildInputArea() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.all(widget.isEmbedded ? 12 : 16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        color: Theme.of(context).cardColor,
         border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
       ),
       child: Column(
@@ -1037,9 +1054,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                             widget.preselectedFileName!,
                             style: const TextStyle(fontSize: 12),
                           ),
-                          backgroundColor: AppColors.primary.withValues(
-                            alpha: 0.1,
-                          ),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.1),
                           side: BorderSide.none,
                           deleteIcon: const Icon(Icons.close, size: 16),
                           onDeleted: () =>
@@ -1054,9 +1071,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           '${_selectedFileIds.length} source${_selectedFileIds.length == 1 ? '' : 's'} selected',
                           style: const TextStyle(fontSize: 12),
                         ),
-                        backgroundColor: AppColors.primary.withValues(
-                          alpha: 0.1,
-                        ),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.1),
                         side: BorderSide.none,
                         deleteIcon: const Icon(Icons.close, size: 16),
                         onDeleted: _clearAllSources,

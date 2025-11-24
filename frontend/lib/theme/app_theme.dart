@@ -7,8 +7,12 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor:
+          Colors.transparent, // Allow AnimatedBackground to show
       primaryColor: accentColor,
+      cardColor: AppColors.surface.withValues(
+        alpha: 0.7,
+      ), // Semi-transparent for glass
       colorScheme: ColorScheme.dark(
         primary: accentColor,
         secondary: accentColor,
@@ -31,13 +35,15 @@ class AppTheme {
   }
 
   static ThemeData getLightTheme(Color accentColor) {
-    // We are focusing on dark mode for the "modern/vibrant" look,
-    // but providing a light theme fallback that is also clean.
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: const Color(0xFFF8FAFC), // Slate 50
+      scaffoldBackgroundColor:
+          Colors.transparent, // Allow AnimatedBackground to show
       primaryColor: accentColor,
+      cardColor: Colors.white.withValues(
+        alpha: 0.7,
+      ), // Semi-transparent for glass
       colorScheme: ColorScheme.light(
         primary: accentColor,
         secondary: accentColor,
