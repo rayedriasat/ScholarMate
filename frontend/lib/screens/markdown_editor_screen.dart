@@ -134,35 +134,59 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
   Future<bool> _onWillPop() async {
     if (!_isModified) return true;
 
-    final result = await showDialog<String>(
+    final result = await showModalBottomSheet<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
-          'Unsaved Changes',
-          style: TextStyle(color: Colors.white),
+      backgroundColor: Colors.transparent,
+      builder: (context) => GlassContainer(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.surface
+            : Colors.white,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Unsaved Changes',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'You have unsaved changes. What would you like to do?',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop('discard'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text('Discard'),
+                ),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop('cancel'),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 12),
+                    ModernButton(
+                      onPressed: () => Navigator.of(context).pop('save'),
+                      label: 'Save',
+                      backgroundColor: AppColors.primary,
+                      width: 80,
+                      height: 36,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
-        content: const Text(
-          'You have unsaved changes. What would you like to do?',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop('discard'),
-            child: const Text('Discard'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop('cancel'),
-            child: const Text('Cancel'),
-          ),
-          ModernButton(
-            onPressed: () => Navigator.of(context).pop('save'),
-            label: 'Save',
-            backgroundColor: AppColors.primary,
-            width: 80,
-            height: 36,
-          ),
-        ],
       ),
     );
 
@@ -253,10 +277,25 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
         appBar: AppBar(
           title: Text(
             widget.existingNote != null ? 'Edit Note' : 'New Note',
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.surface,
+                  AppColors.surface.withValues(alpha: 0.9),
+                ],
+              ),
+            ),
+          ),
+          elevation: 2,
+          shadowColor: Colors.black.withValues(alpha: 0.3),
           iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             if (_isModified)
@@ -359,62 +398,97 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
   }
 
   Widget _buildMarkdownToolbar(ThemeData theme) {
-    return GlassContainer(
-      borderRadius: BorderRadius.zero,
-      color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      border: Border(
-        top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.surface, AppColors.surface.withValues(alpha: 0.8)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _buildToolbarButton(Icons.format_bold, 'Bold', () {
+            _buildToolbarButton(Icons.format_bold_rounded, 'Bold', () {
               _insertMarkdownSyntax('**{}**', placeholder: 'bold text');
             }),
-            _buildToolbarButton(Icons.format_italic, 'Italic', () {
+            const SizedBox(width: 8),
+            _buildToolbarButton(Icons.format_italic_rounded, 'Italic', () {
               _insertMarkdownSyntax('*{}*', placeholder: 'italic text');
             }),
+            const SizedBox(width: 8),
             _buildToolbarButton(
-              Icons.format_strikethrough,
-              'Strikethrough',
+              Icons.format_strikethrough_rounded,
+              'Strike',
               () {
                 _insertMarkdownSyntax('~~{}~~', placeholder: 'strikethrough');
               },
             ),
             Container(
-              height: 24,
-              width: 1,
-              color: Colors.white24,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
+              height: 32,
+              width: 2,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.white24,
+                    Colors.transparent,
+                  ],
+                ),
+              ),
             ),
-            _buildToolbarButton(Icons.title, 'Heading', () {
+            _buildToolbarButton(Icons.title_rounded, 'Heading', () {
               _insertMarkdownSyntax('# {}', placeholder: 'Heading');
             }),
-            _buildToolbarButton(Icons.format_list_bulleted, 'List', () {
+            const SizedBox(width: 8),
+            _buildToolbarButton(Icons.format_list_bulleted_rounded, 'List', () {
               _insertMarkdownSyntax('- {}', placeholder: 'List item');
             }),
+            const SizedBox(width: 8),
             _buildToolbarButton(
-              Icons.format_list_numbered,
-              'Numbered List',
+              Icons.format_list_numbered_rounded,
+              'Numbers',
               () {
                 _insertMarkdownSyntax('1. {}', placeholder: 'List item');
               },
             ),
             Container(
-              height: 24,
-              width: 1,
-              color: Colors.white24,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
+              height: 32,
+              width: 2,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.white24,
+                    Colors.transparent,
+                  ],
+                ),
+              ),
             ),
-            _buildToolbarButton(Icons.link, 'Link', () {
+            _buildToolbarButton(Icons.link_rounded, 'Link', () {
               _insertMarkdownSyntax('[{}](url)', placeholder: 'link text');
             }),
-            _buildToolbarButton(Icons.code, 'Code', () {
+            const SizedBox(width: 8),
+            _buildToolbarButton(Icons.code_rounded, 'Code', () {
               _insertMarkdownSyntax('`{}`', placeholder: 'code');
             }),
-            _buildToolbarButton(Icons.format_quote, 'Quote', () {
+            const SizedBox(width: 8),
+            _buildToolbarButton(Icons.format_quote_rounded, 'Quote', () {
               _insertMarkdownSyntax('> {}', placeholder: 'quote');
             }),
           ],
@@ -429,23 +503,33 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
     VoidCallback onPressed,
   ) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
+      margin: const EdgeInsets.symmetric(horizontal: 3),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
       child: IconButton(
         onPressed: onPressed,
         icon: Icon(icon, size: 20, color: Colors.white),
         tooltip: tooltip,
-        padding: const EdgeInsets.all(8),
-        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+        padding: const EdgeInsets.all(10),
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         style: IconButton.styleFrom(
-          hoverColor: Colors.white.withValues(alpha: 0.1),
-          highlightColor: Colors.white.withValues(alpha: 0.2),
+          backgroundColor: Colors.transparent,
+          hoverColor: AppColors.primary.withValues(alpha: 0.2),
+          highlightColor: AppColors.primary.withValues(alpha: 0.3),
         ),
       ),
     );
   }
 
   Widget _buildEditor() {
-    return Padding(
+    return Container(
+      color: Colors.white,
       padding: const EdgeInsets.all(16),
       child: TextField(
         controller: _contentController,
@@ -455,14 +539,14 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen>
         textAlignVertical: TextAlignVertical.top,
         decoration: const InputDecoration(
           hintText: 'Write your markdown here...',
-          hintStyle: TextStyle(color: Colors.white38),
+          hintStyle: TextStyle(color: Colors.black26),
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
         ),
         style: const TextStyle(
           fontFamily: 'monospace',
           fontSize: 16,
-          color: Colors.white,
+          color: Colors.black87,
           height: 1.5,
         ),
         cursorColor: AppColors.primary,

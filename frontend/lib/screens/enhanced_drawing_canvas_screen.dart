@@ -232,61 +232,86 @@ class _EnhancedDrawingCanvasScreenState
   }
 
   void _addTextNote(Offset position) {
-    showDialog(
+    final textController = TextEditingController();
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        final textController = TextEditingController();
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Text(
-            'Add Text Note',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: TextField(
-            controller: textController,
-            autofocus: true,
-            maxLines: 3,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              hintText: 'Enter your text...',
-              hintStyle: TextStyle(color: Colors.white38),
-              border: OutlineInputBorder(),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white24),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: GlassContainer(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.surface
+              : Colors.white,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Add Text Note',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: AppColors.primary),
+              const SizedBox(height: 16),
+              TextField(
+                controller: textController,
+                autofocus: true,
+                maxLines: 3,
+                style: Theme.of(context).textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  hintText: 'Enter your text...',
+                  hintStyle: TextStyle(color: Theme.of(context).hintColor),
+                  border: const OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 12),
+                  ModernButton(
+                    onPressed: () {
+                      if (textController.text.isNotEmpty) {
+                        setState(() {
+                          final textNote = TextNote(
+                            id: const Uuid().v4(),
+                            position: position,
+                            text: textController.text,
+                            color: _currentColor,
+                          );
+                          _currentPage.textNotes.add(textNote);
+                          _updateNote();
+                        });
+                      }
+                      Navigator.pop(context);
+                    },
+                    label: 'Add',
+                    width: 80,
+                    height: 36,
+                  ),
+                ],
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ModernButton(
-              onPressed: () {
-                if (textController.text.isNotEmpty) {
-                  setState(() {
-                    final textNote = TextNote(
-                      id: const Uuid().v4(),
-                      position: position,
-                      text: textController.text,
-                      color: _currentColor,
-                    );
-                    _currentPage.textNotes.add(textNote);
-                    _updateNote();
-                  });
-                }
-                Navigator.pop(context);
-              },
-              label: 'Add',
-              width: 80,
-              height: 36,
-            ),
-          ],
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -382,149 +407,194 @@ class _EnhancedDrawingCanvasScreenState
   }
 
   void _showTextNoteOptions(TextNote note) {
-    showDialog(
+    final textController = TextEditingController(text: note.text);
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        final textController = TextEditingController(text: note.text);
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Text(
-            'Edit Text Note',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: TextField(
-            controller: textController,
-            autofocus: true,
-            maxLines: 3,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white24),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: GlassContainer(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.surface
+              : Colors.white,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Edit Text Note',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: AppColors.primary),
+              const SizedBox(height: 16),
+              TextField(
+                controller: textController,
+                autofocus: true,
+                maxLines: 3,
+                style: Theme.of(context).textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentPage.textNotes.remove(note);
+                        _updateNote();
+                      });
+                      Navigator.pop(context);
+                    },
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    child: const Text('Delete'),
+                  ),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      ModernButton(
+                        onPressed: () {
+                          setState(() {
+                            note.text = textController.text;
+                            _updateNote();
+                          });
+                          Navigator.pop(context);
+                        },
+                        label: 'Save',
+                        width: 80,
+                        height: 36,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _currentPage.textNotes.remove(note);
-                  _updateNote();
-                });
-                Navigator.pop(context);
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ModernButton(
-              onPressed: () {
-                setState(() {
-                  note.text = textController.text;
-                  _updateNote();
-                });
-                Navigator.pop(context);
-              },
-              label: 'Save',
-              width: 80,
-              height: 36,
-            ),
-          ],
-        );
-      },
+        ),
+      ),
     );
   }
 
   void _showImageOptions(CanvasImage image) {
-    showDialog(
+    double scale = image.scale;
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        double scale = image.scale;
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              title: const Text(
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => GlassContainer(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.surface
+              : Colors.white,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
                 'Image Options',
-                style: TextStyle(color: Colors.white),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
+              const SizedBox(height: 24),
+              Text(
+                'Scale: ${(scale * 100).round()}%',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 8),
+              SliderTheme(
+                data: SliderThemeData(
+                  activeTrackColor: AppColors.primary,
+                  inactiveTrackColor: Theme.of(context).dividerColor,
+                  thumbColor: AppColors.primary,
+                  overlayColor: AppColors.primary.withValues(alpha: 0.2),
+                ),
+                child: Slider(
+                  value: scale,
+                  min: 0.1,
+                  max: 2.0,
+                  divisions: 19,
+                  onChanged: (value) {
+                    setDialogState(() {
+                      scale = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Scale: ${(scale * 100).round()}%',
-                    style: const TextStyle(color: Colors.white),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentPage.images.remove(image);
+                        _updateNote();
+                      });
+                      Navigator.pop(context);
+                    },
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    child: const Text('Delete'),
                   ),
-                  SliderTheme(
-                    data: SliderThemeData(
-                      activeTrackColor: AppColors.primary,
-                      inactiveTrackColor: Colors.white24,
-                      thumbColor: Colors.white,
-                      overlayColor: AppColors.primary.withValues(alpha: 0.2),
-                    ),
-                    child: Slider(
-                      value: scale,
-                      min: 0.1,
-                      max: 2.0,
-                      divisions: 19,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          scale = value;
-                        });
-                      },
-                    ),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      ModernButton(
+                        onPressed: () {
+                          setState(() {
+                            final index = _currentPage.images.indexOf(image);
+                            if (index >= 0) {
+                              _currentPage.images[index] = CanvasImage(
+                                id: image.id,
+                                position: image.position,
+                                imageBytes: image.imageBytes,
+                                width: image.width,
+                                height: image.height,
+                                scale: scale,
+                              );
+                              _updateNote();
+                            }
+                          });
+                          Navigator.pop(context);
+                        },
+                        label: 'Apply',
+                        width: 80,
+                        height: 36,
+                      ),
+                    ],
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentPage.images.remove(image);
-                      _updateNote();
-                    });
-                    Navigator.pop(context);
-                  },
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('Delete'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ModernButton(
-                  onPressed: () {
-                    setState(() {
-                      final index = _currentPage.images.indexOf(image);
-                      if (index >= 0) {
-                        _currentPage.images[index] = CanvasImage(
-                          id: image.id,
-                          position: image.position,
-                          imageBytes: image.imageBytes,
-                          width: image.width,
-                          height: image.height,
-                          scale: scale,
-                        );
-                        _updateNote();
-                      }
-                    });
-                    Navigator.pop(context);
-                  },
-                  label: 'Apply',
-                  width: 80,
-                  height: 36,
-                ),
-              ],
-            );
-          },
-        );
-      },
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -650,34 +720,49 @@ class _EnhancedDrawingCanvasScreenState
   }
 
   void _pickColor() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
-          'Pick a color',
-          style: TextStyle(color: Colors.white),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => GlassContainer(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.surface
+            : Colors.white,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Pick a Color',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ColorPicker(
+              pickerColor: _currentColor,
+              onColorChanged: (color) {
+                setState(() {
+                  _currentColor = color;
+                });
+              },
+              labelTypes: const [],
+              pickerAreaHeightPercent: 0.8,
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ModernButton(
+                onPressed: () => Navigator.pop(context),
+                label: 'Done',
+                width: 80,
+                height: 36,
+              ),
+            ),
+          ],
         ),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: _currentColor,
-            onColorChanged: (color) {
-              setState(() {
-                _currentColor = color;
-              });
-            },
-            labelTypes: const [],
-            pickerAreaHeightPercent: 0.8,
-          ),
-        ),
-        actions: [
-          ModernButton(
-            onPressed: () => Navigator.pop(context),
-            label: 'Done',
-            width: 80,
-            height: 36,
-          ),
-        ],
       ),
     );
   }
@@ -792,17 +877,35 @@ class _EnhancedDrawingCanvasScreenState
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.surface,
+                AppColors.surface.withValues(alpha: 0.9),
+              ],
+            ),
+          ),
+        ),
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.3),
         iconTheme: const IconThemeData(color: Colors.white),
-        title: GlassContainer(
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.white.withValues(alpha: 0.1),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+        title: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
           child: TextField(
             controller: _titleController,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
               color: Colors.white,
             ),
@@ -810,11 +913,83 @@ class _EnhancedDrawingCanvasScreenState
               border: InputBorder.none,
               hintText: 'Note title',
               hintStyle: TextStyle(color: Colors.white38),
+              contentPadding: EdgeInsets.zero,
+              isDense: true,
             ),
             onChanged: (value) => _updateNote(),
           ),
         ),
         actions: [
+          // Drawing tools
+          _buildCompactToolButton(
+            icon: Icons.edit_rounded,
+            tooltip: 'Pen',
+            isSelected: _currentTool == DrawingTool.pen,
+            onTap: () => setState(() => _currentTool = DrawingTool.pen),
+          ),
+          _buildCompactToolButton(
+            icon: Icons.auto_fix_high_rounded,
+            tooltip: 'Eraser',
+            isSelected: _currentTool == DrawingTool.eraser,
+            onTap: () => setState(() => _currentTool = DrawingTool.eraser),
+          ),
+          _buildCompactToolButton(
+            icon: Icons.text_fields_rounded,
+            tooltip: 'Text',
+            isSelected: _currentTool == DrawingTool.text,
+            onTap: () => setState(() => _currentTool = DrawingTool.text),
+          ),
+          _buildCompactToolButton(
+            icon: Icons.image_rounded,
+            tooltip: 'Image',
+            isSelected: _currentTool == DrawingTool.image,
+            onTap: () => setState(() => _currentTool = DrawingTool.image),
+          ),
+          _buildCompactToolButton(
+            icon: Icons.touch_app_rounded,
+            tooltip: 'Select',
+            isSelected: _currentTool == DrawingTool.select,
+            onTap: () => setState(() => _currentTool = DrawingTool.select),
+          ),
+          // Color picker
+          IconButton(
+            onPressed: _pickColor,
+            tooltip: 'Color',
+            icon: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: _currentColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+          // Stroke width
+          SizedBox(
+            width: 100,
+            child: SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: AppColors.primary,
+                inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
+                thumbColor: Colors.white,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                overlayColor: AppColors.primary.withValues(alpha: 0.2),
+                trackHeight: 2,
+              ),
+              child: Slider(
+                value: _strokeWidth,
+                min: 1,
+                max: 20,
+                onChanged: (value) {
+                  setState(() {
+                    _strokeWidth = value;
+                  });
+                },
+              ),
+            ),
+          ),
+          // Undo/Redo
           IconButton(
             icon: const Icon(Icons.undo),
             onPressed: _currentPage.strokes.isEmpty ? null : _undo,
@@ -899,7 +1074,6 @@ class _EnhancedDrawingCanvasScreenState
       ),
       body: Column(
         children: [
-          _buildToolbar(),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -953,56 +1127,78 @@ class _EnhancedDrawingCanvasScreenState
   }
 
   Widget _buildToolbar() {
-    return GlassContainer(
-      borderRadius: BorderRadius.zero,
-      color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      border: Border(
-        bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.surface, AppColors.surface.withValues(alpha: 0.8)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
             _buildToolButton(
-              icon: Icons.edit,
+              icon: Icons.edit_rounded,
               label: 'Pen',
               isSelected: _currentTool == DrawingTool.pen,
               onTap: () => setState(() => _currentTool = DrawingTool.pen),
             ),
             const SizedBox(width: 8),
             _buildToolButton(
-              icon: Icons.cleaning_services,
+              icon: Icons.auto_fix_high_rounded,
               label: 'Eraser',
               isSelected: _currentTool == DrawingTool.eraser,
               onTap: () => setState(() => _currentTool = DrawingTool.eraser),
             ),
             const SizedBox(width: 8),
             _buildToolButton(
-              icon: Icons.text_fields,
+              icon: Icons.text_fields_rounded,
               label: 'Text',
               isSelected: _currentTool == DrawingTool.text,
               onTap: () => setState(() => _currentTool = DrawingTool.text),
             ),
             const SizedBox(width: 8),
             _buildToolButton(
-              icon: Icons.image,
+              icon: Icons.image_rounded,
               label: 'Image',
               isSelected: _currentTool == DrawingTool.image,
               onTap: () => setState(() => _currentTool = DrawingTool.image),
             ),
             const SizedBox(width: 8),
             _buildToolButton(
-              icon: Icons.touch_app,
+              icon: Icons.touch_app_rounded,
               label: 'Select',
               isSelected: _currentTool == DrawingTool.select,
               onTap: () => setState(() => _currentTool = DrawingTool.select),
             ),
-            const SizedBox(width: 16),
-            Container(height: 24, width: 1, color: Colors.white24),
-            const SizedBox(width: 16),
+            Container(
+              height: 32,
+              width: 2,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.white24,
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
             _buildColorButton(),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _buildStrokeWidthSlider(),
           ],
         ),
@@ -1016,60 +1212,105 @@ class _EnhancedDrawingCanvasScreenState
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: isSelected
-          ? AppColors.primary.withValues(alpha: 0.2)
-          : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                color: isSelected ? AppColors.primary : Colors.white70,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isSelected ? AppColors.primary : Colors.white70,
-                ),
-              ),
-            ],
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.7),
+                  ],
+                )
+              : null,
+          color: isSelected ? null : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.1),
+            width: 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    spreadRadius: 0,
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.white70,
+              size: 18,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? Colors.white : Colors.white60,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildColorButton() {
-    return InkWell(
+    return GestureDetector(
       onTap: _pickColor,
-      borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
                 color: _currentColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white54, width: 2),
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: _currentColor.withValues(alpha: 0.4),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             const Text(
               'Color',
-              style: TextStyle(fontSize: 12, color: Colors.white70),
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w500,
+                color: Colors.white70,
+                letterSpacing: 0.2,
+              ),
             ),
           ],
         ),
@@ -1078,37 +1319,94 @@ class _EnhancedDrawingCanvasScreenState
   }
 
   Widget _buildStrokeWidthSlider() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 150,
-          child: SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: AppColors.primary,
-              inactiveTrackColor: Colors.white24,
-              thumbColor: Colors.white,
-              overlayColor: AppColors.primary.withValues(alpha: 0.2),
-            ),
-            child: Slider(
-              value: _strokeWidth,
-              min: 1,
-              max: 20,
-              divisions: 19,
-              label: _strokeWidth.round().toString(),
-              onChanged: (value) {
-                setState(() {
-                  _strokeWidth = value;
-                });
-              },
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 120,
+            child: SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: AppColors.primary,
+                inactiveTrackColor: Colors.white.withValues(alpha: 0.2),
+                thumbColor: Colors.white,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                overlayColor: AppColors.primary.withValues(alpha: 0.2),
+                trackHeight: 2.5,
+              ),
+              child: Slider(
+                value: _strokeWidth,
+                min: 1,
+                max: 20,
+                divisions: 19,
+                onChanged: (value) {
+                  setState(() {
+                    _strokeWidth = value;
+                  });
+                },
+              ),
             ),
           ),
+          Text(
+            '${_strokeWidth.round()}px',
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+              color: Colors.white70,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactToolButton({
+    required IconData icon,
+    required String tooltip,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return IconButton(
+      onPressed: onTap,
+      tooltip: tooltip,
+      icon: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.7),
+                  ],
+                )
+              : null,
+          color: isSelected ? null : Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.2),
+            width: 1,
+          ),
         ),
-        Text(
-          'Width: ${_strokeWidth.round()}',
-          style: const TextStyle(fontSize: 12, color: Colors.white70),
+        child: Icon(
+          icon,
+          size: 18,
+          color: isSelected ? Colors.white : Colors.white70,
         ),
-      ],
+      ),
     );
   }
 
