@@ -106,9 +106,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
       // 1. There are conversations available
       // 2. No conversation is currently loaded
       // 3. No messages are currently displayed
-      if (conversations.isNotEmpty && 
-          _currentConversationId == null && 
-          _messages.isEmpty) {
+      // 4. No preselected files were passed (we want to start fresh with those)
+      if (conversations.isNotEmpty &&
+          _currentConversationId == null &&
+          _messages.isEmpty &&
+          widget.preselectedFileId == null &&
+          widget.preselectedFileIds == null) {
         // Load the most recent conversation (first in the list)
         await _loadConversation(conversations.first.id);
       }
@@ -293,14 +296,20 @@ class _AIChatScreenState extends State<AIChatScreen> {
     setState(() {
       _currentConversationId = null;
       _messages.clear();
-      // Preserve context if embedded with a preselected file
+      // Preserve context if embedded with a preselected file or folder
+      _selectedFileIds.clear();
       if (widget.preselectedFileId != null) {
-        _selectedFileIds = {widget.preselectedFileId!};
-      } else {
-        _selectedFileIds.clear();
+        _selectedFileIds.add(widget.preselectedFileId!);
+      }
+      if (widget.preselectedFileIds != null) {
+        _selectedFileIds.addAll(widget.preselectedFileIds!);
       }
     });
-    await _loadSourcePreferences();
+
+    // Only load preferences if we don't have preselected files
+    if (widget.preselectedFileId == null && widget.preselectedFileIds == null) {
+      await _loadSourcePreferences();
+    }
   }
 
   Future<void> _deleteConversation(String conversationId) async {
@@ -599,7 +608,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWideScreen = screenWidth > 600;
-    
+
     // Auto-hide source panel if screen/panel is too narrow (less than 500px)
     final shouldShowSourcePanel = _showSourcePanel && screenWidth >= 500;
 
@@ -607,7 +616,6 @@ class _AIChatScreenState extends State<AIChatScreen> {
       children: [
         // Background for embedded mode - only if not wrapped in a container
         // (PDF viewer already provides background)
-
         Column(
           children: [
             // Custom AppBar
@@ -646,39 +654,40 @@ class _AIChatScreenState extends State<AIChatScreen> {
                                     itemCount:
                                         _messages.length + (_isLoading ? 1 : 0),
                                     itemBuilder: (context, index) {
-                                    if (index == _messages.length) {
-                                      return const Padding(
-                                        padding: EdgeInsets.all(16.0),
-                                        child: Row(
-                                          children: [
-                                            SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: AppColors.primary,
+                                      if (index == _messages.length) {
+                                        return const Padding(
+                                          padding: EdgeInsets.all(16.0),
+                                          child: Row(
+                                            children: [
+                                              SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: AppColors.primary,
+                                                    ),
                                               ),
-                                            ),
-                                            SizedBox(width: 12),
-                                            Text(
-                                              'AI is thinking...',
-                                              style: TextStyle(
-                                                color: Colors.white70,
+                                              SizedBox(width: 12),
+                                              Text(
+                                                'AI is thinking...',
+                                                style: TextStyle(
+                                                  color: Colors.white70,
+                                                ),
                                               ),
-                                            ),
-                                          ],
-                                        ),
+                                            ],
+                                          ),
+                                        );
+                                      }
+                                      final message = _messages[index];
+                                      return ChatMessageBubble(
+                                        message: message,
+                                        onCitationTapped: _onCitationTapped,
+                                        onSaveAsNote: message.isUser
+                                            ? null
+                                            : () => _onSaveAsNote(message),
                                       );
-                                    }
-                                    final message = _messages[index];
-                                    return ChatMessageBubble(
-                                      message: message,
-                                      onCitationTapped: _onCitationTapped,
-                                      onSaveAsNote: message.isUser
-                                          ? null
-                                          : () => _onSaveAsNote(message),
-                                    );
-                                  },
+                                    },
                                   ),
                                 ),
                         ),
@@ -694,9 +703,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     LayoutBuilder(
                       builder: (context, constraints) {
                         // Use flexible width: min 250px, max 300px, or 40% of available space
-                        final panelWidth = (constraints.maxWidth * 0.4)
-                            .clamp(250.0, 300.0);
-                        
+                        final panelWidth = (constraints.maxWidth * 0.4).clamp(
+                          250.0,
+                          300.0,
+                        );
+
                         return Container(
                           width: panelWidth,
                           decoration: BoxDecoration(

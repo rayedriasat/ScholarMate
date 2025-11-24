@@ -988,8 +988,8 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
   Widget _buildChatPanel(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final maxWidth = screenWidth * _maxChatWidthPercent;
-    final effectiveWidth = _chatPanelFullscreen 
-        ? screenWidth 
+    final effectiveWidth = _chatPanelFullscreen
+        ? screenWidth
         : _chatPanelWidth.clamp(_minChatWidth, maxWidth);
 
     return Row(
@@ -1001,8 +1001,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
             child: GestureDetector(
               onPanUpdate: (details) {
                 setState(() {
-                  _chatPanelWidth = (_chatPanelWidth - details.delta.dx)
-                      .clamp(_minChatWidth, maxWidth);
+                  _chatPanelWidth = (_chatPanelWidth - details.delta.dx).clamp(
+                    _minChatWidth,
+                    maxWidth,
+                  );
                 });
               },
               child: Container(
@@ -1011,7 +1013,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                 child: Center(
                   child: Container(
                     width: 2,
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.5),
                   ),
                 ),
               ),
@@ -1025,10 +1029,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                 ? AppColors.surface
                 : Colors.white,
             border: Border(
-              left: BorderSide(
-                color: Theme.of(context).dividerColor,
-                width: 2,
-              ),
+              left: BorderSide(color: Theme.of(context).dividerColor, width: 2),
             ),
             boxShadow: [
               BoxShadow(
@@ -1040,49 +1041,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
           ),
           child: Column(
             children: [
-              // Chat panel header with controls
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Theme.of(context).dividerColor),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.chat, size: 20),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'AI Chat',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const Spacer(),
-                    // Minimize/Maximize button
-                    IconButton(
-                      icon: Icon(
-                        _chatPanelFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _chatPanelFullscreen = !_chatPanelFullscreen;
-                        });
-                      },
-                      tooltip: _chatPanelFullscreen ? 'Exit fullscreen' : 'Fullscreen',
-                    ),
-                    // Close button
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 20),
-                      onPressed: () {
-                        setState(() {
-                          _showChatPanel = false;
-                        });
-                      },
-                      tooltip: 'Close',
-                    ),
-                  ],
-                ),
-              ),
               // Chat content
               Expanded(
                 child: AIChatScreen(
@@ -1094,6 +1052,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                       _showChatPanel = false;
                     });
                   },
+                  onToggleFullscreen: () {
+                    setState(() {
+                      _chatPanelFullscreen = !_chatPanelFullscreen;
+                    });
+                  },
+                  isFullscreen: _chatPanelFullscreen,
                 ),
               ),
             ],
@@ -1431,17 +1395,294 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                     _showExpandedToolbar = !_showExpandedToolbar;
                   });
                 },
-                tooltip: _showExpandedToolbar ? 'Hide tools' : 'Show more tools',
+                tooltip: _showExpandedToolbar
+                    ? 'Hide tools'
+                    : 'Show more tools',
                 iconSize: 20,
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),
               ),
             ),
-            
+
             // Expanded toolbar buttons (only show when expanded)
             if (_showExpandedToolbar) ...[
-            // Desktop/non-Android: Show all buttons in toolbar with theme-aware design
-            if (kIsWeb)
+              // Desktop/non-Android: Show all buttons in toolbar with theme-aware design
+              if (kIsWeb)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[700]!
+                          : Colors.grey[300]!,
+                      width: 1,
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.view_column_outlined,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[300]
+                          : Colors.grey[700],
+                      size: 20,
+                    ),
+                    onPressed: _openSplitView,
+                    tooltip: 'Split View',
+                    iconSize: 20,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
+              Consumer<ConnectivityService>(
+                builder: (context, connectivity, child) {
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      color: connectivity.isOnline
+                          ? (isDark ? Colors.grey[800] : Colors.grey[100])
+                          : (isDark ? Colors.grey[850] : Colors.grey[200]),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: connectivity.isOnline
+                            ? (isDark ? Colors.grey[700]! : Colors.grey[300]!)
+                            : (isDark ? Colors.grey[800]! : Colors.grey[400]!),
+                        width: 1,
+                      ),
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.people_outline,
+                        color: connectivity.isOnline
+                            ? (isDark ? Colors.grey[300] : Colors.grey[700])
+                            : (isDark ? Colors.grey[700] : Colors.grey[400]),
+                        size: 20,
+                      ),
+                      onPressed: connectivity.isOnline
+                          ? _startCollaboration
+                          : null,
+                      tooltip: connectivity.isOnline
+                          ? 'Start Collaboration'
+                          : 'Offline - Cannot collaborate',
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  );
+                },
+              ),
+              Consumer<ConnectivityService>(
+                builder: (context, connectivity, child) {
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      color: connectivity.isOnline
+                          ? (isDark ? Colors.grey[800] : Colors.grey[100])
+                          : (isDark ? Colors.grey[850] : Colors.grey[200]),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: connectivity.isOnline
+                            ? (isDark ? Colors.grey[700]! : Colors.grey[300]!)
+                            : (isDark ? Colors.grey[800]! : Colors.grey[400]!),
+                        width: 1,
+                      ),
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.refresh_outlined,
+                        color: connectivity.isOnline
+                            ? (isDark ? Colors.grey[300] : Colors.grey[700])
+                            : (isDark ? Colors.grey[700] : Colors.grey[400]),
+                        size: 20,
+                      ),
+                      onPressed: connectivity.isOnline ? _refreshPdf : null,
+                      tooltip: connectivity.isOnline
+                          ? 'Refresh from Google Drive'
+                          : 'Offline - Cannot refresh',
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  );
+                },
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: _showTtsControls
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.blue[900]
+                            : Colors.blue[50])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[800]
+                            : Colors.grey[100]),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _showTtsControls
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.blue[700]!
+                              : Colors.blue[300]!)
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!),
+                    width: 1,
+                  ),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    _showTtsControls
+                        ? Icons.volume_off_outlined
+                        : Icons.volume_up_outlined,
+                    color: _showTtsControls
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.blue[300]
+                              : Colors.blue[700])
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[300]
+                              : Colors.grey[700]),
+                    size: 20,
+                  ),
+                  onPressed: _toggleTtsControls,
+                  tooltip: 'Read Aloud',
+                  iconSize: 20,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: _showAnnotationToolbar
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.orange[900]
+                            : Colors.orange[50])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[800]
+                            : Colors.grey[100]),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _showAnnotationToolbar
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.orange[700]!
+                              : Colors.orange[300]!)
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!),
+                    width: 1,
+                  ),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    _showAnnotationToolbar
+                        ? Icons.edit_off_outlined
+                        : Icons.edit_outlined,
+                    color: _showAnnotationToolbar
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.orange[300]
+                              : Colors.orange[700])
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[300]
+                              : Colors.grey[700]),
+                    size: 20,
+                  ),
+                  onPressed: _toggleAnnotationToolbar,
+                  tooltip: 'Annotations',
+                  iconSize: 20,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+
+              if (_annotations.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.green[900]
+                        : Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.green[700]!
+                          : Colors.green[300]!,
+                      width: 1,
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.cloud_upload_outlined,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.green[300]
+                          : Colors.green[700],
+                      size: 20,
+                    ),
+                    onPressed: () async {
+                      await _savePdfWithAnnotations(uploadToDrive: true);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'PDF saved and uploaded to Google Drive',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    tooltip: 'Upload to Drive',
+                    iconSize: 20,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: _isSearching
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.amber[900]
+                            : Colors.amber[50])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[800]
+                            : Colors.grey[100]),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _isSearching
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.amber[700]!
+                              : Colors.amber[300]!)
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!),
+                    width: 1,
+                  ),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    _isSearching ? Icons.close_outlined : Icons.search_outlined,
+                    color: _isSearching
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.amber[300]
+                              : Colors.amber[800])
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[300]
+                              : Colors.grey[700]),
+                    size: 20,
+                  ),
+                  onPressed: _toggleSearch,
+                  tooltip: 'Search',
+                  iconSize: 20,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
@@ -1458,333 +1699,60 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                 ),
                 child: IconButton(
                   icon: Icon(
-                    Icons.view_column_outlined,
+                    Icons.format_list_numbered_outlined,
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.grey[300]
                         : Colors.grey[700],
                     size: 20,
                   ),
-                  onPressed: _openSplitView,
-                  tooltip: 'Split View',
+                  onPressed: _totalPages > 0 ? _showPageNavigator : null,
+                  tooltip: 'Go to page',
                   iconSize: 20,
                   padding: const EdgeInsets.all(8),
                   constraints: const BoxConstraints(),
                 ),
               ),
-            Consumer<ConnectivityService>(
-              builder: (context, connectivity, child) {
-                final isDark = Theme.of(context).brightness == Brightness.dark;
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: BoxDecoration(
-                    color: connectivity.isOnline
-                        ? (isDark ? Colors.grey[800] : Colors.grey[100])
-                        : (isDark ? Colors.grey[850] : Colors.grey[200]),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: connectivity.isOnline
-                          ? (isDark ? Colors.grey[700]! : Colors.grey[300]!)
-                          : (isDark ? Colors.grey[800]! : Colors.grey[400]!),
-                      width: 1,
-                    ),
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.people_outline,
-                      color: connectivity.isOnline
-                          ? (isDark ? Colors.grey[300] : Colors.grey[700])
-                          : (isDark ? Colors.grey[700] : Colors.grey[400]),
-                      size: 20,
-                    ),
-                    onPressed: connectivity.isOnline
-                        ? _startCollaboration
-                        : null,
-                    tooltip: connectivity.isOnline
-                        ? 'Start Collaboration'
-                        : 'Offline - Cannot collaborate',
-                    iconSize: 20,
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(),
-                  ),
-                );
-              },
-            ),
-            Consumer<ConnectivityService>(
-              builder: (context, connectivity, child) {
-                final isDark = Theme.of(context).brightness == Brightness.dark;
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: BoxDecoration(
-                    color: connectivity.isOnline
-                        ? (isDark ? Colors.grey[800] : Colors.grey[100])
-                        : (isDark ? Colors.grey[850] : Colors.grey[200]),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: connectivity.isOnline
-                          ? (isDark ? Colors.grey[700]! : Colors.grey[300]!)
-                          : (isDark ? Colors.grey[800]! : Colors.grey[400]!),
-                      width: 1,
-                    ),
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.refresh_outlined,
-                      color: connectivity.isOnline
-                          ? (isDark ? Colors.grey[300] : Colors.grey[700])
-                          : (isDark ? Colors.grey[700] : Colors.grey[400]),
-                      size: 20,
-                    ),
-                    onPressed: connectivity.isOnline ? _refreshPdf : null,
-                    tooltip: connectivity.isOnline
-                        ? 'Refresh from Google Drive'
-                        : 'Offline - Cannot refresh',
-                    iconSize: 20,
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(),
-                  ),
-                );
-              },
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: _showTtsControls
-                    ? (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.blue[900]
-                          : Colors.blue[50])
-                    : (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[800]
-                          : Colors.grey[100]),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _showTtsControls
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.blue[700]!
-                            : Colors.blue[300]!)
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[700]!
-                            : Colors.grey[300]!),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  _showTtsControls
-                      ? Icons.volume_off_outlined
-                      : Icons.volume_up_outlined,
-                  color: _showTtsControls
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.blue[300]
-                            : Colors.blue[700])
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[300]
-                            : Colors.grey[700]),
-                  size: 20,
-                ),
-                onPressed: _toggleTtsControls,
-                tooltip: 'Read Aloud',
-                iconSize: 20,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: _showAnnotationToolbar
-                    ? (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.orange[900]
-                          : Colors.orange[50])
-                    : (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[800]
-                          : Colors.grey[100]),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _showAnnotationToolbar
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.orange[700]!
-                            : Colors.orange[300]!)
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[700]!
-                            : Colors.grey[300]!),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  _showAnnotationToolbar
-                      ? Icons.edit_off_outlined
-                      : Icons.edit_outlined,
-                  color: _showAnnotationToolbar
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.orange[300]
-                            : Colors.orange[700])
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[300]
-                            : Colors.grey[700]),
-                  size: 20,
-                ),
-                onPressed: _toggleAnnotationToolbar,
-                tooltip: 'Annotations',
-                iconSize: 20,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
-            ),
-
-            if (_annotations.isNotEmpty)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.green[900]
-                      : Colors.green[50],
+                  color: _showMetadataSidebar
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.teal[900]
+                            : Colors.teal[50])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[800]
+                            : Colors.grey[100]),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.green[700]!
-                        : Colors.green[300]!,
+                    color: _showMetadataSidebar
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.teal[700]!
+                              : Colors.teal[300]!)
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!),
                     width: 1,
                   ),
                 ),
                 child: IconButton(
                   icon: Icon(
-                    Icons.cloud_upload_outlined,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.green[300]
-                        : Colors.green[700],
+                    Icons.info_outlined,
+                    color: _showMetadataSidebar
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.teal[300]
+                              : Colors.teal[700])
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[300]
+                              : Colors.grey[700]),
                     size: 20,
                   ),
-                  onPressed: () async {
-                    await _savePdfWithAnnotations(uploadToDrive: true);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'PDF saved and uploaded to Google Drive',
-                          ),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                  tooltip: 'Upload to Drive',
+                  onPressed: _toggleMetadataSidebar,
+                  tooltip: 'Metadata & Citations',
                   iconSize: 20,
                   padding: const EdgeInsets.all(8),
                   constraints: const BoxConstraints(),
                 ),
               ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: _isSearching
-                    ? (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.amber[900]
-                          : Colors.amber[50])
-                    : (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[800]
-                          : Colors.grey[100]),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _isSearching
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.amber[700]!
-                            : Colors.amber[300]!)
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[700]!
-                            : Colors.grey[300]!),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  _isSearching ? Icons.close_outlined : Icons.search_outlined,
-                  color: _isSearching
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.amber[300]
-                            : Colors.amber[800])
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[300]
-                            : Colors.grey[700]),
-                  size: 20,
-                ),
-                onPressed: _toggleSearch,
-                tooltip: 'Search',
-                iconSize: 20,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[800]
-                    : Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[700]!
-                      : Colors.grey[300]!,
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  Icons.format_list_numbered_outlined,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[300]
-                      : Colors.grey[700],
-                  size: 20,
-                ),
-                onPressed: _totalPages > 0 ? _showPageNavigator : null,
-                tooltip: 'Go to page',
-                iconSize: 20,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: _showMetadataSidebar
-                    ? (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.teal[900]
-                          : Colors.teal[50])
-                    : (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[800]
-                          : Colors.grey[100]),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _showMetadataSidebar
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.teal[700]!
-                            : Colors.teal[300]!)
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[700]!
-                            : Colors.grey[300]!),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  Icons.info_outlined,
-                  color: _showMetadataSidebar
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.teal[300]
-                            : Colors.teal[700])
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[300]
-                            : Colors.grey[700]),
-                  size: 20,
-                ),
-                onPressed: _toggleMetadataSidebar,
-                tooltip: 'Metadata & Citations',
-                iconSize: 20,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
-            ),
             ], // End of expanded toolbar
           ],
         ],
@@ -2066,68 +2034,72 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                                   Expanded(
                                     flex: (_zoomLevel * 200).toInt(),
                                     child: Container(
-                                      color: const Color(0xFF2A2A2A), // Soft dark grey background
+                                      color: const Color(
+                                        0xFF2A2A2A,
+                                      ), // Soft dark grey background
                                       child: SfPdfViewer.memory(
                                         pdfManager.currentPdfBytes!,
                                         key: _pdfViewerKey,
                                         controller: _pdfViewerController,
-                                      onDocumentLoaded:
-                                          (PdfDocumentLoadedDetails details) {
-                                            setState(() {
-                                              _totalPages =
-                                                  details.document.pages.count;
-                                              _annotations =
-                                                  _pdfViewerController
-                                                      .getAnnotations();
-                                            });
-                                          },
-                                      onPageChanged:
-                                          (PdfPageChangedDetails details) {
-                                            setState(() {
-                                              _currentPage =
-                                                  details.newPageNumber;
-                                            });
-                                            // Track page read
-                                            _analyticsService
-                                                ?.updateCurrentPage(
-                                                  _currentPage,
-                                                );
-                                          },
-                                      onAnnotationAdded:
-                                          (Annotation annotation) {
-                                            _onAnnotationAdded(annotation);
-                                          },
-                                      onAnnotationSelected:
-                                          (Annotation annotation) {
-                                            // Show context menu for annotation
-                                            _showAnnotationContextMenu(
-                                              annotation,
-                                            );
-                                          },
-                                      onAnnotationDeselected:
-                                          (Annotation annotation) {
-                                            // Annotation deselected
-                                          },
-                                      onAnnotationEdited:
-                                          (Annotation annotation) {
-                                            setState(() {
-                                              _annotations =
-                                                  _pdfViewerController
-                                                      .getAnnotations();
-                                            });
-                                            // Auto-save when annotation is edited
-                                            _savePdfWithAnnotations();
-                                          },
-                                      onAnnotationRemoved:
-                                          (Annotation annotation) {
-                                            setState(() {
-                                              _annotations =
-                                                  _pdfViewerController
-                                                      .getAnnotations();
-                                            });
-                                            // Auto-save when annotation is removed
-                                            _savePdfWithAnnotations();
-                                          },
+                                        onDocumentLoaded:
+                                            (PdfDocumentLoadedDetails details) {
+                                              setState(() {
+                                                _totalPages = details
+                                                    .document
+                                                    .pages
+                                                    .count;
+                                                _annotations =
+                                                    _pdfViewerController
+                                                        .getAnnotations();
+                                              });
+                                            },
+                                        onPageChanged:
+                                            (PdfPageChangedDetails details) {
+                                              setState(() {
+                                                _currentPage =
+                                                    details.newPageNumber;
+                                              });
+                                              // Track page read
+                                              _analyticsService
+                                                  ?.updateCurrentPage(
+                                                    _currentPage,
+                                                  );
+                                            },
+                                        onAnnotationAdded:
+                                            (Annotation annotation) {
+                                              _onAnnotationAdded(annotation);
+                                            },
+                                        onAnnotationSelected:
+                                            (Annotation annotation) {
+                                              // Show context menu for annotation
+                                              _showAnnotationContextMenu(
+                                                annotation,
+                                              );
+                                            },
+                                        onAnnotationDeselected:
+                                            (Annotation annotation) {
+                                              // Annotation deselected
+                                            },
+                                        onAnnotationEdited:
+                                            (Annotation annotation) {
+                                              setState(() {
+                                                _annotations =
+                                                    _pdfViewerController
+                                                        .getAnnotations();
+                                              });
+                                              // Auto-save when annotation is edited
+                                              _savePdfWithAnnotations();
+                                            },
+                                        onAnnotationRemoved:
+                                            (Annotation annotation) {
+                                              setState(() {
+                                                _annotations =
+                                                    _pdfViewerController
+                                                        .getAnnotations();
+                                              });
+                                              // Auto-save when annotation is removed
+                                              _savePdfWithAnnotations();
+                                            },
                                       ),
                                     ),
                                   ),
@@ -2181,7 +2153,8 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                                       modifiedTime: DateTime.now(),
                                       size: 0,
                                     ),
-                                metadataService: context.read<MetadataService>(),
+                                metadataService: context
+                                    .read<MetadataService>(),
                                 onClose: () {
                                   setState(() {
                                     _showMetadataSidebar = false;

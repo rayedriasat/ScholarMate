@@ -25,6 +25,19 @@ class _IndexingProgressPanelState extends State<IndexingProgressPanel> {
 
         return Container(
           constraints: const BoxConstraints(maxHeight: 500),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF1E293B) // AppColors.surface
+                : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,

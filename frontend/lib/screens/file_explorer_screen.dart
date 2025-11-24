@@ -27,6 +27,8 @@ import 'ai_chat_screen.dart';
 import 'citation_generator_screen.dart';
 import 'analytics_screen.dart';
 import 'join_collaboration_screen.dart';
+import 'advanced_search_screen.dart';
+import '../widgets/tag_selection_dialog.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -69,6 +71,15 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   bool _sortAscending = true;
   // FileViewLayout _viewLayout = FileViewLayout.list; // Unused
   final TextEditingController _searchController = TextEditingController();
+
+  // Chat panel state
+  bool _showChatPanel = false;
+  double _chatPanelWidth = 400;
+  bool _chatPanelFullscreen = false;
+  static const double _minChatWidth = 300;
+  static const double _maxChatWidthPercent = 0.7;
+  String? _chatFolderName;
+  List<String> _chatFileIds = [];
 
   @override
   void initState() {
@@ -571,13 +582,79 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         ? _navigationPath.last.name
         : 'ScholarMate';
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            AIChatScreen(preselectedFileIds: fileIds, folderName: folderName),
-      ),
-    );
+    if (mounted) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      if (screenWidth >= 900) {
+        setState(() {
+          _chatFileIds = fileIds;
+          _chatFolderName = folderName;
+          _showChatPanel = true;
+          _chatPanelFullscreen = false;
+        });
+      } else {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AIChatScreen(
+              preselectedFileIds: fileIds,
+              folderName: folderName,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _chatWithSpecificFolder(DriveFile folder) async {
+    try {
+      // Fetch files in the folder
+      final files = await _driveService!.listFiles(folder.id);
+      final filesInFolder = files.where((f) => !f.isFolder).toList();
+
+      if (filesInFolder.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No files in this folder to chat with'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+      final fileIds = filesInFolder.map((f) => f.id).toList();
+
+      if (mounted) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        if (screenWidth >= 900) {
+          setState(() {
+            _chatFileIds = fileIds;
+            _chatFolderName = folder.name;
+            _showChatPanel = true;
+            _chatPanelFullscreen = false;
+          });
+        } else {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AIChatScreen(
+                preselectedFileIds: fileIds,
+                folderName: folder.name,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error preparing chat: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showIndexingProgressPanel() {
@@ -586,6 +663,88 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const IndexingProgressPanel(),
+    );
+  }
+
+  Widget _buildChatPanel(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = screenWidth * _maxChatWidthPercent;
+    final effectiveWidth = _chatPanelFullscreen
+        ? screenWidth
+        : _chatPanelWidth.clamp(_minChatWidth, maxWidth);
+
+    return Row(
+      children: [
+        // Resize handle
+        if (!_chatPanelFullscreen)
+          MouseRegion(
+            cursor: SystemMouseCursors.resizeColumn,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  _chatPanelWidth = (_chatPanelWidth - details.delta.dx).clamp(
+                    _minChatWidth,
+                    maxWidth,
+                  );
+                });
+              },
+              child: Container(
+                width: 8,
+                color: Colors.transparent,
+                child: Center(
+                  child: Container(
+                    width: 2,
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        // Chat panel
+        Container(
+          width: effectiveWidth,
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surface
+                : Colors.white,
+            border: Border(
+              left: BorderSide(color: Theme.of(context).dividerColor, width: 2),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(-2, 0),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Chat content
+              Expanded(
+                child: AIChatScreen(
+                  preselectedFileIds: _chatFileIds,
+                  folderName: _chatFolderName,
+                  isEmbedded: true,
+                  onClose: () {
+                    setState(() {
+                      _showChatPanel = false;
+                    });
+                  },
+                  onToggleFullscreen: () {
+                    setState(() {
+                      _chatPanelFullscreen = !_chatPanelFullscreen;
+                    });
+                  },
+                  isFullscreen: _chatPanelFullscreen,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -599,52 +758,60 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Stack(
+      body: Row(
         children: [
-          Column(
-            children: [
-              // Custom Toolbar
-              _buildToolbar(isSmallScreen),
+          Expanded(
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    // Custom Toolbar
+                    _buildToolbar(isSmallScreen),
 
-              // Breadcrumbs
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: BreadcrumbNavigation(
-                  path: _navigationPath,
-                  onNavigate: _navigateToFolder,
+                    // Breadcrumbs
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: BreadcrumbNavigation(
+                        path: _navigationPath,
+                        onNavigate: _navigateToFolder,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // File List
+                    Expanded(
+                      child: _isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : _error != null
+                          ? Center(
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            )
+                          : _files.isEmpty
+                          ? _buildEmptyState()
+                          : _buildFileTable(),
+                    ),
+                  ],
                 ),
-              ),
 
-              const SizedBox(height: 8),
-
-              // File List
-              Expanded(
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      )
-                    : _error != null
-                    ? Center(
-                        child: Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      )
-                    : _files.isEmpty
-                    ? _buildEmptyState()
-                    : _buildFileTable(),
-              ),
-            ],
+                // Floating Action Button
+                Positioned(
+                  bottom: isSmallScreen ? 100 : 32,
+                  right: 32,
+                  child: _buildFAB(),
+                ),
+              ],
+            ),
           ),
-
-          // Floating Action Button
-          Positioned(
-            bottom: isSmallScreen ? 100 : 32,
-            right: 32,
-            child: _buildFAB(),
-          ),
+          if (_showChatPanel && MediaQuery.of(context).size.width >= 900)
+            _buildChatPanel(context),
         ],
       ),
     );
@@ -770,9 +937,20 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                     builder: (context) => const AnalyticsScreen(),
                   ),
                 );
+              } else if (value == 'advanced_search') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdvancedSearchScreen(),
+                  ),
+                );
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'advanced_search',
+                child: Text('Advanced Search'),
+              ),
               const PopupMenuItem(
                 value: 'join_collaboration',
                 child: Text('Join Collaboration'),
@@ -1039,6 +1217,18 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                               _showDeleteConfirmation(file);
                             if (value == 'share') _shareFile(file);
                             if (value == 'reindex') _reindexFile(file);
+                            if (value == 'manage_tags') {
+                              showDialog(
+                                context: context,
+                                builder: (context) => TagSelectionDialog(
+                                  fileIds: [file.id],
+                                  currentTags: [],
+                                ),
+                              );
+                            }
+                            if (value == 'chat_with_folder') {
+                              _chatWithSpecificFolder(file);
+                            }
                           },
                           itemBuilder: (context) => [
                             const PopupMenuItem(
@@ -1060,6 +1250,15 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                                 'Delete',
                                 style: TextStyle(color: Colors.red),
                               ),
+                            ),
+                            if (file.isFolder)
+                              const PopupMenuItem(
+                                value: 'chat_with_folder',
+                                child: Text('Chat with Folder'),
+                              ),
+                            const PopupMenuItem(
+                              value: 'manage_tags',
+                              child: Text('Manage Tags'),
                             ),
                           ],
                         ),
