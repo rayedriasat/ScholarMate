@@ -36,7 +36,7 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark
         ? AppColors.background
-        : const Color(0xFFF0F9FF); // Light blue tint
+        : const Color(0xFFFAFAFA); // Soft white/gray
 
     return Stack(
       children: [
@@ -52,13 +52,13 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
                 animationValue: _controller.value,
                 primary: isDark
                     ? AppColors.primary
-                    : const Color(0xFF60A5FA), // Blue 400
+                    : const Color(0xFF3B82F6), // Brighter Blue 500
                 secondary: isDark
                     ? AppColors.secondary
-                    : const Color(0xFFF472B6), // Pink 400
+                    : const Color(0xFFEC4899), // Brighter Pink 500
                 accent: isDark
                     ? AppColors.accent
-                    : const Color(0xFF2DD4BF), // Teal 400
+                    : const Color(0xFF14B8A6), // Brighter Teal 500
                 isDark: isDark,
               ),
               size: Size.infinite,
@@ -97,7 +97,9 @@ class BackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
-    final alphaMultiplier = isDark ? 1.0 : 0.6; // Softer colors for light mode
+    final alphaMultiplier = isDark
+        ? 1.0
+        : 0.8; // More visible colors for light mode
 
     // Orb 1 (Primary) - Top Left
     paint.color = primary.withValues(alpha: 0.3 * alphaMultiplier);

@@ -29,6 +29,14 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark
+        ? Colors.white
+        : Theme.of(context).colorScheme.surface;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.1)
+        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1);
+
     return Container(
       width: width,
       height: height,
@@ -40,14 +48,9 @@ class GlassContainer extends StatelessWidget {
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              color: color ?? Colors.white.withValues(alpha: opacity),
+              color: color ?? baseColor.withValues(alpha: opacity),
               borderRadius: borderRadius ?? BorderRadius.circular(16),
-              border:
-                  border ??
-                  Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1.0,
-                  ),
+              border: border ?? Border.all(color: borderColor, width: 1.0),
             ),
             child: child,
           ),

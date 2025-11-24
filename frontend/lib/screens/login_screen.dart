@@ -85,8 +85,10 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildWebSignInButton(AuthService authService) {
     if (authService.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+      return Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
+        ),
       );
     }
 
@@ -98,12 +100,20 @@ class _LoginScreenState extends State<LoginScreen>
         height: 48,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.2),
+          ),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Text(
+        child: Text(
           'Web sign-in not available',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
         ),
       );
     }
@@ -169,12 +179,12 @@ class _LoginScreenState extends State<LoginScreen>
               children: [
                 _buildLogo(size: 80),
                 const SizedBox(height: 32),
-                const Text(
+                Text(
                   'ScholarMate',
                   style: TextStyle(
                     fontSize: 64,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.1,
                   ),
                 ),
@@ -183,7 +193,9 @@ class _LoginScreenState extends State<LoginScreen>
                   'Your AI-Powered Research Workspace',
                   style: TextStyle(
                     fontSize: 24,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w300,
                   ),
                 ),
@@ -210,12 +222,12 @@ class _LoginScreenState extends State<LoginScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Welcome Back',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -223,7 +235,9 @@ class _LoginScreenState extends State<LoginScreen>
                       'Sign in to continue your research',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 48),
@@ -260,12 +274,12 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildWelcomeText() {
     return Column(
       children: [
-        const Text(
+        Text(
           'ScholarMate',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -274,7 +288,9 @@ class _LoginScreenState extends State<LoginScreen>
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
-            color: Colors.white.withValues(alpha: 0.7),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -339,26 +355,34 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildFeatureItem(IconData icon, String text) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+    return Builder(
+      builder: (context) => Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
           ),
-          child: Icon(icon, color: AppColors.accent, size: 24),
-        ),
-        const SizedBox(width: 16),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 18,
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
+          const SizedBox(width: 16),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 18,
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
