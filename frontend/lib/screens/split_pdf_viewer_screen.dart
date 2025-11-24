@@ -382,40 +382,19 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
     required bool isLeftPane,
   }) {
     if (isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: AppColors.primary),
-            SizedBox(height: 16),
-            Text('Loading PDF...', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-      );
-    }
-
-    if (error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+      return Container(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const CircularProgressIndicator(color: AppColors.primary),
               const SizedBox(height: 16),
-              const Text(
-                'Failed to load PDF',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
               Text(
-                error,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                'Loading PDF...',
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
               ),
             ],
           ),
@@ -423,56 +402,96 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
       );
     }
 
-    if (pdfBytes == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.picture_as_pdf,
-              size: 64,
-              color: Colors.white.withValues(alpha: 0.2),
+    if (error != null) {
+      return Container(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to load PDF',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              isLeftPane ? 'No PDF loaded' : 'No second PDF loaded',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white.withValues(alpha: 0.6),
-              ),
-            ),
-            if (onLoadPdf != null) ...[
-              const SizedBox(height: 24),
-              ModernButton(
-                onPressed: onLoadPdf,
-                icon: Icons.cloud,
-                label: 'Select PDF from Drive',
-              ),
-            ],
-          ],
+          ),
         ),
       );
     }
 
-    return SfPdfViewer.memory(
-      pdfBytes,
-      key: viewerKey,
-      controller: controller,
-      onDocumentLoaded: (details) {
-        setState(() {
-          if (isLeftPane) {
-            _leftTotalPages = details.document.pages.count;
-          } else {
-            _rightTotalPages = details.document.pages.count;
-          }
-        });
-      },
-      onPageChanged: (details) {
-        onPageChanged(details.newPageNumber);
-      },
-      onZoomLevelChanged: (details) {
-        onZoomChanged(details.newZoomLevel);
-      },
+    if (pdfBytes == null) {
+      return Container(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.picture_as_pdf,
+                size: 64,
+                color: Theme.of(context).iconTheme.color?.withValues(alpha: 0.2),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isLeftPane ? 'No PDF loaded' : 'No second PDF loaded',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                ),
+              ),
+              if (onLoadPdf != null) ...[
+                const SizedBox(height: 24),
+                ModernButton(
+                  onPressed: onLoadPdf,
+                  icon: Icons.cloud,
+                  label: 'Select PDF from Drive',
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      color: const Color(0xFF2A2A2A), // Soft dark grey background
+      child: SfPdfViewer.memory(
+        pdfBytes,
+        key: viewerKey,
+        controller: controller,
+        onDocumentLoaded: (details) {
+          setState(() {
+            if (isLeftPane) {
+              _leftTotalPages = details.document.pages.count;
+            } else {
+              _rightTotalPages = details.document.pages.count;
+            }
+          });
+        },
+        onPageChanged: (details) {
+          onPageChanged(details.newPageNumber);
+        },
+        onZoomLevelChanged: (details) {
+          onZoomChanged(details.newZoomLevel);
+        },
+      ),
     );
   }
 
@@ -500,13 +519,48 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
         },
         child: Container(
           width: 8,
-          color: _isDraggingDivider
-              ? AppColors.primary.withValues(alpha: 0.5)
-              : Theme.of(context).scaffoldBackgroundColor,
+          decoration: BoxDecoration(
+            gradient: _isDraggingDivider
+                ? LinearGradient(
+                    colors: [
+                      Colors.blue.withValues(alpha: 0.6),
+                      Colors.purple.withValues(alpha: 0.6),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  )
+                : (_rightPdfBytes != null
+                    ? LinearGradient(
+                        colors: [
+                          Colors.blue.withValues(alpha: 0.4),
+                          Colors.purple.withValues(alpha: 0.4),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      )
+                    : null),
+            color: _rightPdfBytes == null
+                ? Theme.of(context).scaffoldBackgroundColor
+                : null,
+          ),
           child: Center(
             child: Container(
-              width: 2,
-              color: Colors.white.withValues(alpha: 0.3),
+              width: 3,
+              decoration: BoxDecoration(
+                gradient: _rightPdfBytes != null
+                    ? const LinearGradient(
+                        colors: [
+                          Colors.blue,
+                          Colors.purple,
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      )
+                    : null,
+                color: _rightPdfBytes == null
+                    ? Colors.white.withValues(alpha: 0.3)
+                    : null,
+              ),
             ),
           ),
         ),

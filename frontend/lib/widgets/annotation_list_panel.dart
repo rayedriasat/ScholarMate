@@ -72,10 +72,13 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
   Widget build(BuildContext context) {
     final annotationsByPage = _annotationsByPage;
     final sortedPages = annotationsByPage.keys.toList()..sort();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark
+            ? const Color(0xFF1E1E1E).withValues(alpha: 0.95)
+            : const Color(0xFFF5F5F5).withValues(alpha: 0.95),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -90,21 +93,40 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
-              border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.03),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.1),
+                ),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.bookmark, size: 20),
+                Icon(
+                  Icons.bookmark,
+                  size: 20,
+                  color: Theme.of(context).iconTheme.color,
+                ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Annotations',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
                 const Spacer(),
                 Text(
                   '${_filteredAnnotations.length}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
                 ),
               ],
             ),
@@ -119,23 +141,34 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
                 Expanded(
                   child: DropdownButtonFormField<String?>(
                     initialValue: _filterType,
-                    decoration: const InputDecoration(
+                    dropdownColor: Theme.of(context).cardColor,
+                    decoration: InputDecoration(
                       labelText: 'Type',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
+                      labelStyle: TextStyle(
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 8,
                       ),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: null, child: Text('All types')),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('All types'),
+                      ),
                       DropdownMenuItem(
                         value: 'highlight',
                         child: Row(
                           children: [
-                            Icon(Icons.highlight, size: 16),
-                            SizedBox(width: 8),
-                            Text('Highlight'),
+                            Icon(
+                              Icons.highlight,
+                              size: 16,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Highlight'),
                           ],
                         ),
                       ),
@@ -143,9 +176,13 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
                         value: 'underline',
                         child: Row(
                           children: [
-                            Icon(Icons.format_underlined, size: 16),
-                            SizedBox(width: 8),
-                            Text('Underline'),
+                            Icon(
+                              Icons.format_underlined,
+                              size: 16,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Underline'),
                           ],
                         ),
                       ),
@@ -153,9 +190,13 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
                         value: 'strikethrough',
                         child: Row(
                           children: [
-                            Icon(Icons.format_strikethrough, size: 16),
-                            SizedBox(width: 8),
-                            Text('Strikethrough'),
+                            Icon(
+                              Icons.format_strikethrough,
+                              size: 16,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Strikethrough'),
                           ],
                         ),
                       ),
@@ -163,9 +204,13 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
                         value: 'squiggly',
                         child: Row(
                           children: [
-                            Icon(Icons.waves, size: 16),
-                            SizedBox(width: 8),
-                            Text('Squiggly'),
+                            Icon(
+                              Icons.waves,
+                              size: 16,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Squiggly'),
                           ],
                         ),
                       ),
@@ -173,9 +218,13 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
                         value: 'note',
                         child: Row(
                           children: [
-                            Icon(Icons.note, size: 16),
-                            SizedBox(width: 8),
-                            Text('Note'),
+                            Icon(
+                              Icons.note,
+                              size: 16,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Note'),
                           ],
                         ),
                       ),
@@ -215,14 +264,17 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
                         Icon(
                           Icons.bookmark_border,
                           size: 64,
-                          color: Colors.grey[400],
+                          color: Theme.of(context)
+                              .iconTheme
+                              .color
+                              ?.withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'No annotations yet',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -231,7 +283,7 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[500],
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                         ),
                       ],
@@ -252,12 +304,15 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
                               horizontal: 16,
                               vertical: 8,
                             ),
-                            color: Colors.grey[200],
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.black.withValues(alpha: 0.05),
                             child: Text(
                               'Page $pageNumber',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -278,13 +333,20 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
   Widget _buildAnnotationCard(Annotation annotation) {
     final type = _getAnnotationType(annotation);
     final icon = _getAnnotationIcon(annotation);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return InkWell(
       onTap: () => widget.onAnnotationTap(annotation),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+          border: Border(
+            bottom: BorderSide(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.1),
+            ),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,7 +396,10 @@ class _AnnotationListPanelState extends State<AnnotationListPanel> {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   annotation.author!,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
                 ),
               ),
           ],

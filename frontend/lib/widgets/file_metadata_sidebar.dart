@@ -122,12 +122,21 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       width: 320,
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: isDark
+            ? const Color(0xFF1E1E1E).withValues(alpha: 0.95)
+            : const Color(0xFFF5F5F5).withValues(alpha: 0.95),
         border: Border(
-          left: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+          left: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
       ),
       child: Column(
@@ -139,24 +148,36 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: Theme.of(context).dividerColor,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
+                Icon(
+                  Icons.info_outline,
+                  color: Theme.of(context).primaryColor,
+                ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'File Metadata',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                 ),
                 if (widget.onClose != null)
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: Icon(
+                      Icons.close,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
                     onPressed: widget.onClose,
                     tooltip: 'Close',
                   ),
@@ -228,9 +249,15 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Theme.of(context).dividerColor),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.15),
+                ),
               ),
               child: Row(
                 children: [
@@ -240,10 +267,13 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
                     color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'No embedded metadata found in this PDF',
-                      style: TextStyle(fontSize: 13),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 ],
@@ -375,16 +405,25 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Theme.of(context).dividerColor),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.15),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     _metadata!.abstract!,
-                    style: const TextStyle(fontSize: 13),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Align(
@@ -443,9 +482,15 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Theme.of(context).dividerColor),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.15),
+                ),
               ),
               child: Row(
                 children: [
@@ -455,10 +500,13 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
                     color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Citations will be generated from metadata',
-                      style: TextStyle(fontSize: 13),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 ],
@@ -496,18 +544,37 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
   }
 
   Widget _buildCopyableField(String text, String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.15)
+              : Colors.black.withValues(alpha: 0.15),
+        ),
       ),
       child: Row(
         children: [
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
           IconButton(
-            icon: const Icon(Icons.copy, size: 18),
+            icon: Icon(
+              Icons.copy,
+              size: 18,
+              color: Theme.of(context).iconTheme.color,
+            ),
             onPressed: () => _copyToClipboard(text, label),
             tooltip: 'Copy',
           ),
@@ -517,12 +584,19 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
   }
 
   Widget _buildLinkField(String text, String url, String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.15)
+              : Colors.black.withValues(alpha: 0.15),
+        ),
       ),
       child: Row(
         children: [
@@ -543,7 +617,11 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.copy, size: 18),
+            icon: Icon(
+              Icons.copy,
+              size: 18,
+              color: Theme.of(context).iconTheme.color,
+            ),
             onPressed: () => _copyToClipboard(url, label),
             tooltip: 'Copy',
           ),
@@ -579,12 +657,19 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
   }
 
   Widget _buildCitationCard(String format, String citation) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.15)
+              : Colors.black.withValues(alpha: 0.15),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -601,7 +686,11 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.copy, size: 18),
+                icon: Icon(
+                  Icons.copy,
+                  size: 18,
+                  color: Theme.of(context).iconTheme.color,
+                ),
                 onPressed: () => _copyToClipboard(citation, '$format citation'),
                 tooltip: 'Copy $format citation',
                 padding: EdgeInsets.zero,
@@ -610,7 +699,13 @@ class _FileMetadataSidebarState extends State<FileMetadataSidebar> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(citation, style: const TextStyle(fontSize: 13)),
+          Text(
+            citation,
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
         ],
       ),
     );

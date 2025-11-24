@@ -17,6 +17,7 @@ import '../widgets/annotation_list_panel.dart';
 import '../widgets/tts_controls.dart';
 import '../widgets/file_metadata_sidebar.dart';
 import '../widgets/connectivity_indicator.dart';
+import '../widgets/collapsible_sidebar.dart';
 import 'ai_chat_screen.dart';
 import 'collaborative_pdf_viewer_screen.dart';
 import 'split_pdf_viewer_screen.dart';
@@ -68,6 +69,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
 
   // Metadata sidebar state
   bool _showMetadataSidebar = false;
+
+  // Toolbar expansion state
+  bool _showExpandedToolbar = false;
 
   // Chat panel state
   bool _showChatPanel = false;
@@ -1264,6 +1268,55 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
               ],
             )
           else ...[
+            // Toolbar expand/collapse button
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: _showExpandedToolbar
+                    ? (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.blue[900]
+                          : Colors.blue[50])
+                    : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey[100]),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _showExpandedToolbar
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.blue[700]!
+                            : Colors.blue[300]!)
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[700]!
+                            : Colors.grey[300]!),
+                  width: 1,
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  _showExpandedToolbar ? Icons.close : Icons.more_horiz,
+                  color: _showExpandedToolbar
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.blue[300]
+                            : Colors.blue[700])
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : Colors.grey[700]),
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _showExpandedToolbar = !_showExpandedToolbar;
+                  });
+                },
+                tooltip: _showExpandedToolbar ? 'Hide tools' : 'Show more tools',
+                iconSize: 20,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+            
+            // Expanded toolbar buttons (only show when expanded)
+            if (_showExpandedToolbar) ...[
             // Desktop/non-Android: Show all buttons in toolbar with theme-aware design
             if (kIsWeb)
               Container(
@@ -1455,47 +1508,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                 constraints: const BoxConstraints(),
               ),
             ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: _showAnnotations
-                    ? (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.purple[900]
-                          : Colors.purple[50])
-                    : (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[800]
-                          : Colors.grey[100]),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _showAnnotations
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.purple[700]!
-                            : Colors.purple[300]!)
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[700]!
-                            : Colors.grey[300]!),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  Icons.bookmark_outline,
-                  color: _showAnnotations
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.purple[300]
-                            : Colors.purple[700])
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[300]
-                            : Colors.grey[700]),
-                  size: 20,
-                ),
-                onPressed: _toggleAnnotationPanel,
-                tooltip: 'Show annotations',
-                iconSize: 20,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
-            ),
+
             if (_annotations.isNotEmpty)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -1649,6 +1662,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                 constraints: const BoxConstraints(),
               ),
             ),
+            ], // End of expanded toolbar
           ],
         ],
       ),
@@ -1928,10 +1942,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                                   // PDF Viewer (fills vertical space)
                                   Expanded(
                                     flex: (_zoomLevel * 200).toInt(),
-                                    child: SfPdfViewer.memory(
-                                      pdfManager.currentPdfBytes!,
-                                      key: _pdfViewerKey,
-                                      controller: _pdfViewerController,
+                                    child: Container(
+                                      color: const Color(0xFF2A2A2A), // Soft dark grey background
+                                      child: SfPdfViewer.memory(
+                                        pdfManager.currentPdfBytes!,
+                                        key: _pdfViewerKey,
+                                        controller: _pdfViewerController,
                                       onDocumentLoaded:
                                           (PdfDocumentLoadedDetails details) {
                                             setState(() {
@@ -1989,6 +2005,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                                             // Auto-save when annotation is removed
                                             _savePdfWithAnnotations();
                                           },
+                                      ),
                                     ),
                                   ),
                                   // Right black bar (only visible when zoomed < 100%)
@@ -2006,8 +2023,14 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                           // Annotation panel (desktop) or bottom sheet (mobile)
                           if (_showAnnotations &&
                               MediaQuery.of(context).size.width >= 600)
-                            SizedBox(
+                            CollapsibleSidebar(
                               width: 300,
+                              title: 'Annotations',
+                              onClose: () {
+                                setState(() {
+                                  _showAnnotations = false;
+                                });
+                              },
                               child: AnnotationListPanel(
                                 annotations: _annotations,
                                 onAnnotationTap: _onAnnotationTap,
@@ -2017,8 +2040,14 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                           // Metadata sidebar (desktop only)
                           if (_showMetadataSidebar &&
                               MediaQuery.of(context).size.width >= 600)
-                            SizedBox(
+                            CollapsibleSidebar(
                               width: 350,
+                              title: 'Metadata',
+                              onClose: () {
+                                setState(() {
+                                  _showMetadataSidebar = false;
+                                });
+                              },
                               child: FileMetadataSidebar(
                                 file:
                                     widget.file ??
@@ -2029,8 +2058,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                                       modifiedTime: DateTime.now(),
                                       size: 0,
                                     ),
-                                metadataService: context
-                                    .read<MetadataService>(),
+                                metadataService: context.read<MetadataService>(),
                                 onClose: () {
                                   setState(() {
                                     _showMetadataSidebar = false;
