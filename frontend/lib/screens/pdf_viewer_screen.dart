@@ -18,6 +18,7 @@ import '../widgets/tts_controls.dart';
 import '../widgets/file_metadata_sidebar.dart';
 import '../widgets/connectivity_indicator.dart';
 import '../widgets/collapsible_sidebar.dart';
+import '../theme/app_colors.dart';
 import 'ai_chat_screen.dart';
 import 'collaborative_pdf_viewer_screen.dart';
 import 'split_pdf_viewer_screen.dart';
@@ -75,6 +76,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
 
   // Chat panel state
   bool _showChatPanel = false;
+  double _chatPanelWidth = 400;
+  bool _chatPanelFullscreen = false;
+  static const double _minChatWidth = 300;
+  static const double _maxChatWidthPercent = 0.7;
 
   // Zoom state
   double _zoomLevel = 1.0;
@@ -977,6 +982,124 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
           leftFileName: fileName,
         ),
       ),
+    );
+  }
+
+  Widget _buildChatPanel(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = screenWidth * _maxChatWidthPercent;
+    final effectiveWidth = _chatPanelFullscreen 
+        ? screenWidth 
+        : _chatPanelWidth.clamp(_minChatWidth, maxWidth);
+
+    return Row(
+      children: [
+        // Resize handle
+        if (!_chatPanelFullscreen)
+          MouseRegion(
+            cursor: SystemMouseCursors.resizeColumn,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  _chatPanelWidth = (_chatPanelWidth - details.delta.dx)
+                      .clamp(_minChatWidth, maxWidth);
+                });
+              },
+              child: Container(
+                width: 8,
+                color: Colors.transparent,
+                child: Center(
+                  child: Container(
+                    width: 2,
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        // Chat panel
+        Container(
+          width: effectiveWidth,
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surface
+                : Colors.white,
+            border: Border(
+              left: BorderSide(
+                color: Theme.of(context).dividerColor,
+                width: 2,
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(-2, 0),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Chat panel header with controls
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: Theme.of(context).dividerColor),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.chat, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'AI Chat',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    // Minimize/Maximize button
+                    IconButton(
+                      icon: Icon(
+                        _chatPanelFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _chatPanelFullscreen = !_chatPanelFullscreen;
+                        });
+                      },
+                      tooltip: _chatPanelFullscreen ? 'Exit fullscreen' : 'Fullscreen',
+                    ),
+                    // Close button
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () {
+                        setState(() {
+                          _showChatPanel = false;
+                        });
+                      },
+                      tooltip: 'Close',
+                    ),
+                  ],
+                ),
+              ),
+              // Chat content
+              Expanded(
+                child: AIChatScreen(
+                  preselectedFileId: widget.file?.id ?? widget.fileId,
+                  preselectedFileName: widget.file?.name ?? widget.fileName,
+                  isEmbedded: true,
+                  onClose: () {
+                    setState(() {
+                      _showChatPanel = false;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -2075,24 +2198,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
             ),
           ),
           if (_showChatPanel && MediaQuery.of(context).size.width >= 900)
-            Container(
-              width: 400,
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: Theme.of(context).dividerColor),
-                ),
-              ),
-              child: AIChatScreen(
-                preselectedFileId: widget.file?.id ?? widget.fileId,
-                preselectedFileName: widget.file?.name ?? widget.fileName,
-                isEmbedded: true,
-                onClose: () {
-                  setState(() {
-                    _showChatPanel = false;
-                  });
-                },
-              ),
-            ),
+            _buildChatPanel(context),
         ],
       ),
       floatingActionButton: !_showChatPanel

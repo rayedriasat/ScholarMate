@@ -29,6 +29,8 @@ class AIChatScreen extends StatefulWidget {
   final String? folderName;
   final bool isEmbedded;
   final VoidCallback? onClose;
+  final VoidCallback? onToggleFullscreen;
+  final bool? isFullscreen;
 
   const AIChatScreen({
     super.key,
@@ -38,6 +40,8 @@ class AIChatScreen extends StatefulWidget {
     this.folderName,
     this.isEmbedded = false,
     this.onClose,
+    this.onToggleFullscreen,
+    this.isFullscreen,
   });
 
   @override
@@ -97,6 +101,17 @@ class _AIChatScreenState extends State<AIChatScreen> {
         _conversations = conversations;
         _isLoadingConversations = false;
       });
+
+      // Auto-load the most recent conversation if:
+      // 1. There are conversations available
+      // 2. No conversation is currently loaded
+      // 3. No messages are currently displayed
+      if (conversations.isNotEmpty && 
+          _currentConversationId == null && 
+          _messages.isEmpty) {
+        // Load the most recent conversation (first in the list)
+        await _loadConversation(conversations.first.id);
+      }
     } catch (e) {
       debugPrint('Failed to load conversations: $e');
       setState(() {
@@ -582,13 +597,16 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isWideScreen = MediaQuery.of(context).size.width > 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 600;
+    
+    // Auto-hide source panel if screen/panel is too narrow (less than 500px)
+    final shouldShowSourcePanel = _showSourcePanel && screenWidth >= 500;
 
     final content = Stack(
       children: [
-        // Background - Removed as it's now global in AppNavigation
-        if (widget.isEmbedded)
-          Container(color: Theme.of(context).scaffoldBackgroundColor),
+        // Background for embedded mode - only if not wrapped in a container
+        // (PDF viewer already provides background)
 
         Column(
           children: [
@@ -617,16 +635,17 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     flex: _showSourcePanel && isWideScreen ? 2 : 1,
                     child: Column(
                       children: [
-                        // Messages list
+                        // Messages list with SelectionArea for better text selection
                         Expanded(
                           child: _messages.isEmpty
                               ? _buildEmptyState()
-                              : ListView.builder(
-                                  controller: _scrollController,
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount:
-                                      _messages.length + (_isLoading ? 1 : 0),
-                                  itemBuilder: (context, index) {
+                              : SelectionArea(
+                                  child: ListView.builder(
+                                    controller: _scrollController,
+                                    padding: const EdgeInsets.all(16),
+                                    itemCount:
+                                        _messages.length + (_isLoading ? 1 : 0),
+                                    itemBuilder: (context, index) {
                                     if (index == _messages.length) {
                                       return const Padding(
                                         padding: EdgeInsets.all(16.0),
@@ -660,6 +679,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                                           : () => _onSaveAsNote(message),
                                     );
                                   },
+                                  ),
                                 ),
                         ),
 
@@ -669,26 +689,34 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     ),
                   ),
 
-                  // Source selection panel (desktop/tablet only)
-                  if (_showSourcePanel && isWideScreen)
-                    Container(
-                      width: 300,
-                      decoration: BoxDecoration(
-                        border: Border(
-                          left: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.1),
+                  // Source selection panel (responsive width)
+                  if (shouldShowSourcePanel && isWideScreen)
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Use flexible width: min 250px, max 300px, or 40% of available space
+                        final panelWidth = (constraints.maxWidth * 0.4)
+                            .clamp(250.0, 300.0);
+                        
+                        return Container(
+                          width: panelWidth,
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      child: SourceSelectionPanel(
-                        availableFiles: _availableFiles,
-                        selectedFileIds: _selectedFileIds,
-                        isLoading: _isLoadingFiles,
-                        onToggleFile: _toggleSourceSelection,
-                        onClearAll: _clearAllSources,
-                        onSelectAll: _selectAllSources,
-                        onRefresh: _loadAvailableFiles,
-                      ),
+                          child: SourceSelectionPanel(
+                            availableFiles: _availableFiles,
+                            selectedFileIds: _selectedFileIds,
+                            isLoading: _isLoadingFiles,
+                            onToggleFile: _toggleSourceSelection,
+                            onClearAll: _clearAllSources,
+                            onSelectAll: _selectAllSources,
+                            onRefresh: _loadAvailableFiles,
+                          ),
+                        );
+                      },
                     ),
                 ],
               ),
@@ -754,6 +782,53 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
           ),
           const Spacer(),
+          // Sources button with badge
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon: Icon(
+                  _showSourcePanel ? Icons.folder_open : Icons.folder_outlined,
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _showSourcePanel = !_showSourcePanel;
+                  });
+                },
+                tooltip: 'Select PDFs (${_selectedFileIds.length} selected)',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+              if (_selectedFileIds.isNotEmpty)
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '${_selectedFileIds.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.add, size: 20),
             onPressed: _startNewConversation,
@@ -762,6 +837,24 @@ class _AIChatScreenState extends State<AIChatScreen> {
             constraints: const BoxConstraints(),
             color: isDark ? Colors.white70 : Colors.black54,
           ),
+          if (widget.onToggleFullscreen != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(
+                widget.isFullscreen == true
+                    ? Icons.fullscreen_exit
+                    : Icons.fullscreen,
+                size: 20,
+              ),
+              onPressed: widget.onToggleFullscreen,
+              tooltip: widget.isFullscreen == true
+                  ? 'Exit fullscreen'
+                  : 'Fullscreen',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
+          ],
           if (widget.onClose != null) ...[
             const SizedBox(width: 8),
             IconButton(

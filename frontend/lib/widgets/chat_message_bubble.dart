@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/chat_message.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
@@ -94,7 +95,7 @@ class ChatMessageBubble extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      SelectableText(
                         message.content,
                         style: TextStyle(
                           color: isUser
@@ -106,6 +107,20 @@ class ChatMessageBubble extends StatelessWidget {
                           height: 1.5,
                           fontWeight: FontWeight.w400,
                         ),
+                        contextMenuBuilder: (context, editableTextState) {
+                          return AdaptiveTextSelectionToolbar(
+                            anchors: editableTextState.contextMenuAnchors,
+                            children: [
+                              TextSelectionToolbarTextButton(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                onPressed: () {
+                                  editableTextState.copySelection(SelectionChangedCause.toolbar);
+                                },
+                                child: const Text('Copy'),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       if (message.citations != null &&
                           message.citations!.isNotEmpty)
@@ -137,6 +152,52 @@ class ChatMessageBubble extends StatelessWidget {
                         color: isDark ? Colors.white54 : Colors.black45,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Copy button
+                    InkWell(
+                      onTap: () {
+                        // Copy message content to clipboard
+                        final data = ClipboardData(text: message.content);
+                        Clipboard.setData(data);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Message copied to clipboard'),
+                            duration: const Duration(seconds: 1),
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.all(16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.copy,
+                              size: 12,
+                              color: isDark ? Colors.white54 : Colors.black45,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Copy',
+                              style: TextStyle(
+                                color: isDark ? Colors.white54 : Colors.black45,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     if (!isUser && onSaveAsNote != null) ...[
