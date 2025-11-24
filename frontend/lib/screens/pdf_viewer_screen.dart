@@ -20,7 +20,6 @@ import '../widgets/connectivity_indicator.dart';
 import '../widgets/collapsible_sidebar.dart';
 import '../theme/app_colors.dart';
 import 'ai_chat_screen.dart';
-import 'collaborative_pdf_viewer_screen.dart';
 import 'split_pdf_viewer_screen.dart';
 
 /// Full-screen PDF viewer with navigation controls and annotations
@@ -914,37 +913,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     }
   }
 
-  void _startCollaboration() {
-    final fileId = widget.file?.id ?? widget.fileId;
-    final fileName = widget.file?.name ?? widget.fileName;
-
-    if (fileId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Cannot start collaboration: file information not available',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Navigate to collaborative PDF viewer
-    // Pass the already-loaded PDF bytes to avoid re-downloading
-    final pdfManager = context.read<PdfViewerManager>();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CollaborativePdfViewerScreen(
-          fileId: fileId,
-          fileName: fileName ?? 'document.pdf',
-          pdfBytes: pdfManager.currentPdfBytes, // Pass existing bytes
-        ),
-      ),
-    );
-  }
-
   void _openSplitView() {
     // Only available on web
     if (!kIsWeb) {
@@ -1221,9 +1189,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                   case 'metadata':
                     _toggleMetadataSidebar();
                     break;
-                  case 'collaborate':
-                    _startCollaboration();
-                    break;
                   case 'splitview':
                     _openSplitView();
                     break;
@@ -1241,17 +1206,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                       ],
                     ),
                   ),
-                PopupMenuItem(
-                  value: 'collaborate',
-                  enabled: context.read<ConnectivityService>().isOnline,
-                  child: const Row(
-                    children: [
-                      Icon(Icons.people, size: 20, color: Colors.purple),
-                      SizedBox(width: 12),
-                      Text('Start Collaboration'),
-                    ],
-                  ),
-                ),
                 const PopupMenuDivider(),
                 PopupMenuItem(
                   value: 'refresh',
@@ -1437,45 +1391,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                     constraints: const BoxConstraints(),
                   ),
                 ),
-              Consumer<ConnectivityService>(
-                builder: (context, connectivity, child) {
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: BoxDecoration(
-                      color: connectivity.isOnline
-                          ? (isDark ? Colors.grey[800] : Colors.grey[100])
-                          : (isDark ? Colors.grey[850] : Colors.grey[200]),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: connectivity.isOnline
-                            ? (isDark ? Colors.grey[700]! : Colors.grey[300]!)
-                            : (isDark ? Colors.grey[800]! : Colors.grey[400]!),
-                        width: 1,
-                      ),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.people_outline,
-                        color: connectivity.isOnline
-                            ? (isDark ? Colors.grey[300] : Colors.grey[700])
-                            : (isDark ? Colors.grey[700] : Colors.grey[400]),
-                        size: 20,
-                      ),
-                      onPressed: connectivity.isOnline
-                          ? _startCollaboration
-                          : null,
-                      tooltip: connectivity.isOnline
-                          ? 'Start Collaboration'
-                          : 'Offline - Cannot collaborate',
-                      iconSize: 20,
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(),
-                    ),
-                  );
-                },
-              ),
               Consumer<ConnectivityService>(
                 builder: (context, connectivity, child) {
                   final isDark =

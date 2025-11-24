@@ -6,7 +6,6 @@ import '../services/drive_service.dart';
 import '../services/tag_service.dart';
 import '../services/sharing_service.dart';
 import '../services/indexing_service.dart';
-import '../services/metadata_service.dart';
 import '../theme/app_colors.dart';
 
 import '../widgets/breadcrumb_navigation.dart';
@@ -24,9 +23,7 @@ import 'document_scanner_screen.dart';
 import 'tag_management_screen.dart';
 import 'shared_files_screen.dart';
 import 'ai_chat_screen.dart';
-import 'citation_generator_screen.dart';
 import 'analytics_screen.dart';
-import 'join_collaboration_screen.dart';
 import 'advanced_search_screen.dart';
 import '../widgets/tag_selection_dialog.dart';
 import 'enhanced_drawing_canvas_screen.dart';
@@ -901,14 +898,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 ? AppColors.surface
                 : Colors.white,
             onSelected: (value) {
-              if (value == 'join_collaboration') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const JoinCollaborationScreen(),
-                  ),
-                );
-              } else if (value == 'manage_tags') {
+              if (value == 'manage_tags') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -920,16 +910,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const SharedFilesScreen(),
-                  ),
-                );
-              } else if (value == 'citations') {
-                final metadataService = context.read<MetadataService>();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CitationGeneratorScreen(
-                      metadataService: metadataService,
-                    ),
                   ),
                 );
               } else if (value == 'analytics') {
@@ -954,20 +934,12 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 child: Text('Advanced Search'),
               ),
               const PopupMenuItem(
-                value: 'join_collaboration',
-                child: Text('Join Collaboration'),
-              ),
-              const PopupMenuItem(
                 value: 'shared_with_me',
                 child: Text('Shared with Me'),
               ),
               const PopupMenuItem(
                 value: 'manage_tags',
                 child: Text('Manage Tags'),
-              ),
-              const PopupMenuItem(
-                value: 'citations',
-                child: Text('Citation Generator'),
               ),
               const PopupMenuItem(value: 'analytics', child: Text('Analytics')),
             ],

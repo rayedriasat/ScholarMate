@@ -9,6 +9,7 @@ import 'file_explorer_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'notes_screen.dart';
 import 'notebook_studio_screen.dart';
+import 'citation_generator_screen.dart';
 
 /// Home screen shown after successful authentication
 class HomeScreen extends StatefulWidget {
@@ -72,6 +73,13 @@ class _HomeScreenState extends State<HomeScreen> {
         activeIcon: Icons.auto_stories,
         label: 'Notebook Studio',
         screen: const NotebookStudioScreen(),
+      ),
+      NavigationItem(
+        id: 'citations',
+        icon: Icons.format_quote_outlined,
+        activeIcon: Icons.format_quote,
+        label: 'Citations',
+        screen: const CitationGeneratorScreen(),
       ),
     ];
   }
