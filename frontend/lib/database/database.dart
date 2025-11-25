@@ -32,6 +32,8 @@ part 'database.g.dart';
     LocalChatMessages,
     ModelMetadata,
     OfflineAiSyncQueue,
+    FileChatThreads,
+    FileChatMessages,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -41,7 +43,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -119,6 +121,19 @@ class AppDatabase extends _$AppDatabase {
           );
           await customStatement(
             'CREATE INDEX IF NOT EXISTS idx_local_chat_messages_synced ON local_chat_messages(synced);',
+          );
+        }
+        if (from < 10) {
+          // Migration from version 9 to 10: Add file chat tables
+          await m.createTable(fileChatThreads);
+          await m.createTable(fileChatMessages);
+
+          // Create indices for efficient queries
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_file_chat_messages_file_id ON file_chat_messages(file_id);',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_file_chat_messages_thread_id ON file_chat_messages(thread_id);',
           );
         }
       },

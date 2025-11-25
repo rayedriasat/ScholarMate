@@ -25,6 +25,7 @@ import 'services/collaboration_service.dart';
 import 'services/realtime_service.dart';
 import 'services/annotation_sync_service.dart';
 import 'services/document_extraction_service.dart';
+import 'services/file_chat_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -279,6 +280,19 @@ class ScholarMateApp extends StatelessWidget {
                 authService: auth,
                 baseUrl: ConfigService().apiBaseUrl,
                 realtimeService: realtime,
+              ),
+        ),
+        // File chat service for PDF collaboration
+        ChangeNotifierProxyProvider<AppDatabase, FileChatService>(
+          create: (context) => FileChatService(
+            database: context.read<AppDatabase>(),
+            supabase: Supabase.instance.client,
+          ),
+          update: (context, database, previous) =>
+              previous ??
+              FileChatService(
+                database: database,
+                supabase: Supabase.instance.client,
               ),
         ),
       ],

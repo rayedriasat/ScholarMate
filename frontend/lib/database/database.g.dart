@@ -10231,6 +10231,933 @@ class OfflineAiSyncQueueCompanion
   }
 }
 
+class $FileChatThreadsTable extends FileChatThreads
+    with TableInfo<$FileChatThreadsTable, FileChatThread> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FileChatThreadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileIdMeta = const VerificationMeta('fileId');
+  @override
+  late final GeneratedColumn<String> fileId = GeneratedColumn<String>(
+    'file_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageCountMeta = const VerificationMeta(
+    'messageCount',
+  );
+  @override
+  late final GeneratedColumn<int> messageCount = GeneratedColumn<int>(
+    'message_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    fileId,
+    createdAt,
+    updatedAt,
+    messageCount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'file_chat_threads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FileChatThread> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('file_id')) {
+      context.handle(
+        _fileIdMeta,
+        fileId.isAcceptableOrUnknown(data['file_id']!, _fileIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('message_count')) {
+      context.handle(
+        _messageCountMeta,
+        messageCount.isAcceptableOrUnknown(
+          data['message_count']!,
+          _messageCountMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FileChatThread map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FileChatThread(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      fileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      messageCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}message_count'],
+      )!,
+    );
+  }
+
+  @override
+  $FileChatThreadsTable createAlias(String alias) {
+    return $FileChatThreadsTable(attachedDatabase, alias);
+  }
+}
+
+class FileChatThread extends DataClass implements Insertable<FileChatThread> {
+  final String id;
+  final String fileId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int messageCount;
+  const FileChatThread({
+    required this.id,
+    required this.fileId,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.messageCount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['file_id'] = Variable<String>(fileId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['message_count'] = Variable<int>(messageCount);
+    return map;
+  }
+
+  FileChatThreadsCompanion toCompanion(bool nullToAbsent) {
+    return FileChatThreadsCompanion(
+      id: Value(id),
+      fileId: Value(fileId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      messageCount: Value(messageCount),
+    );
+  }
+
+  factory FileChatThread.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FileChatThread(
+      id: serializer.fromJson<String>(json['id']),
+      fileId: serializer.fromJson<String>(json['fileId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      messageCount: serializer.fromJson<int>(json['messageCount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'fileId': serializer.toJson<String>(fileId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'messageCount': serializer.toJson<int>(messageCount),
+    };
+  }
+
+  FileChatThread copyWith({
+    String? id,
+    String? fileId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    int? messageCount,
+  }) => FileChatThread(
+    id: id ?? this.id,
+    fileId: fileId ?? this.fileId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    messageCount: messageCount ?? this.messageCount,
+  );
+  FileChatThread copyWithCompanion(FileChatThreadsCompanion data) {
+    return FileChatThread(
+      id: data.id.present ? data.id.value : this.id,
+      fileId: data.fileId.present ? data.fileId.value : this.fileId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      messageCount: data.messageCount.present
+          ? data.messageCount.value
+          : this.messageCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileChatThread(')
+          ..write('id: $id, ')
+          ..write('fileId: $fileId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('messageCount: $messageCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, fileId, createdAt, updatedAt, messageCount);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FileChatThread &&
+          other.id == this.id &&
+          other.fileId == this.fileId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.messageCount == this.messageCount);
+}
+
+class FileChatThreadsCompanion extends UpdateCompanion<FileChatThread> {
+  final Value<String> id;
+  final Value<String> fileId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> messageCount;
+  final Value<int> rowid;
+  const FileChatThreadsCompanion({
+    this.id = const Value.absent(),
+    this.fileId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.messageCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FileChatThreadsCompanion.insert({
+    required String id,
+    required String fileId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.messageCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       fileId = Value(fileId),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<FileChatThread> custom({
+    Expression<String>? id,
+    Expression<String>? fileId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? messageCount,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fileId != null) 'file_id': fileId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (messageCount != null) 'message_count': messageCount,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FileChatThreadsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? fileId,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? messageCount,
+    Value<int>? rowid,
+  }) {
+    return FileChatThreadsCompanion(
+      id: id ?? this.id,
+      fileId: fileId ?? this.fileId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      messageCount: messageCount ?? this.messageCount,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (fileId.present) {
+      map['file_id'] = Variable<String>(fileId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (messageCount.present) {
+      map['message_count'] = Variable<int>(messageCount.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileChatThreadsCompanion(')
+          ..write('id: $id, ')
+          ..write('fileId: $fileId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('messageCount: $messageCount, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $FileChatMessagesTable extends FileChatMessages
+    with TableInfo<$FileChatMessagesTable, FileChatMessage> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FileChatMessagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _threadIdMeta = const VerificationMeta(
+    'threadId',
+  );
+  @override
+  late final GeneratedColumn<String> threadId = GeneratedColumn<String>(
+    'thread_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileIdMeta = const VerificationMeta('fileId');
+  @override
+  late final GeneratedColumn<String> fileId = GeneratedColumn<String>(
+    'file_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userNameMeta = const VerificationMeta(
+    'userName',
+  );
+  @override
+  late final GeneratedColumn<String> userName = GeneratedColumn<String>(
+    'user_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userPhotoUrlMeta = const VerificationMeta(
+    'userPhotoUrl',
+  );
+  @override
+  late final GeneratedColumn<String> userPhotoUrl = GeneratedColumn<String>(
+    'user_photo_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    threadId,
+    fileId,
+    userId,
+    userName,
+    userPhotoUrl,
+    content,
+    timestamp,
+    isSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'file_chat_messages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FileChatMessage> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('thread_id')) {
+      context.handle(
+        _threadIdMeta,
+        threadId.isAcceptableOrUnknown(data['thread_id']!, _threadIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_threadIdMeta);
+    }
+    if (data.containsKey('file_id')) {
+      context.handle(
+        _fileIdMeta,
+        fileId.isAcceptableOrUnknown(data['file_id']!, _fileIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('user_name')) {
+      context.handle(
+        _userNameMeta,
+        userName.isAcceptableOrUnknown(data['user_name']!, _userNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userNameMeta);
+    }
+    if (data.containsKey('user_photo_url')) {
+      context.handle(
+        _userPhotoUrlMeta,
+        userPhotoUrl.isAcceptableOrUnknown(
+          data['user_photo_url']!,
+          _userPhotoUrlMeta,
+        ),
+      );
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timestampMeta);
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FileChatMessage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FileChatMessage(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      threadId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thread_id'],
+      )!,
+      fileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      userName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_name'],
+      )!,
+      userPhotoUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_photo_url'],
+      ),
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}timestamp'],
+      )!,
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $FileChatMessagesTable createAlias(String alias) {
+    return $FileChatMessagesTable(attachedDatabase, alias);
+  }
+}
+
+class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
+  final String id;
+  final String threadId;
+  final String fileId;
+  final String userId;
+  final String userName;
+  final String? userPhotoUrl;
+  final String content;
+  final DateTime timestamp;
+  final bool isSynced;
+  const FileChatMessage({
+    required this.id,
+    required this.threadId,
+    required this.fileId,
+    required this.userId,
+    required this.userName,
+    this.userPhotoUrl,
+    required this.content,
+    required this.timestamp,
+    required this.isSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['thread_id'] = Variable<String>(threadId);
+    map['file_id'] = Variable<String>(fileId);
+    map['user_id'] = Variable<String>(userId);
+    map['user_name'] = Variable<String>(userName);
+    if (!nullToAbsent || userPhotoUrl != null) {
+      map['user_photo_url'] = Variable<String>(userPhotoUrl);
+    }
+    map['content'] = Variable<String>(content);
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    map['is_synced'] = Variable<bool>(isSynced);
+    return map;
+  }
+
+  FileChatMessagesCompanion toCompanion(bool nullToAbsent) {
+    return FileChatMessagesCompanion(
+      id: Value(id),
+      threadId: Value(threadId),
+      fileId: Value(fileId),
+      userId: Value(userId),
+      userName: Value(userName),
+      userPhotoUrl: userPhotoUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userPhotoUrl),
+      content: Value(content),
+      timestamp: Value(timestamp),
+      isSynced: Value(isSynced),
+    );
+  }
+
+  factory FileChatMessage.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FileChatMessage(
+      id: serializer.fromJson<String>(json['id']),
+      threadId: serializer.fromJson<String>(json['threadId']),
+      fileId: serializer.fromJson<String>(json['fileId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      userName: serializer.fromJson<String>(json['userName']),
+      userPhotoUrl: serializer.fromJson<String?>(json['userPhotoUrl']),
+      content: serializer.fromJson<String>(json['content']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'threadId': serializer.toJson<String>(threadId),
+      'fileId': serializer.toJson<String>(fileId),
+      'userId': serializer.toJson<String>(userId),
+      'userName': serializer.toJson<String>(userName),
+      'userPhotoUrl': serializer.toJson<String?>(userPhotoUrl),
+      'content': serializer.toJson<String>(content),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+      'isSynced': serializer.toJson<bool>(isSynced),
+    };
+  }
+
+  FileChatMessage copyWith({
+    String? id,
+    String? threadId,
+    String? fileId,
+    String? userId,
+    String? userName,
+    Value<String?> userPhotoUrl = const Value.absent(),
+    String? content,
+    DateTime? timestamp,
+    bool? isSynced,
+  }) => FileChatMessage(
+    id: id ?? this.id,
+    threadId: threadId ?? this.threadId,
+    fileId: fileId ?? this.fileId,
+    userId: userId ?? this.userId,
+    userName: userName ?? this.userName,
+    userPhotoUrl: userPhotoUrl.present ? userPhotoUrl.value : this.userPhotoUrl,
+    content: content ?? this.content,
+    timestamp: timestamp ?? this.timestamp,
+    isSynced: isSynced ?? this.isSynced,
+  );
+  FileChatMessage copyWithCompanion(FileChatMessagesCompanion data) {
+    return FileChatMessage(
+      id: data.id.present ? data.id.value : this.id,
+      threadId: data.threadId.present ? data.threadId.value : this.threadId,
+      fileId: data.fileId.present ? data.fileId.value : this.fileId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      userName: data.userName.present ? data.userName.value : this.userName,
+      userPhotoUrl: data.userPhotoUrl.present
+          ? data.userPhotoUrl.value
+          : this.userPhotoUrl,
+      content: data.content.present ? data.content.value : this.content,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileChatMessage(')
+          ..write('id: $id, ')
+          ..write('threadId: $threadId, ')
+          ..write('fileId: $fileId, ')
+          ..write('userId: $userId, ')
+          ..write('userName: $userName, ')
+          ..write('userPhotoUrl: $userPhotoUrl, ')
+          ..write('content: $content, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('isSynced: $isSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    threadId,
+    fileId,
+    userId,
+    userName,
+    userPhotoUrl,
+    content,
+    timestamp,
+    isSynced,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FileChatMessage &&
+          other.id == this.id &&
+          other.threadId == this.threadId &&
+          other.fileId == this.fileId &&
+          other.userId == this.userId &&
+          other.userName == this.userName &&
+          other.userPhotoUrl == this.userPhotoUrl &&
+          other.content == this.content &&
+          other.timestamp == this.timestamp &&
+          other.isSynced == this.isSynced);
+}
+
+class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
+  final Value<String> id;
+  final Value<String> threadId;
+  final Value<String> fileId;
+  final Value<String> userId;
+  final Value<String> userName;
+  final Value<String?> userPhotoUrl;
+  final Value<String> content;
+  final Value<DateTime> timestamp;
+  final Value<bool> isSynced;
+  final Value<int> rowid;
+  const FileChatMessagesCompanion({
+    this.id = const Value.absent(),
+    this.threadId = const Value.absent(),
+    this.fileId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.userName = const Value.absent(),
+    this.userPhotoUrl = const Value.absent(),
+    this.content = const Value.absent(),
+    this.timestamp = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FileChatMessagesCompanion.insert({
+    required String id,
+    required String threadId,
+    required String fileId,
+    required String userId,
+    required String userName,
+    this.userPhotoUrl = const Value.absent(),
+    required String content,
+    required DateTime timestamp,
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       threadId = Value(threadId),
+       fileId = Value(fileId),
+       userId = Value(userId),
+       userName = Value(userName),
+       content = Value(content),
+       timestamp = Value(timestamp);
+  static Insertable<FileChatMessage> custom({
+    Expression<String>? id,
+    Expression<String>? threadId,
+    Expression<String>? fileId,
+    Expression<String>? userId,
+    Expression<String>? userName,
+    Expression<String>? userPhotoUrl,
+    Expression<String>? content,
+    Expression<DateTime>? timestamp,
+    Expression<bool>? isSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (threadId != null) 'thread_id': threadId,
+      if (fileId != null) 'file_id': fileId,
+      if (userId != null) 'user_id': userId,
+      if (userName != null) 'user_name': userName,
+      if (userPhotoUrl != null) 'user_photo_url': userPhotoUrl,
+      if (content != null) 'content': content,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FileChatMessagesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? threadId,
+    Value<String>? fileId,
+    Value<String>? userId,
+    Value<String>? userName,
+    Value<String?>? userPhotoUrl,
+    Value<String>? content,
+    Value<DateTime>? timestamp,
+    Value<bool>? isSynced,
+    Value<int>? rowid,
+  }) {
+    return FileChatMessagesCompanion(
+      id: id ?? this.id,
+      threadId: threadId ?? this.threadId,
+      fileId: fileId ?? this.fileId,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userPhotoUrl: userPhotoUrl ?? this.userPhotoUrl,
+      content: content ?? this.content,
+      timestamp: timestamp ?? this.timestamp,
+      isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (threadId.present) {
+      map['thread_id'] = Variable<String>(threadId.value);
+    }
+    if (fileId.present) {
+      map['file_id'] = Variable<String>(fileId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (userName.present) {
+      map['user_name'] = Variable<String>(userName.value);
+    }
+    if (userPhotoUrl.present) {
+      map['user_photo_url'] = Variable<String>(userPhotoUrl.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileChatMessagesCompanion(')
+          ..write('id: $id, ')
+          ..write('threadId: $threadId, ')
+          ..write('fileId: $fileId, ')
+          ..write('userId: $userId, ')
+          ..write('userName: $userName, ')
+          ..write('userPhotoUrl: $userPhotoUrl, ')
+          ..write('content: $content, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -10268,6 +11195,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ModelMetadataTable modelMetadata = $ModelMetadataTable(this);
   late final $OfflineAiSyncQueueTable offlineAiSyncQueue =
       $OfflineAiSyncQueueTable(this);
+  late final $FileChatThreadsTable fileChatThreads = $FileChatThreadsTable(
+    this,
+  );
+  late final $FileChatMessagesTable fileChatMessages = $FileChatMessagesTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -10293,6 +11226,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     localChatMessages,
     modelMetadata,
     offlineAiSyncQueue,
+    fileChatThreads,
+    fileChatMessages,
   ];
 }
 
@@ -15572,6 +16507,498 @@ typedef $$OfflineAiSyncQueueTableProcessedTableManager =
       OfflineAiSyncQueueData,
       PrefetchHooks Function()
     >;
+typedef $$FileChatThreadsTableCreateCompanionBuilder =
+    FileChatThreadsCompanion Function({
+      required String id,
+      required String fileId,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> messageCount,
+      Value<int> rowid,
+    });
+typedef $$FileChatThreadsTableUpdateCompanionBuilder =
+    FileChatThreadsCompanion Function({
+      Value<String> id,
+      Value<String> fileId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> messageCount,
+      Value<int> rowid,
+    });
+
+class $$FileChatThreadsTableFilterComposer
+    extends Composer<_$AppDatabase, $FileChatThreadsTable> {
+  $$FileChatThreadsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get messageCount => $composableBuilder(
+    column: $table.messageCount,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FileChatThreadsTableOrderingComposer
+    extends Composer<_$AppDatabase, $FileChatThreadsTable> {
+  $$FileChatThreadsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get messageCount => $composableBuilder(
+    column: $table.messageCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FileChatThreadsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FileChatThreadsTable> {
+  $$FileChatThreadsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get fileId =>
+      $composableBuilder(column: $table.fileId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get messageCount => $composableBuilder(
+    column: $table.messageCount,
+    builder: (column) => column,
+  );
+}
+
+class $$FileChatThreadsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FileChatThreadsTable,
+          FileChatThread,
+          $$FileChatThreadsTableFilterComposer,
+          $$FileChatThreadsTableOrderingComposer,
+          $$FileChatThreadsTableAnnotationComposer,
+          $$FileChatThreadsTableCreateCompanionBuilder,
+          $$FileChatThreadsTableUpdateCompanionBuilder,
+          (
+            FileChatThread,
+            BaseReferences<
+              _$AppDatabase,
+              $FileChatThreadsTable,
+              FileChatThread
+            >,
+          ),
+          FileChatThread,
+          PrefetchHooks Function()
+        > {
+  $$FileChatThreadsTableTableManager(
+    _$AppDatabase db,
+    $FileChatThreadsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FileChatThreadsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FileChatThreadsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FileChatThreadsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> fileId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> messageCount = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FileChatThreadsCompanion(
+                id: id,
+                fileId: fileId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                messageCount: messageCount,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String fileId,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> messageCount = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FileChatThreadsCompanion.insert(
+                id: id,
+                fileId: fileId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                messageCount: messageCount,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FileChatThreadsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FileChatThreadsTable,
+      FileChatThread,
+      $$FileChatThreadsTableFilterComposer,
+      $$FileChatThreadsTableOrderingComposer,
+      $$FileChatThreadsTableAnnotationComposer,
+      $$FileChatThreadsTableCreateCompanionBuilder,
+      $$FileChatThreadsTableUpdateCompanionBuilder,
+      (
+        FileChatThread,
+        BaseReferences<_$AppDatabase, $FileChatThreadsTable, FileChatThread>,
+      ),
+      FileChatThread,
+      PrefetchHooks Function()
+    >;
+typedef $$FileChatMessagesTableCreateCompanionBuilder =
+    FileChatMessagesCompanion Function({
+      required String id,
+      required String threadId,
+      required String fileId,
+      required String userId,
+      required String userName,
+      Value<String?> userPhotoUrl,
+      required String content,
+      required DateTime timestamp,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+typedef $$FileChatMessagesTableUpdateCompanionBuilder =
+    FileChatMessagesCompanion Function({
+      Value<String> id,
+      Value<String> threadId,
+      Value<String> fileId,
+      Value<String> userId,
+      Value<String> userName,
+      Value<String?> userPhotoUrl,
+      Value<String> content,
+      Value<DateTime> timestamp,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+
+class $$FileChatMessagesTableFilterComposer
+    extends Composer<_$AppDatabase, $FileChatMessagesTable> {
+  $$FileChatMessagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get threadId => $composableBuilder(
+    column: $table.threadId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userPhotoUrl => $composableBuilder(
+    column: $table.userPhotoUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FileChatMessagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $FileChatMessagesTable> {
+  $$FileChatMessagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get threadId => $composableBuilder(
+    column: $table.threadId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileId => $composableBuilder(
+    column: $table.fileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userPhotoUrl => $composableBuilder(
+    column: $table.userPhotoUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FileChatMessagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FileChatMessagesTable> {
+  $$FileChatMessagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get threadId =>
+      $composableBuilder(column: $table.threadId, builder: (column) => column);
+
+  GeneratedColumn<String> get fileId =>
+      $composableBuilder(column: $table.fileId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get userName =>
+      $composableBuilder(column: $table.userName, builder: (column) => column);
+
+  GeneratedColumn<String> get userPhotoUrl => $composableBuilder(
+    column: $table.userPhotoUrl,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+}
+
+class $$FileChatMessagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FileChatMessagesTable,
+          FileChatMessage,
+          $$FileChatMessagesTableFilterComposer,
+          $$FileChatMessagesTableOrderingComposer,
+          $$FileChatMessagesTableAnnotationComposer,
+          $$FileChatMessagesTableCreateCompanionBuilder,
+          $$FileChatMessagesTableUpdateCompanionBuilder,
+          (
+            FileChatMessage,
+            BaseReferences<
+              _$AppDatabase,
+              $FileChatMessagesTable,
+              FileChatMessage
+            >,
+          ),
+          FileChatMessage,
+          PrefetchHooks Function()
+        > {
+  $$FileChatMessagesTableTableManager(
+    _$AppDatabase db,
+    $FileChatMessagesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FileChatMessagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FileChatMessagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FileChatMessagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> threadId = const Value.absent(),
+                Value<String> fileId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> userName = const Value.absent(),
+                Value<String?> userPhotoUrl = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<DateTime> timestamp = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FileChatMessagesCompanion(
+                id: id,
+                threadId: threadId,
+                fileId: fileId,
+                userId: userId,
+                userName: userName,
+                userPhotoUrl: userPhotoUrl,
+                content: content,
+                timestamp: timestamp,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String threadId,
+                required String fileId,
+                required String userId,
+                required String userName,
+                Value<String?> userPhotoUrl = const Value.absent(),
+                required String content,
+                required DateTime timestamp,
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FileChatMessagesCompanion.insert(
+                id: id,
+                threadId: threadId,
+                fileId: fileId,
+                userId: userId,
+                userName: userName,
+                userPhotoUrl: userPhotoUrl,
+                content: content,
+                timestamp: timestamp,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FileChatMessagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FileChatMessagesTable,
+      FileChatMessage,
+      $$FileChatMessagesTableFilterComposer,
+      $$FileChatMessagesTableOrderingComposer,
+      $$FileChatMessagesTableAnnotationComposer,
+      $$FileChatMessagesTableCreateCompanionBuilder,
+      $$FileChatMessagesTableUpdateCompanionBuilder,
+      (
+        FileChatMessage,
+        BaseReferences<_$AppDatabase, $FileChatMessagesTable, FileChatMessage>,
+      ),
+      FileChatMessage,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -15615,4 +17042,8 @@ class $AppDatabaseManager {
       $$ModelMetadataTableTableManager(_db, _db.modelMetadata);
   $$OfflineAiSyncQueueTableTableManager get offlineAiSyncQueue =>
       $$OfflineAiSyncQueueTableTableManager(_db, _db.offlineAiSyncQueue);
+  $$FileChatThreadsTableTableManager get fileChatThreads =>
+      $$FileChatThreadsTableTableManager(_db, _db.fileChatThreads);
+  $$FileChatMessagesTableTableManager get fileChatMessages =>
+      $$FileChatMessagesTableTableManager(_db, _db.fileChatMessages);
 }
