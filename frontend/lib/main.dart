@@ -24,6 +24,7 @@ import 'services/notebook_service.dart';
 import 'services/collaboration_service.dart';
 import 'services/realtime_service.dart';
 import 'services/annotation_sync_service.dart';
+import 'services/document_extraction_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -148,6 +149,25 @@ class ScholarMateApp extends StatelessWidget {
               AnnotationService(database: cache.database, cacheService: cache),
         ),
         Provider<OCRService>(create: (context) => OCRService(ConfigService())),
+        ChangeNotifierProxyProvider3<
+          ConfigService,
+          AuthService,
+          OCRService,
+          DocumentExtractionService
+        >(
+          create: (context) => DocumentExtractionService(
+            configService: ConfigService(),
+            authService: context.read<AuthService>(),
+            ocrService: context.read<OCRService>(),
+          ),
+          update: (context, config, auth, ocr, previous) =>
+              previous ??
+              DocumentExtractionService(
+                configService: config,
+                authService: auth,
+                ocrService: ocr,
+              ),
+        ),
         ChangeNotifierProvider<TtsService>(create: (_) => TtsService()),
         ChangeNotifierProxyProvider2<
           CacheService,

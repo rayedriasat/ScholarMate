@@ -10,6 +10,7 @@ import 'ai_assistant_screen.dart';
 import 'notes_screen.dart';
 import 'notebook_studio_screen.dart';
 import 'citation_generator_screen.dart';
+import 'extracted_documents_screen.dart';
 
 /// Home screen shown after successful authentication
 class HomeScreen extends StatefulWidget {
@@ -52,6 +53,13 @@ class _HomeScreenState extends State<HomeScreen> {
         activeIcon: Icons.folder,
         label: 'Files',
         screen: const FileExplorerScreen(),
+      ),
+      NavigationItem(
+        id: 'scan',
+        icon: Icons.document_scanner_outlined,
+        activeIcon: Icons.document_scanner,
+        label: 'Scan',
+        screen: const ExtractedDocumentsScreen(),
       ),
       NavigationItem(
         id: 'ai',

@@ -11,8 +11,11 @@ import 'package:path/path.dart' as path;
 import '../services/ocr_service.dart';
 import '../services/drive_service.dart';
 import '../services/cache_service.dart';
+import '../services/document_extraction_service.dart';
 import '../models/markdown_note.dart';
+import '../models/extracted_document.dart';
 import 'markdown_editor_screen.dart';
+import 'extracted_document_detail_screen.dart';
 import 'package:universal_html/html.dart' as html;
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
@@ -330,6 +333,12 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         return;
       }
 
+      // Handle extract document action
+      if (action == 'extract') {
+        await _extractDocument(ocrResult);
+        return;
+      }
+
       // Create PDF with OCR text
       final fileName = 'Scanned_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
@@ -527,7 +536,11 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, 'markdown'),
-            child: const Text('Save as Markdown'),
+            child: const Text('Markdown'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'extract'),
+            child: const Text('Extract Data'),
           ),
           ModernButton(
             onPressed: () => Navigator.pop(context, 'pdf'),
@@ -575,6 +588,264 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         });
       }
     }
+  }
+
+  Future<void> _extractDocument(OCRResult ocrResult) async {
+    try {
+      if (!mounted) return;
+
+      // Show extraction dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          backgroundColor: AppColors.surface,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: AppColors.primary),
+              SizedBox(height: 16),
+              Text(
+                'Extracting document data...',
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Extract structured data using AI
+      final extractionService = context.read<DocumentExtractionService>();
+      final extractedDoc = await extractionService.extractDocument(
+        _capturedImages.first,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); // Close extraction dialog
+
+      // Show extracted data for review
+      final confirmed = await _showExtractionPreview(extractedDoc);
+
+      if (confirmed == true && mounted) {
+        // Upload image to Drive first
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            backgroundColor: AppColors.surface,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppColors.primary),
+                SizedBox(height: 16),
+                Text(
+                  'Uploading image...',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        String? imageUrl;
+        if (!kIsWeb) {
+          final driveService = context.read<DriveService>();
+          final uploadedFile = await driveService.uploadFile(
+            File(_capturedImages.first.path),
+            widget.parentFolderId ?? '',
+            customName:
+                'Extracted_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          );
+          imageUrl = uploadedFile.id; // Use file ID as reference
+        }
+
+        if (!mounted) return;
+        Navigator.pop(context); // Close upload dialog
+
+        // Save extracted document
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            backgroundColor: AppColors.surface,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppColors.primary),
+                SizedBox(height: 16),
+                Text(
+                  'Saving document...',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        final savedDoc = await extractionService.saveExtractedDocument(
+          extractedDoc,
+          imageUrl,
+        );
+
+        if (!mounted) return;
+        Navigator.pop(context); // Close save dialog
+
+        // Navigate to detail screen
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                ExtractedDocumentDetailScreen(document: savedDoc),
+          ),
+        );
+
+        if (mounted) {
+          Navigator.pop(context); // Return to previous screen
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        try {
+          Navigator.pop(context); // Close any open dialogs
+        } catch (_) {}
+        _showError('Failed to extract document: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
+  Future<bool?> _showExtractionPreview(ExtractedDocument document) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Row(
+          children: [
+            Text(document.typeIcon, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                document.documentType,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Summary:',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  document.summary,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Extracted Data:',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...document.extractedData.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            '${entry.key}:',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            entry.value.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                if (document.tags.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Tags:',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: document.tags.map((tag) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          tag,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ModernButton(
+            onPressed: () => Navigator.pop(context, true),
+            label: 'Save Document',
+            width: 140,
+            height: 36,
+          ),
+        ],
+      ),
+    );
   }
 
   void _showError(String message) {
