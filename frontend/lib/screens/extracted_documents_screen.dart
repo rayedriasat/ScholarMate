@@ -342,7 +342,7 @@ class _ExtractedDocumentsScreenState extends State<ExtractedDocumentsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Document Type Icon
+            // Document Type Icon or Image Thumbnail
             Container(
               width: 60,
               height: 60,
@@ -350,11 +350,48 @@ class _ExtractedDocumentsScreenState extends State<ExtractedDocumentsScreen> {
                 color: AppColors.primary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Center(
-                child: Text(
-                  document.typeIcon,
-                  style: const TextStyle(fontSize: 32),
-                ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child:
+                    document.imagePath != null && document.imagePath!.isNotEmpty
+                    ? Image.network(
+                        'https://drive.google.com/uc?export=view&id=${document.imagePath}',
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Center(
+                            child: Text(
+                              document.typeIcon,
+                              style: const TextStyle(fontSize: 32),
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : Center(
+                        child: Text(
+                          document.typeIcon,
+                          style: const TextStyle(fontSize: 32),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 16),
