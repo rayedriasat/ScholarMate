@@ -126,7 +126,7 @@ class _FileCardState extends State<FileCard>
           onTap: widget.onTap,
           onLongPress: widget.onLongPress,
           child: GlassContainer(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             blur: 10,
             opacity: widget.isSelected ? 0.15 : (_isHovered ? 0.1 : 0.05),
             color: widget.isSelected
@@ -144,6 +144,7 @@ class _FileCardState extends State<FileCard>
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Icon and name row
                 Row(
@@ -175,7 +176,7 @@ class _FileCardState extends State<FileCard>
                                     ),
                                     child: const Icon(
                                       Icons.check,
-                                      size: 10,
+                                      size: 8,
                                       color: Colors.white,
                                     ),
                                   ),
@@ -186,30 +187,31 @@ class _FileCardState extends State<FileCard>
                           ),
                       ],
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             widget.file.name,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 14,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (!widget.file.isFolder) ...[
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Text(
                               _getFileTypeLabel(),
                               style: TextStyle(
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurface.withValues(alpha: 0.5),
-                                fontSize: 12,
+                                fontSize: 11,
                               ),
                             ),
                           ],
@@ -219,10 +221,10 @@ class _FileCardState extends State<FileCard>
                     if (widget.file.isShared)
                       Icon(
                         Icons.people,
-                        size: 16,
+                        size: 14,
                         color: Theme.of(context).colorScheme.secondary,
                       ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     FileContextMenu(
                       file: widget.file,
                       onRename: widget.onRename,
@@ -235,26 +237,26 @@ class _FileCardState extends State<FileCard>
                   ],
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
 
                 // Tags section (only for files, not folders)
                 if (!widget.file.isFolder) ...[
                   if (_isLoadingTags)
                     const SizedBox(
-                      height: 20,
-                      width: 20,
+                      height: 16,
+                      width: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   else if (_tags.isNotEmpty) ...[
                     TagChipList(
                       tags: _tags,
                       small: true,
-                      maxTags: 3,
+                      maxTags: 2,
                       onTagTap: (tag) {
                         // Optional: Navigate to filtered view with this tag
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                   ],
                 ],
 
@@ -264,31 +266,31 @@ class _FileCardState extends State<FileCard>
                     if (!widget.file.isFolder && widget.file.size != null) ...[
                       Icon(
                         Icons.storage,
-                        size: 14,
+                        size: 12,
                         color: Theme.of(
                           context,
                         ).colorScheme.onSurface.withValues(alpha: 0.54),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 3),
                       Text(
                         widget.file.formattedSize,
                         style: TextStyle(
                           color: Theme.of(
                             context,
                           ).colorScheme.onSurface.withValues(alpha: 0.54),
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 8),
                     ],
                     Icon(
                       Icons.access_time,
-                      size: 14,
+                      size: 12,
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface.withValues(alpha: 0.54),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     Expanded(
                       child: Text(
                         _formatDate(widget.file.modifiedTime),
@@ -296,7 +298,7 @@ class _FileCardState extends State<FileCard>
                           color: Theme.of(
                             context,
                           ).colorScheme.onSurface.withValues(alpha: 0.54),
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
                     ),
@@ -305,13 +307,13 @@ class _FileCardState extends State<FileCard>
 
                 // Sync status indicator
                 if (widget.file.syncStatus != 'synced') ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   _buildSyncStatusBadge(),
                 ],
 
                 // Indexing status badge (only for PDFs)
                 if (widget.file.isPdf) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   IndexingStatusBadge(fileId: widget.file.id),
                 ],
               ],
@@ -325,24 +327,24 @@ class _FileCardState extends State<FileCard>
   Widget _buildFileIcon() {
     if (widget.file.isFolder) {
       return Container(
-        width: 48,
-        height: 48,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.blue[400]!, Colors.blue[600]!],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
               color: Colors.blue.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        child: const Icon(Icons.folder, color: Colors.white, size: 24),
+        child: const Icon(Icons.folder, color: Colors.white, size: 20),
       );
     }
 
@@ -365,24 +367,24 @@ class _FileCardState extends State<FileCard>
     }
 
     return Container(
-      width: 48,
-      height: 48,
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: gradientColors,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
             color: iconColor.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Icon(iconData, color: Colors.white, size: 24),
+      child: Icon(iconData, color: Colors.white, size: 20),
     );
   }
 

@@ -282,37 +282,41 @@ class _NotesScreenState extends State<NotesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Background - Removed as it's now global in AppNavigation
-          Column(
-            children: [
-              // Custom Toolbar
-              _buildToolbar(),
-              _buildFilterBar(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom Toolbar
+            _buildToolbar(),
+            _buildFilterBar(),
 
-              // Content
-              Expanded(
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      )
-                    : _getFilteredNotes().isEmpty
-                    ? _buildEmptyState(context)
-                    : _buildNotesList(),
-              ),
-            ],
-          ),
-        ],
+            // Content
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : _getFilteredNotes().isEmpty
+                  ? _buildEmptyState(context)
+                  : _buildNotesList(),
+            ),
+          ],
+        ),
       ),
-      floatingActionButton: ModernButton(
-        onPressed: _createNewNote,
-        icon: Icons.add,
-        label: 'New Note',
-        width: 140,
-        height: 50,
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.width >= 800
+              ? 0
+              : 113, // 70 (nav height) + 24 (nav bottom) + 19 (overflow buffer)
+        ),
+        child: ModernButton(
+          onPressed: _createNewNote,
+          icon: Icons.add,
+          label: 'New Note',
+          width: 165,
+          height: 50,
+        ),
       ),
     );
   }
@@ -399,8 +403,16 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Widget _buildGridView(List<dynamic> notes) {
+    final isWideScreen = MediaQuery.of(context).size.width >= 800;
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: isWideScreen
+            ? 16
+            : 120, // Extra padding for floating bottom nav on mobile
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final crossAxisCount = constraints.maxWidth > 1200
@@ -434,8 +446,16 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Widget _buildListView(List<dynamic> notes) {
+    final isWideScreen = MediaQuery.of(context).size.width >= 800;
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: isWideScreen
+            ? 16
+            : 120, // Extra padding for floating bottom nav on mobile
+      ),
       itemCount: notes.length,
       itemBuilder: (context, index) {
         final note = notes[index];

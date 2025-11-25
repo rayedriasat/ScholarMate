@@ -149,7 +149,10 @@ class _ModernButtonState extends State<ModernButton>
             duration: const Duration(milliseconds: 200),
             width: widget.width,
             height: widget.height ?? 48,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: widget.label.isEmpty
+                ? EdgeInsets
+                      .zero // No padding for icon-only buttons
+                : const EdgeInsets.symmetric(horizontal: 24),
             decoration: BoxDecoration(
               color: _getBackgroundColor(),
               borderRadius: BorderRadius.circular(12),
@@ -184,19 +187,23 @@ class _ModernButtonState extends State<ModernButton>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  if (widget.label.isNotEmpty) const SizedBox(width: 12),
                 ] else if (widget.icon != null) ...[
                   Icon(widget.icon, color: _getTextColor(), size: 20),
-                  const SizedBox(width: 8),
+                  if (widget.label.isNotEmpty) const SizedBox(width: 8),
                 ],
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    color: _getTextColor(),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                if (widget.label.isNotEmpty)
+                  Flexible(
+                    child: Text(
+                      widget.label,
+                      style: TextStyle(
+                        color: _getTextColor(),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

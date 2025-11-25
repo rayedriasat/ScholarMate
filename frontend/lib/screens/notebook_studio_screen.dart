@@ -138,16 +138,54 @@ class _NotebookStudioScreenState extends State<NotebookStudioScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Notebook Studio'), elevation: 0),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _folders.isEmpty
-          ? _buildEmptyState()
-          : _buildFolderGrid(),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createFolder,
-        icon: const Icon(Icons.add),
-        label: const Text('New Workspace'),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom AppBar
+            Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                border: Border(
+                  bottom: BorderSide(color: Theme.of(context).dividerColor),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'Notebook Studio',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Body
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _folders.isEmpty
+                  ? _buildEmptyState()
+                  : _buildFolderGrid(),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.width >= 800
+              ? 0
+              : 113, // 70 (nav height) + 24 (nav bottom) + 19 (overflow buffer)
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: _createFolder,
+          icon: const Icon(Icons.add),
+          label: const Text('New Workspace'),
+        ),
       ),
     );
   }
@@ -180,10 +218,18 @@ class _NotebookStudioScreenState extends State<NotebookStudioScreen> {
   }
 
   Widget _buildFolderGrid() {
+    final isWideScreen = MediaQuery.of(context).size.width >= 800;
     return RefreshIndicator(
       onRefresh: _loadFolders,
       child: GridView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: isWideScreen
+              ? 16
+              : 120, // Extra padding for floating bottom nav on mobile
+        ),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 300,
           childAspectRatio: 1.2,

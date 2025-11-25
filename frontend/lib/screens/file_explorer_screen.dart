@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/drive_file.dart';
@@ -10,6 +12,7 @@ import '../theme/app_colors.dart';
 
 import '../widgets/breadcrumb_navigation.dart';
 import '../widgets/file_upload_widget.dart';
+import '../widgets/file_card.dart';
 // import '../widgets/tag_selection_dialog.dart';
 import '../widgets/sharing_dialog.dart';
 import '../widgets/indexing_progress_panel.dart';
@@ -68,7 +71,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String _searchQuery = '';
   FileSortOption _sortOption = FileSortOption.name;
   bool _sortAscending = true;
-  // FileViewLayout _viewLayout = FileViewLayout.list; // Unused
+  FileViewLayout _viewLayout = FileViewLayout.list;
   final TextEditingController _searchController = TextEditingController();
 
   // Chat panel state
@@ -754,6 +757,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    final isAndroid = !kIsWeb && Platform.isAndroid;
+    final padding = MediaQuery.of(context).padding;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -764,6 +769,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               children: [
                 Column(
                   children: [
+                    // Top safe area padding
+                    if (isAndroid) SizedBox(height: padding.top),
+
                     // Custom Toolbar
                     _buildToolbar(isSmallScreen),
 
@@ -780,29 +788,34 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
                     // File List
                     Expanded(
-                      child: _isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.primary,
-                              ),
-                            )
-                          : _error != null
-                          ? Center(
-                              child: Text(
-                                _error!,
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            )
-                          : _files.isEmpty
-                          ? _buildEmptyState()
-                          : _buildFileTable(),
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          bottom: isAndroid ? padding.bottom + 80 : 0,
+                        ),
+                        child: _isLoading
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              )
+                            : _error != null
+                            ? Center(
+                                child: Text(
+                                  _error!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              )
+                            : _files.isEmpty
+                            ? _buildEmptyState()
+                            : _buildFileListView(),
+                      ),
                     ),
                   ],
                 ),
 
                 // Floating Action Button
                 Positioned(
-                  bottom: isSmallScreen ? 100 : 32,
+                  bottom: isAndroid ? padding.bottom + 90 : 32,
                   right: 32,
                   child: _buildFAB(),
                 ),
@@ -817,9 +830,12 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   Widget _buildToolbar(bool isSmallScreen) {
+    final isAndroid = !kIsWeb && Platform.isAndroid;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Container(
       height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8 : 16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         border: Border(
@@ -835,70 +851,115 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 color: Theme.of(context).iconTheme.color,
               ),
               onPressed: _navigateBack,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
-          const SizedBox(width: 8),
+          if (_canNavigateBack) const SizedBox(width: 4),
           Text(
             'Library',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: isSmallScreen ? 16 : 20,
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const Spacer(),
           // Search Bar
-          Container(
-            width: isSmallScreen ? 150 : 300,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Icon(Icons.search, size: 18, color: Colors.grey),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      hintText: 'Search...',
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
+          if (screenWidth > 600)
+            Container(
+              width: screenWidth > 800 ? 300 : 200,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Theme.of(context).dividerColor),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.search, size: 18, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Search...',
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      style: const TextStyle(fontSize: 14),
                     ),
-                    style: TextStyle(fontSize: 14),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          IconButton(
-            icon: Icon(Icons.refresh, color: Theme.of(context).iconTheme.color),
-            onPressed: _refresh,
-            tooltip: 'Refresh',
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.analytics_outlined,
-              color: Theme.of(context).iconTheme.color,
+          if (screenWidth > 600) const SizedBox(width: 8),
+
+          // View layout toggle
+          if (kIsWeb || isAndroid)
+            IconButton(
+              icon: Icon(
+                _viewLayout == FileViewLayout.list
+                    ? Icons.grid_view
+                    : Icons.view_list,
+                color: Theme.of(context).iconTheme.color,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _viewLayout = _viewLayout == FileViewLayout.list
+                      ? FileViewLayout.glassCard
+                      : FileViewLayout.list;
+                });
+              },
+              tooltip: _viewLayout == FileViewLayout.list
+                  ? 'Card View'
+                  : 'List View',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
-            onPressed: _showIndexingProgressPanel,
-            tooltip: 'Indexing Progress',
-          ),
+
+          if (!isSmallScreen)
+            IconButton(
+              icon: Icon(
+                Icons.refresh,
+                color: Theme.of(context).iconTheme.color,
+                size: 20,
+              ),
+              onPressed: _refresh,
+              tooltip: 'Refresh',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          if (!isSmallScreen)
+            IconButton(
+              icon: Icon(
+                Icons.analytics_outlined,
+                color: Theme.of(context).iconTheme.color,
+                size: 20,
+              ),
+              onPressed: _showIndexingProgressPanel,
+              tooltip: 'Indexing Progress',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
           PopupMenuButton<String>(
             icon: Icon(
               Icons.more_vert,
               color: Theme.of(context).iconTheme.color,
+              size: 20,
             ),
+            padding: EdgeInsets.zero,
             color: Theme.of(context).brightness == Brightness.dark
                 ? AppColors.surface
                 : Colors.white,
             onSelected: (value) {
-              if (value == 'manage_tags') {
+              if (value == 'refresh') {
+                _refresh();
+              } else if (value == 'indexing') {
+                _showIndexingProgressPanel();
+              } else if (value == 'manage_tags') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -912,13 +973,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                     builder: (context) => const SharedFilesScreen(),
                   ),
                 );
-              } else if (value == 'analytics') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AnalyticsScreen(),
-                  ),
-                );
               } else if (value == 'advanced_search') {
                 Navigator.push(
                   context,
@@ -926,9 +980,23 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                     builder: (context) => const AdvancedSearchScreen(),
                   ),
                 );
+              } else if (value == 'analytics') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AnalyticsScreen(),
+                  ),
+                );
               }
             },
             itemBuilder: (context) => [
+              if (isSmallScreen) ...[
+                const PopupMenuItem(value: 'refresh', child: Text('Refresh')),
+                const PopupMenuItem(
+                  value: 'indexing',
+                  child: Text('Indexing Progress'),
+                ),
+              ],
               const PopupMenuItem(
                 value: 'advanced_search',
                 child: Text('Advanced Search'),
@@ -979,272 +1047,613 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     );
   }
 
-  Widget _buildFileTable() {
-    return Column(
-      children: [
-        // Table Header
-        Container(
-          height: 40,
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: Theme.of(context).dividerColor),
-            ),
-            color: Theme.of(context).cardColor.withValues(alpha: 0.5),
-          ),
-          child: Row(
-            children: [
-              const SizedBox(width: 16),
-              // Icon column
-              const SizedBox(width: 40),
-              // Name column
-              Expanded(
-                flex: 3,
-                child: InkWell(
-                  onTap: () => _handleSort(FileSortOption.name),
-                  child: Row(
-                    children: [
-                      const Text(
-                        'Name',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                      if (_sortOption == FileSortOption.name)
-                        Icon(
-                          _sortAscending
-                              ? Icons.arrow_upward
-                              : Icons.arrow_downward,
-                          size: 14,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              // Date column
-              Expanded(
-                flex: 1,
-                child: InkWell(
-                  onTap: () => _handleSort(FileSortOption.date),
-                  child: Row(
-                    children: [
-                      const Text(
-                        'Date Modified',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                      if (_sortOption == FileSortOption.date)
-                        Icon(
-                          _sortAscending
-                              ? Icons.arrow_upward
-                              : Icons.arrow_downward,
-                          size: 14,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              // Size column
-              SizedBox(
-                width: 100,
-                child: InkWell(
-                  onTap: () => _handleSort(FileSortOption.size),
-                  child: Row(
-                    children: [
-                      const Text(
-                        'Size',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                      if (_sortOption == FileSortOption.size)
-                        Icon(
-                          _sortAscending
-                              ? Icons.arrow_upward
-                              : Icons.arrow_downward,
-                          size: 14,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 48), // Actions space
-            ],
-          ),
-        ),
-        // Table Body
-        Expanded(
-          child: ListView.builder(
-            itemCount: _files.length,
-            itemBuilder: (context, index) {
-              final file = _files[index];
-              final isSelected = _selectedFiles.contains(file.id);
+  Widget _buildFileListView() {
+    final isAndroid = !kIsWeb && Platform.isAndroid;
 
-              return InkWell(
-                onTap: () {
-                  if (_selectedFiles.isNotEmpty) {
-                    _toggleFileSelection(file.id);
-                  } else if (file.isFolder) {
-                    _navigateToFolder(file);
-                  } else {
-                    // Open file viewer
-                    if (file.isPdf) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PdfViewerScreen(file: file),
-                        ),
-                      );
-                    } else if (file.isMarkdown) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              MarkdownViewerScreen(file: file),
-                        ),
-                      );
-                    }
-                  }
-                },
-                onLongPress: () => _toggleFileSelection(file.id),
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-                        : (index % 2 == 0
-                              ? Theme.of(
-                                  context,
-                                ).cardColor.withValues(alpha: 0.3)
-                              : Colors.transparent),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Theme.of(
-                          context,
-                        ).dividerColor.withValues(alpha: 0.5),
-                      ),
+    // Android uses card-based list view (old style) or glassy cards
+    if (isAndroid) {
+      if (_viewLayout == FileViewLayout.glassCard) {
+        return _buildGlassCardGrid();
+      }
+      return _buildAndroidCardList();
+    }
+
+    // Web uses table view or glassy cards
+    if (_viewLayout == FileViewLayout.glassCard) {
+      return _buildGlassCardGrid();
+    }
+    return _buildFileTable();
+  }
+
+  Widget _buildAndroidCardList() {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      itemCount: _files.length,
+      itemBuilder: (context, index) {
+        final file = _files[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: FileCard(
+            file: file,
+            isSelected: _selectedFiles.contains(file.id),
+            onTap: () {
+              if (_selectedFiles.isNotEmpty) {
+                _toggleFileSelection(file.id);
+              } else if (file.isFolder) {
+                _navigateToFolder(file);
+              } else {
+                if (file.isPdf) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PdfViewerScreen(file: file),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 16),
-                      // Icon
-                      Icon(
+                  );
+                } else if (file.isMarkdown) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MarkdownViewerScreen(file: file),
+                    ),
+                  );
+                }
+              }
+            },
+            onLongPress: () => _toggleFileSelection(file.id),
+            onRename: () => _showRenameDialog(file),
+            onDelete: () => _showDeleteConfirmation(file),
+            onShare: () => _shareFile(file),
+            onReindex: () => _reindexFile(file),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGlassCardGrid() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    int crossAxisCount;
+    double childAspectRatio;
+
+    if (screenWidth > 1200) {
+      crossAxisCount = 4;
+      childAspectRatio = 0.55;
+    } else if (screenWidth > 800) {
+      crossAxisCount = 3;
+      childAspectRatio = 0.55;
+    } else if (screenWidth > 500) {
+      crossAxisCount = 2;
+      childAspectRatio = 0.55;
+    } else {
+      crossAxisCount = 2;
+      childAspectRatio = 0.5;
+    }
+
+    return GridView.builder(
+      padding: EdgeInsets.all(screenWidth < 600 ? 12 : 20),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: screenWidth < 600 ? 12 : 20,
+        mainAxisSpacing: screenWidth < 600 ? 12 : 20,
+        childAspectRatio: childAspectRatio,
+      ),
+      itemCount: _files.length,
+      itemBuilder: (context, index) {
+        final file = _files[index];
+        return _buildGlassCard(file);
+      },
+    );
+  }
+
+  Widget _buildGlassCard(DriveFile file) {
+    final isSelected = _selectedFiles.contains(file.id);
+
+    return GestureDetector(
+      onTap: () {
+        if (_selectedFiles.isNotEmpty) {
+          _toggleFileSelection(file.id);
+        } else if (file.isFolder) {
+          _navigateToFolder(file);
+        } else {
+          if (file.isPdf) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PdfViewerScreen(file: file),
+              ),
+            );
+          } else if (file.isMarkdown) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MarkdownViewerScreen(file: file),
+              ),
+            );
+          }
+        }
+      },
+      onLongPress: () => _toggleFileSelection(file.id),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(14),
+        blur: 20,
+        opacity: 0.05,
+        color: isSelected
+            ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+            : Theme.of(context).cardColor.withValues(alpha: 0.3),
+        border: Border.all(
+          color: isSelected
+              ? Theme.of(context).primaryColor.withValues(alpha: 0.4)
+              : Theme.of(context).dividerColor.withValues(alpha: 0.15),
+          width: 1,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Thumbnail/Preview area with status indicators
+            Expanded(
+              flex: 3,
+              child: Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: file.isFolder
+                          ? Colors.blue.withValues(alpha: 0.1)
+                          : (file.isPdf
+                                ? Colors.red.withValues(alpha: 0.1)
+                                : Colors.green.withValues(alpha: 0.1)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Icon(
                         file.isFolder
                             ? Icons.folder
                             : (file.isPdf
                                   ? Icons.picture_as_pdf
-                                  : Icons.insert_drive_file),
+                                  : Icons.description),
+                        size: 48,
                         color: file.isFolder
                             ? Colors.blue
-                            : (file.isPdf ? Colors.red : Colors.grey),
-                        size: 20,
+                            : (file.isPdf ? Colors.red : Colors.green),
                       ),
-                      const SizedBox(width: 16),
-                      // Name
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          file.name,
-                          style: const TextStyle(fontSize: 13),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // Status badges
+                  if (file.isShared)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Icon(
+                          Icons.people,
+                          size: 12,
+                          color: Colors.white,
                         ),
                       ),
-                      // Date
-                      Expanded(
-                        flex: 1,
-                        child: Text(
-                          _formatDate(file.modifiedTime),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            // File info with metadata
+            Expanded(
+              flex: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // File name
+                  Text(
+                    file.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  // Metadata row
+                  Row(
+                    children: [
+                      if (!file.isFolder) ...[
+                        Icon(
+                          Icons.insert_drive_file,
+                          size: 11,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          file.isPdf ? 'PDF' : 'MD',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).textTheme.bodySmall?.color,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontSize: 10,
                           ),
                         ),
-                      ),
-                      // Size
-                      SizedBox(
-                        width: 100,
-                        child: Text(
-                          file.isFolder ? '--' : file.formattedSize,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).textTheme.bodySmall?.color,
+                        const SizedBox(width: 8),
+                      ],
+                      if (!file.isFolder && file.size != null) ...[
+                        Icon(
+                          Icons.storage,
+                          size: 11,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            file.formattedSize,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              fontSize: 10,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                      // Actions
-                      SizedBox(
-                        width: 48,
-                        child: PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert, size: 18),
-                          padding: EdgeInsets.zero,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? AppColors.surface
-                              : Colors.white,
-                          onSelected: (value) {
-                            if (value == 'rename') _showRenameDialog(file);
-                            if (value == 'delete')
-                              _showDeleteConfirmation(file);
-                            if (value == 'share') _shareFile(file);
-                            if (value == 'reindex') _reindexFile(file);
-                            if (value == 'manage_tags') {
-                              showDialog(
-                                context: context,
-                                builder: (context) => TagSelectionDialog(
-                                  fileIds: [file.id],
-                                  currentTags: [],
-                                ),
-                              );
-                            }
-                            if (value == 'chat_with_folder') {
-                              _chatWithSpecificFolder(file);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'rename',
-                              child: Text('Rename'),
-                            ),
-                            const PopupMenuItem(
-                              value: 'share',
-                              child: Text('Share'),
-                            ),
-                            if (file.isPdf)
-                              const PopupMenuItem(
-                                value: 'reindex',
-                                child: Text('Reindex'),
-                              ),
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: Text(
-                                'Delete',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                            if (file.isFolder)
-                              const PopupMenuItem(
-                                value: 'chat_with_folder',
-                                child: Text('Chat with Folder'),
-                              ),
-                            const PopupMenuItem(
-                              value: 'manage_tags',
-                              child: Text('Manage Tags'),
-                            ),
-                          ],
+                      ],
+                      const Spacer(),
+                      PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_vert,
+                          size: 16,
+                          color: Theme.of(context).iconTheme.color,
                         ),
+                        padding: EdgeInsets.zero,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.surface
+                            : Colors.white,
+                        onSelected: (value) {
+                          if (value == 'rename') _showRenameDialog(file);
+                          if (value == 'delete') _showDeleteConfirmation(file);
+                          if (value == 'share') _shareFile(file);
+                          if (value == 'reindex') _reindexFile(file);
+                          if (value == 'manage_tags') {
+                            showDialog(
+                              context: context,
+                              builder: (context) => TagSelectionDialog(
+                                fileIds: [file.id],
+                                currentTags: [],
+                              ),
+                            );
+                          }
+                          if (value == 'chat_with_folder') {
+                            _chatWithSpecificFolder(file);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'rename',
+                            child: Text('Rename'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'share',
+                            child: Text('Share'),
+                          ),
+                          if (file.isPdf)
+                            const PopupMenuItem(
+                              value: 'reindex',
+                              child: Text('Reindex'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Text(
+                              'Delete',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                          if (file.isFolder)
+                            const PopupMenuItem(
+                              value: 'chat_with_folder',
+                              child: Text('Chat with Folder'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'manage_tags',
+                            child: Text('Manage Tags'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ),
-              );
-            },
-          ),
+                  // Date
+                  if (file.modifiedTime != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 11,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatDate(file.modifiedTime),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildFileTable() {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return ListView.builder(
+      padding: EdgeInsets.all(screenWidth < 600 ? 12 : 20),
+      itemCount: _files.length,
+      itemBuilder: (context, index) {
+        final file = _files[index];
+        final isSelected = _selectedFiles.contains(file.id);
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: GestureDetector(
+            onTap: () {
+              if (_selectedFiles.isNotEmpty) {
+                _toggleFileSelection(file.id);
+              } else if (file.isFolder) {
+                _navigateToFolder(file);
+              } else {
+                if (file.isPdf) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PdfViewerScreen(file: file),
+                    ),
+                  );
+                } else if (file.isMarkdown) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MarkdownViewerScreen(file: file),
+                    ),
+                  );
+                }
+              }
+            },
+            onLongPress: () => _toggleFileSelection(file.id),
+            child: GlassContainer(
+              padding: EdgeInsets.all(screenWidth < 600 ? 12 : 16),
+              blur: 20,
+              opacity: 0.05,
+              color: isSelected
+                  ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+                  : Theme.of(context).cardColor.withValues(alpha: 0.3),
+              border: Border.all(
+                color: isSelected
+                    ? Theme.of(context).primaryColor.withValues(alpha: 0.4)
+                    : Theme.of(context).dividerColor.withValues(alpha: 0.15),
+                width: 1,
+              ),
+              child: Row(
+                children: [
+                  // Icon with gradient background
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: file.isFolder
+                            ? [Colors.blue[400]!, Colors.blue[600]!]
+                            : (file.isPdf
+                                  ? [Colors.red[400]!, Colors.red[700]!]
+                                  : [Colors.green[400]!, Colors.green[700]!]),
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      file.isFolder
+                          ? Icons.folder
+                          : (file.isPdf
+                                ? Icons.picture_as_pdf
+                                : Icons.description),
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // File info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Name with type badge
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                file.name,
+                                style: TextStyle(
+                                  fontSize: screenWidth < 600 ? 13 : 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (!file.isFolder) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      (file.isPdf ? Colors.red : Colors.green)
+                                          .withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  file.isPdf ? 'PDF' : 'MD',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                    color: file.isPdf
+                                        ? Colors.red[300]
+                                        : Colors.green[300],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        // Metadata row
+                        Row(
+                          children: [
+                            if (!file.isFolder && file.size != null) ...[
+                              Icon(
+                                Icons.storage,
+                                size: 12,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                file.formattedSize,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.5),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                            ],
+                            if (file.modifiedTime != null) ...[
+                              Icon(
+                                Icons.access_time,
+                                size: 12,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatDate(file.modifiedTime),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            // Status indicators
+                            if (file.isShared)
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Icon(
+                                  Icons.people,
+                                  size: 14,
+                                  color: Colors.blue[300],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Actions
+                  PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      size: 20,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    padding: EdgeInsets.zero,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.surface
+                        : Colors.white,
+                    onSelected: (value) {
+                      if (value == 'rename') _showRenameDialog(file);
+                      if (value == 'delete') _showDeleteConfirmation(file);
+                      if (value == 'share') _shareFile(file);
+                      if (value == 'reindex') _reindexFile(file);
+                      if (value == 'manage_tags') {
+                        showDialog(
+                          context: context,
+                          builder: (context) => TagSelectionDialog(
+                            fileIds: [file.id],
+                            currentTags: [],
+                          ),
+                        );
+                      }
+                      if (value == 'chat_with_folder') {
+                        _chatWithSpecificFolder(file);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'rename',
+                        child: Text('Rename'),
+                      ),
+                      const PopupMenuItem(value: 'share', child: Text('Share')),
+                      if (file.isPdf)
+                        const PopupMenuItem(
+                          value: 'reindex',
+                          child: Text('Reindex'),
+                        ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                      if (file.isFolder)
+                        const PopupMenuItem(
+                          value: 'chat_with_folder',
+                          child: Text('Chat with Folder'),
+                        ),
+                      const PopupMenuItem(
+                        value: 'manage_tags',
+                        child: Text('Manage Tags'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1407,7 +1816,7 @@ class _CreateFolderDialogState extends State<_CreateFolderDialog> {
 
 enum FileSortOption { name, date, size, tag }
 
-enum FileViewLayout { list, grid }
+enum FileViewLayout { list, glassCard }
 
 enum TagFilterMode { any, all }
 

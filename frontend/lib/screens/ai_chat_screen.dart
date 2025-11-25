@@ -612,129 +612,124 @@ class _AIChatScreenState extends State<AIChatScreen> {
     // Auto-hide source panel if screen/panel is too narrow (less than 500px)
     final shouldShowSourcePanel = _showSourcePanel && screenWidth >= 500;
 
-    final content = Stack(
-      children: [
-        // Background for embedded mode - only if not wrapped in a container
-        // (PDF viewer already provides background)
-        Column(
-          children: [
-            // Custom AppBar
-            if (!widget.isEmbedded) _buildAppBar(isWideScreen),
-            if (widget.isEmbedded) _buildEmbeddedHeader(),
+    final content = SafeArea(
+      child: Column(
+        children: [
+          // Custom AppBar
+          if (!widget.isEmbedded) _buildAppBar(isWideScreen),
+          if (widget.isEmbedded) _buildEmbeddedHeader(),
 
-            // Main Content
-            Expanded(
-              child: Row(
-                children: [
-                  // Conversation list sidebar (desktop only)
-                  if (_showConversationList && isWideScreen)
-                    ConversationListSidebar(
-                      conversations: _conversations,
-                      currentConversationId: _currentConversationId,
-                      onConversationSelected: _loadConversation,
-                      onNewConversation: _startNewConversation,
-                      onDeleteConversation: _deleteConversation,
-                      onRenameConversation: _renameConversation,
-                      isLoading: _isLoadingConversations,
-                    ),
-
-                  // Main chat area
-                  Expanded(
-                    flex: _showSourcePanel && isWideScreen ? 2 : 1,
-                    child: Column(
-                      children: [
-                        // Messages list with SelectionArea for better text selection
-                        Expanded(
-                          child: _messages.isEmpty
-                              ? _buildEmptyState()
-                              : SelectionArea(
-                                  child: ListView.builder(
-                                    controller: _scrollController,
-                                    padding: const EdgeInsets.all(16),
-                                    itemCount:
-                                        _messages.length + (_isLoading ? 1 : 0),
-                                    itemBuilder: (context, index) {
-                                      if (index == _messages.length) {
-                                        return const Padding(
-                                          padding: EdgeInsets.all(16.0),
-                                          child: Row(
-                                            children: [
-                                              SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: AppColors.primary,
-                                                    ),
-                                              ),
-                                              SizedBox(width: 12),
-                                              Text(
-                                                'AI is thinking...',
-                                                style: TextStyle(
-                                                  color: Colors.white70,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }
-                                      final message = _messages[index];
-                                      return ChatMessageBubble(
-                                        message: message,
-                                        onCitationTapped: _onCitationTapped,
-                                        onSaveAsNote: message.isUser
-                                            ? null
-                                            : () => _onSaveAsNote(message),
-                                      );
-                                    },
-                                  ),
-                                ),
-                        ),
-
-                        // Input area
-                        _buildInputArea(),
-                      ],
-                    ),
+          // Main Content
+          Expanded(
+            child: Row(
+              children: [
+                // Conversation list sidebar (desktop only)
+                if (_showConversationList && isWideScreen)
+                  ConversationListSidebar(
+                    conversations: _conversations,
+                    currentConversationId: _currentConversationId,
+                    onConversationSelected: _loadConversation,
+                    onNewConversation: _startNewConversation,
+                    onDeleteConversation: _deleteConversation,
+                    onRenameConversation: _renameConversation,
+                    isLoading: _isLoadingConversations,
                   ),
 
-                  // Source selection panel (responsive width)
-                  if (shouldShowSourcePanel && isWideScreen)
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        // Use flexible width: min 250px, max 300px, or 40% of available space
-                        final panelWidth = (constraints.maxWidth * 0.4).clamp(
-                          250.0,
-                          300.0,
-                        );
-
-                        return Container(
-                          width: panelWidth,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              left: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.1),
+                // Main chat area
+                Expanded(
+                  flex: _showSourcePanel && isWideScreen ? 2 : 1,
+                  child: Column(
+                    children: [
+                      // Messages list with SelectionArea for better text selection
+                      Expanded(
+                        child: _messages.isEmpty
+                            ? _buildEmptyState()
+                            : SelectionArea(
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount:
+                                      _messages.length + (_isLoading ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    if (index == _messages.length) {
+                                      return const Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                            SizedBox(width: 12),
+                                            Text(
+                                              'AI is thinking...',
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                    final message = _messages[index];
+                                    return ChatMessageBubble(
+                                      message: message,
+                                      onCitationTapped: _onCitationTapped,
+                                      onSaveAsNote: message.isUser
+                                          ? null
+                                          : () => _onSaveAsNote(message),
+                                    );
+                                  },
+                                ),
                               ),
+                      ),
+
+                      // Input area
+                      _buildInputArea(),
+                    ],
+                  ),
+                ),
+
+                // Source selection panel (responsive width)
+                if (shouldShowSourcePanel && isWideScreen)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Use flexible width: min 250px, max 300px, or 40% of available space
+                      final panelWidth = (constraints.maxWidth * 0.4).clamp(
+                        250.0,
+                        300.0,
+                      );
+
+                      return Container(
+                        width: panelWidth,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.1),
                             ),
                           ),
-                          child: SourceSelectionPanel(
-                            availableFiles: _availableFiles,
-                            selectedFileIds: _selectedFileIds,
-                            isLoading: _isLoadingFiles,
-                            onToggleFile: _toggleSourceSelection,
-                            onClearAll: _clearAllSources,
-                            onSelectAll: _selectAllSources,
-                            onRefresh: _loadAvailableFiles,
-                          ),
-                        );
-                      },
-                    ),
-                ],
-              ),
+                        ),
+                        child: SourceSelectionPanel(
+                          availableFiles: _availableFiles,
+                          selectedFileIds: _selectedFileIds,
+                          isLoading: _isLoadingFiles,
+                          onToggleFile: _toggleSourceSelection,
+                          onClearAll: _clearAllSources,
+                          onSelectAll: _selectAllSources,
+                          onRefresh: _loadAvailableFiles,
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
 
     if (widget.isEmbedded) {
@@ -1130,8 +1125,21 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildInputArea() {
+    final isWideScreen = MediaQuery.of(context).size.width >= 800;
     return Container(
-      padding: EdgeInsets.all(widget.isEmbedded ? 12 : 16),
+      padding: EdgeInsets.only(
+        left: widget.isEmbedded ? 12 : 16,
+        right: widget.isEmbedded ? 12 : 16,
+        top: widget.isEmbedded ? 12 : 16,
+        bottom: isWideScreen
+            ? (widget.isEmbedded ? 12 : 16)
+            : 16, // Normal padding - nav bar spacing handled by parent
+      ),
+      margin: EdgeInsets.only(
+        bottom: isWideScreen
+            ? 0
+            : 80, // Space for floating nav: 70px height + 24px bottom + 6px spacing
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
