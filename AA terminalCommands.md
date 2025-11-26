@@ -11,7 +11,6 @@ flutter build apk --release --dart-define-from-file=dart_defines_defang.json
 
 flutter pub get
 flutter analyze
-flutter build web
 
 dart run build_runner clean
 dart run build_runner build --delete-conflicting-outputs
