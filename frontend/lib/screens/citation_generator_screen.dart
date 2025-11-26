@@ -240,6 +240,7 @@ class _CitationGeneratorScreenState extends State<CitationGeneratorScreen>
           : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Citation Generator'),
+        centerTitle: true,
         backgroundColor: isDark ? AppColors.surface : null,
         elevation: 0,
         bottom: TabBar(

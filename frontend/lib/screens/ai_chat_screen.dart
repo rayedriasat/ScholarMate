@@ -60,6 +60,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Set<String> _selectedFileIds = {};
   List<DriveFile> _availableFiles = [];
   bool _isLoadingFiles = false;
+  double _conversationSidebarWidth = 280;
+  bool _isResizingConversationSidebar = false;
 
   // Chat history
   List<ChatConversation> _conversations = [];
@@ -623,18 +625,6 @@ class _AIChatScreenState extends State<AIChatScreen> {
           Expanded(
             child: Row(
               children: [
-                // Conversation list sidebar (desktop only)
-                if (_showConversationList && isWideScreen)
-                  ConversationListSidebar(
-                    conversations: _conversations,
-                    currentConversationId: _currentConversationId,
-                    onConversationSelected: _loadConversation,
-                    onNewConversation: _startNewConversation,
-                    onDeleteConversation: _deleteConversation,
-                    onRenameConversation: _renameConversation,
-                    isLoading: _isLoadingConversations,
-                  ),
-
                 // Main chat area
                 Expanded(
                   flex: _showSourcePanel && isWideScreen ? 2 : 1,
@@ -725,6 +715,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       );
                     },
                   ),
+
+                // Conversation list sidebar (desktop only, on right side)
+                if (_showConversationList && isWideScreen)
+                  _buildResizableConversationSidebar(),
               ],
             ),
           ),
@@ -738,7 +732,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     return Scaffold(
       body: content,
-      drawer: !isWideScreen
+      endDrawer: !isWideScreen
           ? Drawer(
               backgroundColor: AppColors.background,
               child: ConversationListSidebar(
@@ -884,43 +878,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
       borderRadius: BorderRadius.zero,
       border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
       color: Theme.of(context).cardColor,
-      child: Row(
+      child: Stack(
         children: [
-          if (widget.preselectedFileId != null || widget.folderName != null)
-            IconButton(
-              icon: Icon(
-                Icons.arrow_back,
-                color: Theme.of(context).iconTheme.color,
-              ),
-              onPressed: () => Navigator.pop(context),
-            )
-          else if (isWideScreen)
-            IconButton(
-              icon: Icon(
-                _showConversationList ? Icons.close : Icons.menu,
-                color: Theme.of(context).iconTheme.color,
-              ),
-              onPressed: () {
-                setState(() {
-                  _showConversationList = !_showConversationList;
-                });
-              },
-            )
-          else
-            Builder(
-              builder: (context) => IconButton(
-                icon: Icon(
-                  Icons.menu,
-                  color: Theme.of(context).iconTheme.color,
-                ),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-            ),
-          const SizedBox(width: 8),
-          Expanded(
-            // Added Expanded to prevent overflow
+          // Centered Title
+          Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
@@ -944,7 +906,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
-                  overflow: TextOverflow.ellipsis, // Handle long titles
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (widget.preselectedFileId != null &&
                     widget.preselectedFileName != null)
@@ -962,57 +924,117 @@ class _AIChatScreenState extends State<AIChatScreen> {
               ],
             ),
           ),
-          // Spacer(), // Removed Spacer as Expanded takes available space
-          if (_currentConversationId != null)
-            IconButton(
-              icon: Icon(Icons.add, color: Theme.of(context).iconTheme.color),
-              onPressed: _startNewConversation,
-              tooltip: 'New Chat',
+
+          // Left Actions
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.preselectedFileId != null ||
+                    widget.folderName != null)
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+              ],
             ),
-          IconButton(
-            icon: Icon(
-              _showSourcePanel ? Icons.close : Icons.filter_list,
-              color: Theme.of(context).iconTheme.color,
-            ),
-            onPressed: () {
-              if (isWideScreen) {
-                setState(() {
-                  _showSourcePanel = !_showSourcePanel;
-                });
-              } else {
-                _showSourceSelectionBottomSheet();
-              }
-            },
-            tooltip: 'Source Selection',
           ),
-          if (_conversations.isNotEmpty)
-            PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert,
-                color: Theme.of(context).iconTheme.color,
-              ),
-              color: Theme.of(context).cardColor,
-              onSelected: (value) {
-                if (value == 'clear_all') {
-                  _clearAllConversations();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'clear_all',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_sweep, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text(
-                        'Clear All Conversations',
-                        style: TextStyle(color: Colors.red),
+
+          // Right Actions
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_currentConversationId != null)
+                  IconButton(
+                    icon: Icon(
+                      Icons.add,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    onPressed: _startNewConversation,
+                    tooltip: 'New Chat',
+                  ),
+                IconButton(
+                  icon: Icon(
+                    _showSourcePanel ? Icons.close : Icons.filter_list,
+                    color: Theme.of(context).iconTheme.color,
+                  ),
+                  onPressed: () {
+                    if (isWideScreen) {
+                      setState(() {
+                        _showSourcePanel = !_showSourcePanel;
+                      });
+                    } else {
+                      _showSourceSelectionBottomSheet();
+                    }
+                  },
+                  tooltip: 'Source Selection',
+                ),
+                // Conversation history button
+                if (isWideScreen)
+                  IconButton(
+                    icon: Icon(
+                      _showConversationList ? Icons.close : Icons.history,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showConversationList = !_showConversationList;
+                      });
+                    },
+                    tooltip: 'Conversation History',
+                  )
+                else
+                  Builder(
+                    builder: (context) => IconButton(
+                      icon: Icon(
+                        Icons.history,
+                        color: Theme.of(context).iconTheme.color,
+                      ),
+                      onPressed: () => Scaffold.of(context).openEndDrawer(),
+                      tooltip: 'Conversation History',
+                    ),
+                  ),
+                if (_conversations.isNotEmpty)
+                  PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    color: Theme.of(context).cardColor,
+                    onSelected: (value) {
+                      if (value == 'clear_all') {
+                        _clearAllConversations();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'clear_all',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_sweep, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text(
+                              'Clear All Conversations',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
               ],
             ),
+          ),
         ],
       ),
     );
@@ -1069,6 +1091,68 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildResizableConversationSidebar() {
+    return MouseRegion(
+      cursor: _isResizingConversationSidebar
+          ? SystemMouseCursors.resizeColumn
+          : SystemMouseCursors.basic,
+      child: Row(
+        children: [
+          // Resize handle
+          GestureDetector(
+            onHorizontalDragStart: (_) {
+              setState(() {
+                _isResizingConversationSidebar = true;
+              });
+            },
+            onHorizontalDragUpdate: (details) {
+              setState(() {
+                // Subtract the delta to resize from the left (since sidebar is on right)
+                _conversationSidebarWidth =
+                    (_conversationSidebarWidth - details.delta.dx).clamp(
+                      200.0, // Min width
+                      500.0, // Max width
+                    );
+              });
+            },
+            onHorizontalDragEnd: (_) {
+              setState(() {
+                _isResizingConversationSidebar = false;
+              });
+            },
+            child: MouseRegion(
+              cursor: SystemMouseCursors.resizeColumn,
+              child: Container(
+                width: 8,
+                color: Colors.transparent,
+                child: Center(
+                  child: Container(
+                    width: 2,
+                    height: double.infinity,
+                    color: _isResizingConversationSidebar
+                        ? AppColors.primary
+                        : Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Sidebar content
+          ConversationListSidebar(
+            conversations: _conversations,
+            currentConversationId: _currentConversationId,
+            onConversationSelected: _loadConversation,
+            onNewConversation: _startNewConversation,
+            onDeleteConversation: _deleteConversation,
+            onRenameConversation: _renameConversation,
+            isLoading: _isLoadingConversations,
+            width: _conversationSidebarWidth,
+          ),
+        ],
       ),
     );
   }
@@ -1136,9 +1220,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
             : 16, // Normal padding - nav bar spacing handled by parent
       ),
       margin: EdgeInsets.only(
-        bottom: isWideScreen
-            ? 0
-            : 80, // Space for floating nav: 70px height + 24px bottom + 6px spacing
+        bottom:
+            0, // Space for floating nav: 70px height + 24px bottom + 6px spacing
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,

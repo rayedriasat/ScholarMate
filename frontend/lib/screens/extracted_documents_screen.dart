@@ -96,6 +96,7 @@ class _ExtractedDocumentsScreenState extends State<ExtractedDocumentsScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Extracted Documents', style: TextStyle(color: textColor)),
+        centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),

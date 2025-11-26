@@ -842,175 +842,240 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           bottom: BorderSide(color: Theme.of(context).dividerColor),
         ),
       ),
-      child: Row(
+      child: Stack(
         children: [
-          if (_canNavigateBack)
-            IconButton(
-              icon: Icon(
-                Icons.arrow_back,
-                color: Theme.of(context).iconTheme.color,
+          // Centered Title
+          Center(
+            child: Text(
+              'Library',
+              style: TextStyle(
+                fontSize: isSmallScreen ? 16 : 20,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
-              onPressed: _navigateBack,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          if (_canNavigateBack) const SizedBox(width: 4),
-          Text(
-            'Library',
-            style: TextStyle(
-              fontSize: isSmallScreen ? 16 : 20,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const Spacer(),
-          // Search Bar
-          if (screenWidth > 600)
-            Container(
-              width: screenWidth > 800 ? 300 : 200,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Theme.of(context).dividerColor),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Icon(Icons.search, size: 18, color: Colors.grey),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'Search...',
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      style: const TextStyle(fontSize: 14),
+
+          // Left Actions
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_canNavigateBack)
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    onPressed: _navigateBack,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+              ],
+            ),
+          ),
+
+          // Right Actions
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Search Bar
+                if (screenWidth > 600)
+                  Container(
+                    width: screenWidth > 800 ? 300 : 200,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        Icon(Icons.search, size: 18, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: const InputDecoration(
+                              hintText: 'Search...',
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          if (screenWidth > 600) const SizedBox(width: 8),
+                if (screenWidth > 600) const SizedBox(width: 8),
 
-          // View layout toggle
-          if (kIsWeb || isAndroid)
-            IconButton(
-              icon: Icon(
-                _viewLayout == FileViewLayout.list
-                    ? Icons.grid_view
-                    : Icons.view_list,
-                color: Theme.of(context).iconTheme.color,
-                size: 20,
-              ),
-              onPressed: () {
-                setState(() {
-                  _viewLayout = _viewLayout == FileViewLayout.list
-                      ? FileViewLayout.glassCard
-                      : FileViewLayout.list;
-                });
-              },
-              tooltip: _viewLayout == FileViewLayout.list
-                  ? 'Card View'
-                  : 'List View',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
+                // View layout toggle
+                if (kIsWeb || isAndroid)
+                  IconButton(
+                    icon: Icon(
+                      _viewLayout == FileViewLayout.list
+                          ? Icons.grid_view
+                          : Icons.view_list,
+                      color: Theme.of(context).iconTheme.color,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _viewLayout = _viewLayout == FileViewLayout.list
+                            ? FileViewLayout.glassCard
+                            : FileViewLayout.list;
+                      });
+                    },
+                    tooltip: _viewLayout == FileViewLayout.list
+                        ? 'Card View'
+                        : 'List View',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
 
-          if (!isSmallScreen)
-            IconButton(
-              icon: Icon(
-                Icons.refresh,
-                color: Theme.of(context).iconTheme.color,
-                size: 20,
-              ),
-              onPressed: _refresh,
-              tooltip: 'Refresh',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          if (!isSmallScreen)
-            IconButton(
-              icon: Icon(
-                Icons.analytics_outlined,
-                color: Theme.of(context).iconTheme.color,
-                size: 20,
-              ),
-              onPressed: _showIndexingProgressPanel,
-              tooltip: 'Indexing Progress',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          PopupMenuButton<String>(
-            icon: Icon(
-              Icons.more_vert,
-              color: Theme.of(context).iconTheme.color,
-              size: 20,
-            ),
-            padding: EdgeInsets.zero,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.surface
-                : Colors.white,
-            onSelected: (value) {
-              if (value == 'refresh') {
-                _refresh();
-              } else if (value == 'indexing') {
-                _showIndexingProgressPanel();
-              } else if (value == 'manage_tags') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TagManagementScreen(),
+                if (!isSmallScreen)
+                  IconButton(
+                    icon: Icon(
+                      Icons.refresh,
+                      color: Theme.of(context).iconTheme.color,
+                      size: 20,
+                    ),
+                    onPressed: _refresh,
+                    tooltip: 'Refresh',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
-                ).then((_) => _loadFiles());
-              } else if (value == 'shared_with_me') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SharedFilesScreen(),
+                if (!isSmallScreen)
+                  IconButton(
+                    icon: Icon(
+                      Icons.analytics_outlined,
+                      color: Theme.of(context).iconTheme.color,
+                      size: 20,
+                    ),
+                    onPressed: _showIndexingProgressPanel,
+                    tooltip: 'Indexing Progress',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
-                );
-              } else if (value == 'advanced_search') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AdvancedSearchScreen(),
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: Theme.of(context).iconTheme.color,
+                    size: 20,
                   ),
-                );
-              } else if (value == 'analytics') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AnalyticsScreen(),
-                  ),
-                );
-              }
-            },
-            itemBuilder: (context) => [
-              if (isSmallScreen) ...[
-                const PopupMenuItem(value: 'refresh', child: Text('Refresh')),
-                const PopupMenuItem(
-                  value: 'indexing',
-                  child: Text('Indexing Progress'),
+                  padding: EdgeInsets.zero,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.surface
+                      : Colors.white,
+                  onSelected: (value) {
+                    if (value == 'refresh') {
+                      _refresh();
+                    } else if (value == 'indexing') {
+                      _showIndexingProgressPanel();
+                    } else if (value == 'manage_tags') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TagManagementScreen(),
+                        ),
+                      ).then((_) => _loadFiles());
+                    } else if (value == 'shared_with_me') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SharedFilesScreen(),
+                        ),
+                      );
+                    } else if (value == 'advanced_search') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdvancedSearchScreen(),
+                        ),
+                      );
+                    } else if (value == 'analytics') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AnalyticsScreen(),
+                        ),
+                      );
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'refresh',
+                      child: Row(
+                        children: [
+                          Icon(Icons.refresh, size: 20),
+                          SizedBox(width: 8),
+                          Text('Refresh'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'indexing',
+                      child: Row(
+                        children: [
+                          Icon(Icons.analytics_outlined, size: 20),
+                          SizedBox(width: 8),
+                          Text('Indexing Progress'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'manage_tags',
+                      child: Row(
+                        children: [
+                          Icon(Icons.label_outline, size: 20),
+                          SizedBox(width: 8),
+                          Text('Manage Tags'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'shared_with_me',
+                      child: Row(
+                        children: [
+                          Icon(Icons.people_outline, size: 20),
+                          SizedBox(width: 8),
+                          Text('Shared with Me'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'advanced_search',
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, size: 20),
+                          SizedBox(width: 8),
+                          Text('Advanced Search'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'analytics',
+                      child: Row(
+                        children: [
+                          Icon(Icons.analytics, size: 20),
+                          SizedBox(width: 8),
+                          Text('Analytics'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
-              const PopupMenuItem(
-                value: 'advanced_search',
-                child: Text('Advanced Search'),
-              ),
-              const PopupMenuItem(
-                value: 'shared_with_me',
-                child: Text('Shared with Me'),
-              ),
-              const PopupMenuItem(
-                value: 'manage_tags',
-                child: Text('Manage Tags'),
-              ),
-              const PopupMenuItem(value: 'analytics', child: Text('Analytics')),
-            ],
+            ),
           ),
         ],
       ),

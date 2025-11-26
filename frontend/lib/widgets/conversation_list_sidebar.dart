@@ -15,6 +15,7 @@ class ConversationListSidebar extends StatelessWidget {
   final Function(String conversationId) onDeleteConversation;
   final Function(String conversationId, String newTitle) onRenameConversation;
   final bool isLoading;
+  final double width;
 
   const ConversationListSidebar({
     super.key,
@@ -25,15 +26,16 @@ class ConversationListSidebar extends StatelessWidget {
     required this.onDeleteConversation,
     required this.onRenameConversation,
     this.isLoading = false,
+    this.width = 280,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 280,
+      width: width,
       decoration: BoxDecoration(
         border: Border(
-          right: BorderSide(
+          left: BorderSide(
             color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
           ),
         ),

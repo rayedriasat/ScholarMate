@@ -153,12 +153,15 @@ class _NotebookStudioScreenState extends State<NotebookStudioScreen> {
               ),
               child: Row(
                 children: [
-                  Text(
-                    'Notebook Studio',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
+                  Expanded(
+                    child: Text(
+                      'Notebook Studio',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],

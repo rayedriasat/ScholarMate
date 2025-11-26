@@ -306,9 +306,7 @@ class _NotesScreenState extends State<NotesScreen> {
       ),
       floatingActionButton: Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.width >= 800
-              ? 0
-              : 113, // 70 (nav height) + 24 (nav bottom) + 19 (overflow buffer)
+          bottom: 0, // 70 (nav height) + 24 (nav bottom) + 19 (overflow buffer)
         ),
         child: ModernButton(
           onPressed: _createNewNote,
@@ -809,24 +807,32 @@ class _NotesScreenState extends State<NotesScreen> {
       borderRadius: BorderRadius.zero,
       border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
       color: Theme.of(context).cardColor,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Stack(
         children: [
-          Text(
-            'Notes',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
+          Center(
+            child: Text(
+              'Notes',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
-          IconButton(
-            icon: Icon(
-              _isGridView ? Icons.view_list : Icons.grid_view,
-              color: Theme.of(context).iconTheme.color,
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: IconButton(
+                icon: Icon(
+                  _isGridView ? Icons.view_list : Icons.grid_view,
+                  color: Theme.of(context).iconTheme.color,
+                ),
+                onPressed: _toggleView,
+                tooltip: _isGridView ? 'List view' : 'Grid view',
+              ),
             ),
-            onPressed: _toggleView,
-            tooltip: _isGridView ? 'List view' : 'Grid view',
           ),
         ],
       ),

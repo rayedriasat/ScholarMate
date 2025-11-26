@@ -80,31 +80,33 @@ class _AppNavigationState extends State<AppNavigation> {
 
     return Scaffold(
       extendBody: true, // Important for floating bottom bar
+      drawer: !isWideScreen
+          ? Drawer(
+              width: 280,
+              backgroundColor: Colors.transparent,
+              child: GlassContainer(
+                width: 280,
+                height: double.infinity,
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                border: Border(
+                  right: BorderSide(
+                    color: Theme.of(context).dividerColor,
+                    width: 1,
+                  ),
+                ),
+                color: Theme.of(context).cardColor,
+                child: _buildNavigationContent(context, false),
+              ),
+            )
+          : null,
       body: Stack(
         children: [
           // Global Background
           const Positioned.fill(child: AnimatedBackground()),
 
-          // Background - Needs to be at the bottom of the stack to span the whole screen
-          // We rely on the Scaffold's background color being transparent (set in AppTheme)
-          // But if we want the AnimatedBackground to be global, it should be here or in main.dart
-          // Assuming main.dart or a parent widget provides the background, or we can add it here if needed.
-          // For now, we'll assume the transparent scaffold allows the background from Notes/Chat screens to show?
-          // Wait, the user wants the sidebar to be glassy. That means the background must be BEHIND the sidebar.
-          // So the background must be at the root of the Scaffold body.
-
-          // However, individual screens (Notes, Chat) also have their own backgrounds?
-          // If we want a unified background, we should probably remove it from individual screens or
-          // make the sidebar overlay the content?
-          // The Zotero layout usually has a persistent sidebar.
-
-          // Let's assume the individual screens provide the background for now,
-          // BUT for the sidebar to be glassy over "something", that "something" needs to be behind it.
-          // If the sidebar is in a Row, it's next to the content.
-          // To make it look "glassy" over a background, the background should span the whole Row.
-
-          // Let's wrap the Row in a Container with the background color/image if needed,
-          // or just rely on the parent.
           Row(
             children: [
               // Persistent Sidebar for web/desktop
@@ -126,13 +128,27 @@ class _AppNavigationState extends State<AppNavigation> {
                       ],
                     ),
 
-                    // Floating Bottom Navigation for mobile
+                    // Mobile Menu Button
                     if (!isWideScreen)
                       Positioned(
-                        bottom: 24,
-                        left: 24,
-                        right: 24,
-                        child: _buildFloatingBottomNav(context),
+                        top: 12,
+                        left: 12,
+                        child: Builder(
+                          builder: (context) => IconButton(
+                            icon: const Icon(Icons.menu),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Theme.of(
+                                context,
+                              ).cardColor.withValues(alpha: 0.5),
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.onSurface,
+                            ),
+                            onPressed: () {
+                              Scaffold.of(context).openDrawer();
+                            },
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -141,15 +157,16 @@ class _AppNavigationState extends State<AppNavigation> {
           ),
         ],
       ),
-      floatingActionButton: _showSettings ? null : widget.floatingActionButton,
     );
   }
 
   Widget _buildSidebar(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final maxWidth = screenWidth * _maxSidebarWidthPercent;
-    final effectiveWidth = _sidebarCollapsed ? _minSidebarWidth : _sidebarWidth.clamp(_minSidebarWidth, maxWidth);
-    
+    final effectiveWidth = _sidebarCollapsed
+        ? _minSidebarWidth
+        : _sidebarWidth.clamp(_minSidebarWidth, maxWidth);
+
     // Auto-collapse if width is too small (less than 150px)
     final shouldShowCollapsed = _sidebarCollapsed || effectiveWidth < 150;
 
@@ -162,7 +179,10 @@ class _AppNavigationState extends State<AppNavigation> {
             height: double.infinity,
             borderRadius: BorderRadius.zero,
             border: Border(
-              right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+              right: BorderSide(
+                color: Theme.of(context).dividerColor,
+                width: 1,
+              ),
             ),
             color: Theme.of(context).cardColor,
             child: ClipRect(
@@ -171,124 +191,7 @@ class _AppNavigationState extends State<AppNavigation> {
                 maxWidth: effectiveWidth,
                 child: SizedBox(
                   width: effectiveWidth,
-                  child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 24),
-              // App logo and Title with toggle button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: shouldShowCollapsed
-                    ? Center(
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.menu,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _sidebarCollapsed = false;
-                              if (_sidebarWidth < 150) {
-                                _sidebarWidth = 250; // Reset to default width
-                              }
-                            });
-                          },
-                          tooltip: 'Expand sidebar',
-                        ),
-                      )
-                    : Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              Icons.menu_open,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _sidebarCollapsed = true;
-                              });
-                            },
-                            tooltip: 'Collapse sidebar',
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              gradient: AppColors.primaryGradient,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.school, color: Colors.white, size: 18),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'ScholarMate',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-
-          const SizedBox(height: 32),
-
-              // Navigation items
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  children: [
-                    if (!shouldShowCollapsed)
-                      const Padding(
-                        padding: EdgeInsets.only(left: 12, bottom: 8),
-                        child: Text(
-                          'LIBRARY',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                    for (int i = 0; i < widget.items.length; i++)
-                      _buildSidebarItem(
-                        context,
-                        widget.items[i],
-                        i == _selectedIndex,
-                        () => _onItemTapped(i),
-                        shouldShowCollapsed,
-                      ),
-                  ],
-                ),
-              ),
-
-              // Settings section at bottom
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: _buildSidebarItem(
-                  context,
-                  NavigationItem(
-                    id: 'settings',
-                    icon: Icons.settings_outlined,
-                    activeIcon: Icons.settings,
-                    label: 'Settings',
-                    screen: Container(),
-                  ),
-                  _showSettings,
-                  _toggleSettings,
-                  shouldShowCollapsed,
-                ),
-              ),
-            ],
-                  ),
+                  child: _buildNavigationContent(context, shouldShowCollapsed),
                 ),
               ),
             ),
@@ -300,28 +203,30 @@ class _AppNavigationState extends State<AppNavigation> {
           child: GestureDetector(
             onPanUpdate: (details) {
               setState(() {
-                final newWidth = (_sidebarWidth + details.delta.dx)
-                    .clamp(_minSidebarWidth, maxWidth);
+                final newWidth = (_sidebarWidth + details.delta.dx).clamp(
+                  _minSidebarWidth,
+                  maxWidth,
+                );
                 _sidebarWidth = newWidth;
-                
+
                 // Auto-expand if dragging wider than threshold
                 if (newWidth >= 150 && _sidebarCollapsed) {
                   _sidebarCollapsed = false;
                 }
               });
             },
-              child: Container(
-                width: 8,
-                color: Colors.transparent,
-                child: Center(
-                  child: Container(
-                    width: 2,
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                  ),
+            child: Container(
+              width: 8,
+              color: Colors.transparent,
+              child: Center(
+                child: Container(
+                  width: 2,
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
                 ),
               ),
             ),
           ),
+        ),
       ],
     );
   }
@@ -343,7 +248,7 @@ class _AppNavigationState extends State<AppNavigation> {
           child: Tooltip(
             message: forceCollapsed ? item.label : '',
             child: Container(
-              padding: forceCollapsed 
+              padding: forceCollapsed
                   ? const EdgeInsets.all(10)
                   : const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
@@ -358,17 +263,23 @@ class _AppNavigationState extends State<AppNavigation> {
                         isSelected ? (item.activeIcon ?? item.icon) : item.icon,
                         color: isSelected
                             ? Theme.of(context).primaryColor
-                            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.7),
                         size: 20,
                       ),
                     )
                   : Row(
                       children: [
                         Icon(
-                          isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+                          isSelected
+                              ? (item.activeIcon ?? item.icon)
+                              : item.icon,
                           color: isSelected
                               ? Theme.of(context).primaryColor
-                              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.7),
                           size: 20,
                         ),
                         const SizedBox(width: 12),
@@ -378,9 +289,12 @@ class _AppNavigationState extends State<AppNavigation> {
                             style: TextStyle(
                               color: isSelected
                                   ? Theme.of(context).primaryColor
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                                  : Theme.of(context).colorScheme.onSurface
+                                        .withValues(alpha: 0.8),
                               fontSize: 14,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -685,27 +599,125 @@ class _AppNavigationState extends State<AppNavigation> {
     );
   }
 
-  Widget _buildFloatingBottomNav(BuildContext context) {
-    return GlassContainer(
-      height: 70,
-      borderRadius: BorderRadius.circular(35),
-      blur: 20,
-      opacity: 0.1,
-      border: Border.all(
-        color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-        width: 1,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          for (int i = 0; i < widget.items.length; i++)
-            _buildBottomNavItem(
-              context,
-              widget.items[i],
-              i == _selectedIndex,
-              () => _onItemTapped(i),
-            ),
-          _buildBottomNavItem(
+  Widget _buildNavigationContent(
+    BuildContext context,
+    bool shouldShowCollapsed,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        // App logo and Title with toggle button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: shouldShowCollapsed
+              ? Center(
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.menu,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _sidebarCollapsed = false;
+                        if (_sidebarWidth < 150) {
+                          _sidebarWidth = 250; // Reset to default width
+                        }
+                      });
+                    },
+                    tooltip: 'Expand sidebar',
+                  ),
+                )
+              : Row(
+                  children: [
+                    if (MediaQuery.of(context).size.width >= 800)
+                      IconButton(
+                        icon: Icon(
+                          Icons.menu_open,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _sidebarCollapsed = true;
+                          });
+                        },
+                        tooltip: 'Collapse sidebar',
+                      ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.school,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'ScholarMate',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+
+        const SizedBox(height: 32),
+
+        // Navigation items
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            children: [
+              if (!shouldShowCollapsed)
+                const Padding(
+                  padding: EdgeInsets.only(left: 12, bottom: 8),
+                  child: Text(
+                    'LIBRARY',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              for (int i = 0; i < widget.items.length; i++)
+                _buildSidebarItem(
+                  context,
+                  widget.items[i],
+                  i == _selectedIndex,
+                  () {
+                    _onItemTapped(i);
+                    // Close drawer if open (on mobile)
+                    if (Scaffold.of(context).hasDrawer &&
+                        Scaffold.of(context).isDrawerOpen) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  shouldShowCollapsed,
+                ),
+            ],
+          ),
+        ),
+
+        // Settings section at bottom
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: _buildSidebarItem(
             context,
             NavigationItem(
               id: 'settings',
@@ -715,49 +727,17 @@ class _AppNavigationState extends State<AppNavigation> {
               screen: Container(),
             ),
             _showSettings,
-            _toggleSettings,
+            () {
+              _toggleSettings();
+              if (Scaffold.of(context).hasDrawer &&
+                  Scaffold.of(context).isDrawerOpen) {
+                Navigator.of(context).pop();
+              }
+            },
+            shouldShowCollapsed,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavItem(
-    BuildContext context,
-    NavigationItem item,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isSelected ? (item.activeIcon ?? item.icon) : item.icon,
-            color: isSelected
-                ? Theme.of(context).primaryColor
-                : Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            item.label,
-            style: TextStyle(
-              color: isSelected
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.6),
-              fontSize: 10,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
