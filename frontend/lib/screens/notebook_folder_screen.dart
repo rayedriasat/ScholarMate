@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../database/database.dart';
@@ -5,6 +6,7 @@ import '../services/notebook_service.dart';
 import '../widgets/notebook_files_tab.dart';
 import '../widgets/notebook_chat_tab.dart';
 import '../widgets/notebook_ai_studio_tab.dart';
+import 'notebook_folder_web_screen.dart';
 
 /// Detail screen for a single notebook folder
 class NotebookFolderScreen extends StatefulWidget {
@@ -96,6 +98,12 @@ class _NotebookFolderScreenState extends State<NotebookFolderScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Use web-optimized 3-panel layout on web
+    if (kIsWeb) {
+      return NotebookFolderWebScreen(folder: widget.folder);
+    }
+
+    // Use tab-based layout on mobile
     return Scaffold(
       appBar: AppBar(
         title: Column(
