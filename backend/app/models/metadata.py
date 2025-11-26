@@ -60,3 +60,4 @@ class MetadataExtractionRequest(BaseModel):
     file_id: str = Field(..., description="Google Drive file ID")
     file_name: str
     extract_from_content: bool = Field(default=True, description="Extract from PDF content using OCR/parsing")
+    access_token: str = Field(..., description="User's Google Drive access token")

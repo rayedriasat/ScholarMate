@@ -50,6 +50,7 @@ async def start_indexing(
         job_id = await rag_indexer.index_file(
             file_id=request.file_id,
             user_id=request.user_id,
+            access_token=request.access_token,
             file_name=request.file_name
         )
         
@@ -197,6 +198,7 @@ async def reindex_file(
         job_id = await rag_indexer.index_file(
             file_id=file_id,
             user_id=request.user_id,
+            access_token=request.access_token,
             file_name=request.file_name
         )
         

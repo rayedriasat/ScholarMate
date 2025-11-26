@@ -101,6 +101,7 @@ class RAGIndexer:
         self,
         file_id: str,
         user_id: str,
+        access_token: str,
         file_name: Optional[str] = None
     ) -> str:
         """
@@ -110,6 +111,7 @@ class RAGIndexer:
         Args:
             file_id: Google Drive file ID
             user_id: User UUID
+            access_token: User's Google Drive access token
             file_name: Optional file name for metadata
             
         Returns:
@@ -124,12 +126,14 @@ class RAGIndexer:
             logger.info(f"Creating indexing job {job_id} for file {file_id}, user {user_id}")
             
             # Create job record in database with pending status
+            # Store access token in job data for background processing
             await self._create_indexing_job(
                 job_id=job_id,
                 user_id=user_id,
                 file_id=file_id,
                 status="pending",
-                file_name=file_name
+                file_name=file_name,
+                access_token=access_token
             )
             
             logger.info(f"Indexing job {job_id} created successfully")
@@ -163,16 +167,26 @@ class RAGIndexer:
             
             user_id = job_data["user_id"]
             file_id = job_data["file_id"]
+            access_token = job_data.get("access_token")
+            
+            if not access_token:
+                logger.error(f"No access token found in job {job_id}")
+                await self._update_job_status(
+                    job_id, 
+                    "failed", 
+                    error_message="No access token provided. Please retry from the app."
+                )
+                return
             
             # Update job status to processing
             await self._update_job_status(job_id, "processing")
             
-            # Fetch file from Google Drive (source of truth)
+            # Fetch file from Google Drive using provided access token
             logger.info(f"Fetching file {file_id} from Google Drive")
-            file_bytes = await self.drive_service.get_file_bytes(file_id, user_id)
+            file_bytes = self.drive_service.get_file_bytes(file_id, access_token)
             
             # Get file metadata
-            metadata = await self.drive_service.get_file_metadata(file_id, user_id)
+            metadata = self.drive_service.get_file_metadata(file_id, access_token)
             file_name = metadata.get("name", f"file_{file_id}")
             
             # Extract and chunk text
@@ -513,7 +527,8 @@ class RAGIndexer:
         user_id: str,
         file_id: str,
         status: str,
-        file_name: Optional[str] = None
+        file_name: Optional[str] = None,
+        access_token: Optional[str] = None
     ) -> None:
         """Create indexing job record in database."""
         try:
@@ -548,6 +563,7 @@ class RAGIndexer:
                     "job_id": job_id,
                     "drive_file_id": file_id,
                     "google_user_id": user_id,  # Store original Google ID for reference
+                    "access_token": access_token,  # Store access token for background processing
                     "chunks_processed": 0,
                     "total_chunks": None,
                     "retry_count": 0,
@@ -737,12 +753,14 @@ class RAGIndexer:
                 chunks_processed = metadata.get("chunks_processed", 0)
                 total_chunks = metadata.get("total_chunks")
                 drive_file_id = metadata.get("drive_file_id", "")
+                access_token = metadata.get("access_token")  # Get access token from metadata
                 
                 # Return formatted response matching the JobStatus model
                 return {
                     "job_id": job_id,
                     "user_id": job["user_id"],
                     "file_id": drive_file_id,  # Return Drive file ID, not Supabase UUID
+                    "access_token": access_token,  # Include access token for processing
                     "status": job["status"],
                     "chunks_processed": chunks_processed,
                     "total_chunks": total_chunks,

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'config_service.dart';
+import 'auth_service.dart';
 import '../models/tag.dart';
 import '../models/indexing_job.dart';
 
@@ -23,6 +24,7 @@ class ApiService {
   ApiService._internal();
 
   final _config = ConfigService();
+  final _authService = AuthService();
 
   String get _baseUrl => _config.apiBaseUrl;
 
@@ -348,6 +350,12 @@ class ApiService {
     String? fileName,
   }) async {
     try {
+      // Get fresh access token
+      final accessToken = await _authService.getAccessToken();
+      if (accessToken == null) {
+        throw ApiException('Not authenticated', 401);
+      }
+
       final response = await http.post(
         Uri.parse('$_baseUrl/api/ingest/start'),
         headers: {'Content-Type': 'application/json'},
@@ -355,12 +363,33 @@ class ApiService {
           'user_id': userId,
           'file_id': fileId,
           'file_name': fileName,
+          'access_token': accessToken,
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['job_id'] as String;
+      } else if (response.statusCode == 401) {
+        // Token expired, retry once with fresh token
+        final newToken = await _authService.getAccessToken();
+        if (newToken != null) {
+          final retryResponse = await http.post(
+            Uri.parse('$_baseUrl/api/ingest/start'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_id': userId,
+              'file_id': fileId,
+              'file_name': fileName,
+              'access_token': newToken,
+            }),
+          );
+          if (retryResponse.statusCode == 200) {
+            final data = jsonDecode(retryResponse.body);
+            return data['job_id'] as String;
+          }
+        }
+        throw ApiException('Authentication failed', 401);
       } else {
         throw ApiException(
           'Failed to start indexing: ${response.body}',
@@ -427,15 +456,44 @@ class ApiService {
     String? fileName,
   }) async {
     try {
+      // Get fresh access token
+      final accessToken = await _authService.getAccessToken();
+      if (accessToken == null) {
+        throw ApiException('Not authenticated', 401);
+      }
+
       final response = await http.post(
         Uri.parse('$_baseUrl/api/ingest/reindex/$fileId'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'user_id': userId, 'file_name': fileName}),
+        body: jsonEncode({
+          'user_id': userId,
+          'file_name': fileName,
+          'access_token': accessToken,
+        }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['job_id'] as String;
+      } else if (response.statusCode == 401) {
+        // Token expired, retry once
+        final newToken = await _authService.getAccessToken();
+        if (newToken != null) {
+          final retryResponse = await http.post(
+            Uri.parse('$_baseUrl/api/ingest/reindex/$fileId'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_id': userId,
+              'file_name': fileName,
+              'access_token': newToken,
+            }),
+          );
+          if (retryResponse.statusCode == 200) {
+            final data = jsonDecode(retryResponse.body);
+            return data['job_id'] as String;
+          }
+        }
+        throw ApiException('Authentication failed', 401);
       } else {
         throw ApiException(
           'Failed to reindex file: ${response.body}',

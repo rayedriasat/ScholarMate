@@ -44,7 +44,7 @@ async def extract_metadata(
         
         print(f"Fetching file bytes from Google Drive...")
         try:
-            file_bytes = await drive_service.get_file_bytes(request.file_id, user_id)
+            file_bytes = drive_service.get_file_bytes(request.file_id, request.access_token)
         except ValueError as e:
             error_msg = str(e)
             print(f"Failed to fetch file: {error_msg}")

@@ -22,41 +22,41 @@ class MetadataService {
     try {
       final token = getToken();
       final userId = getUserId();
-      
+
       if (token.isEmpty) {
         print('ERROR: No authentication token available');
         throw Exception('Not authenticated');
       }
-      
+
       if (userId.isEmpty) {
         print('ERROR: No user ID available');
         throw Exception('User ID not found');
       }
-      
+
       print('Extracting metadata for file: $fileName (ID: $fileId)');
       print('API URL: $baseUrl/api/metadata/extract?user_id=$userId');
       print('Token length: ${token.length}');
-      
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/metadata/extract?user_id=$userId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'file_id': fileId,
-          'file_name': fileName,
-          'extract_from_content': extractFromContent,
-        }),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Request timed out after 30 seconds');
-        },
-      );
+
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/metadata/extract?user_id=$userId'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'file_id': fileId,
+              'file_name': fileName,
+              'extract_from_content': extractFromContent,
+              'access_token': token,
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Request timed out after 30 seconds');
+            },
+          );
 
       print('Metadata extraction response status: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         print('Response body: ${response.body}');
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -122,7 +122,9 @@ class MetadataService {
       final token = getToken();
       final userId = getUserId();
       final response = await http.post(
-        Uri.parse('$baseUrl/api/metadata/citation/from-metadata?user_id=$userId'),
+        Uri.parse(
+          '$baseUrl/api/metadata/citation/from-metadata?user_id=$userId',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -134,7 +136,9 @@ class MetadataService {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         return Citation.fromJson(data);
       } else {
-        print('Failed to generate citation from metadata: ${response.statusCode}');
+        print(
+          'Failed to generate citation from metadata: ${response.statusCode}',
+        );
         return null;
       }
     } catch (e) {

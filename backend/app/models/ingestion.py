@@ -12,6 +12,7 @@ class StartIndexingRequest(BaseModel):
     user_id: str = Field(..., description="User UUID")
     file_id: str = Field(..., description="Google Drive file ID")
     file_name: Optional[str] = Field(None, description="Optional file name for metadata")
+    access_token: str = Field(..., description="User's Google Drive access token")
 
 
 class StartIndexingResponse(BaseModel):
@@ -46,6 +47,7 @@ class ReindexRequest(BaseModel):
     """Request to reindex a file."""
     user_id: str = Field(..., description="User UUID")
     file_name: Optional[str] = Field(None, description="Optional file name for metadata")
+    access_token: str = Field(..., description="User's Google Drive access token")
 
 
 class ReindexResponse(BaseModel):
