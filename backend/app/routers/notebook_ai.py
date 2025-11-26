@@ -136,11 +136,14 @@ Make the questions challenging but fair, covering key concepts from the material
         # Get RAG service to retrieve context
         rag_service = get_rag_query_service()
         
+        # Resolve user ID to UUID (handles Google sub IDs)
+        resolved_user_id = await rag_service._get_or_create_user_uuid(request.user_id)
+        
         # Retrieve context from files
         logger.info(f"🔍 Retrieving context with file_ids: {request.file_ids}")
         context_chunks = await rag_service.retrieve_context(
             question=prompt,
-            user_id=request.user_id,
+            user_id=resolved_user_id,
             selected_file_ids=request.file_ids,
             top_k=10
         )
@@ -253,10 +256,14 @@ Format your response as JSON:
 }}"""
 
         rag_service = get_rag_query_service()
+        
+        # Resolve user ID to UUID
+        resolved_user_id = await rag_service._get_or_create_user_uuid(request.user_id)
+        
         logger.info(f"🔍 Retrieving context with file_ids: {request.file_ids}")
         context_chunks = await rag_service.retrieve_context(
             question=prompt,
-            user_id=request.user_id,
+            user_id=resolved_user_id,
             selected_file_ids=request.file_ids,
             top_k=15
         )
@@ -355,10 +362,14 @@ Format your response as JSON:
 }}"""
 
         rag_service = get_rag_query_service()
+        
+        # Resolve user ID to UUID
+        resolved_user_id = await rag_service._get_or_create_user_uuid(request.user_id)
+        
         logger.info(f"🔍 Retrieving context with file_ids: {request.file_ids}")
         context_chunks = await rag_service.retrieve_context(
             question=prompt,
-            user_id=request.user_id,
+            user_id=resolved_user_id,
             selected_file_ids=request.file_ids,
             top_k=12
         )

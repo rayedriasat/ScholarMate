@@ -5,6 +5,7 @@ import '../database/database.dart';
 import '../services/notebook_service.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../screens/quiz_taking_screen.dart';
 
 /// AI Studio tab with various AI tools
 class NotebookAiStudioTab extends StatefulWidget {
@@ -158,12 +159,49 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
       switch (toolType) {
         case 'quiz':
           try {
+            // Ask for number of questions
+            int numQuestions = 5;
+            if (mounted) {
+              // Close loading dialog first
+              Navigator.pop(context);
+
+              final selected = await showDialog<int>(
+                context: context,
+                builder: (context) => _QuizQuestionCountDialog(),
+              );
+
+              if (selected == null) return; // User cancelled
+              numQuestions = selected;
+
+              // Show loading dialog again
+              if (!context.mounted) return;
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(
+                  child: Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Generating content...'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+
             debugPrint('🔵 Generating quiz with ${fileIds.length} files...');
             debugPrint('🔵 File IDs: $fileIds');
             final response = await apiService.generateQuiz(
               userId: userId,
               fileIds: fileIds,
-              numQuestions: 5,
+              numQuestions: numQuestions,
             );
             debugPrint('🟢 Quiz API response received');
             debugPrint('🟢 Response keys: ${response.keys}');
@@ -527,7 +565,7 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
     try {
       switch (output.toolType) {
         case 'quiz':
-          contentWidget = _buildQuizView(output.content);
+          contentWidget = _buildQuizView(output.content, output.title);
           break;
         case 'summary':
           contentWidget = _buildSummaryView(output.content);
@@ -563,87 +601,143 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
     );
   }
 
-  Widget _buildQuizView(String content) {
+  Widget _buildQuizView(String content, String title) {
     try {
-      final questions = jsonDecode(content) as List;
+      final questions = (jsonDecode(content) as List)
+          .cast<Map<String, dynamic>>();
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
-        children: questions.asMap().entries.map((entry) {
-          final index = entry.key;
-          final q = entry.value;
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Question ${index + 1}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
+        children: [
+          // Exam Mode Banner
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.school, size: 32, color: Colors.blue),
+                const SizedBox(height: 8),
+                Text(
+                  '${questions.length} Questions Generated',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    q['question'] ?? '',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ...(q['options'] as List).asMap().entries.map((opt) {
-                    final optIndex = opt.key;
-                    final optText = opt.value;
-                    final isCorrect = optIndex == q['correct_index'];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isCorrect
-                                ? Icons.check_circle
-                                : Icons.circle_outlined,
-                            color: isCorrect ? Colors.green : Colors.grey,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${String.fromCharCode(65 + optIndex)}. $optText',
-                              style: TextStyle(
-                                fontWeight: isCorrect
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: isCorrect ? Colors.green : null,
-                              ),
-                            ),
-                          ),
-                        ],
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Test your knowledge with Exam Mode',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QuizTakingScreen(
+                          title: title,
+                          questions: questions,
+                        ),
                       ),
                     );
-                  }),
-                  if (q['explanation'] != null) ...[
-                    const Divider(),
-                    const SizedBox(height: 8),
+                  },
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Start Exam'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Preview Questions',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          ...questions.asMap().entries.map((entry) {
+            final index = entry.key;
+            final q = entry.value;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      'Explanation:',
-                      style: TextStyle(
+                      'Question ${index + 1}',
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[700],
+                        color: Colors.blue,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(q['explanation']),
+                    const SizedBox(height: 8),
+                    Text(
+                      q['question'] ?? '',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...(q['options'] as List).asMap().entries.map((opt) {
+                      final optIndex = opt.key;
+                      final optText = opt.value;
+                      final isCorrect = optIndex == q['correct_index'];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isCorrect
+                                  ? Icons.check_circle
+                                  : Icons.circle_outlined,
+                              color: isCorrect ? Colors.green : Colors.grey,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${String.fromCharCode(65 + optIndex)}. $optText',
+                                style: TextStyle(
+                                  fontWeight: isCorrect
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isCorrect ? Colors.green : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    if (q['explanation'] != null) ...[
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Explanation:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(q['explanation']),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          );
-        }).toList(),
+            );
+          }),
+        ],
       );
     } catch (e) {
       return Text('Error parsing quiz: $e');
@@ -790,6 +884,71 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
+  }
+}
+
+class _QuizQuestionCountDialog extends StatefulWidget {
+  @override
+  State<_QuizQuestionCountDialog> createState() =>
+      _QuizQuestionCountDialogState();
+}
+
+class _QuizQuestionCountDialogState extends State<_QuizQuestionCountDialog> {
+  double _questionCount = 5;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Quiz Settings'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Number of Questions'),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                '${_questionCount.round()}',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
+              Expanded(
+                child: Slider(
+                  value: _questionCount,
+                  min: 5,
+                  max: 20,
+                  divisions: 15,
+                  label: _questionCount.round().toString(),
+                  onChanged: (value) {
+                    setState(() {
+                      _questionCount = value;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Select between 5 and 20 questions',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _questionCount.round()),
+          child: const Text('Generate'),
+        ),
+      ],
+    );
   }
 }
 
