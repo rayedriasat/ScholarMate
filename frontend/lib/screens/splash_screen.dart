@@ -50,6 +50,19 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark
+        ? Colors.white
+        : const Color(0xFF1E293B); // Slate 800
+    final subtitleColor = isDark
+        ? Colors.white.withValues(alpha: 0.8)
+        : const Color(0xFF475569); // Slate 600
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.2)
+        : const Color(
+            0xFF3B82F6,
+          ).withValues(alpha: 0.3); // Blue with transparency
+
     return Scaffold(
       body: Stack(
         children: [
@@ -77,24 +90,30 @@ class _SplashScreenState extends State<SplashScreen>
                     height: 120,
                     borderRadius: BorderRadius.circular(30),
                     blur: 20,
-                    opacity: 0.1,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      width: 1.5,
-                    ),
+                    opacity: isDark ? 0.1 : 0.15,
+                    border: Border.all(color: borderColor, width: 1.5),
                     child: Center(
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
-                            colors: [AppColors.primary, AppColors.secondary],
+                            colors: isDark
+                                ? [AppColors.primary, AppColors.secondary]
+                                : [
+                                    const Color(0xFF3B82F6),
+                                    const Color(0xFFEC4899),
+                                  ], // Brighter for light mode
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.4),
+                              color:
+                                  (isDark
+                                          ? AppColors.primary
+                                          : const Color(0xFF3B82F6))
+                                      .withValues(alpha: 0.4),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -110,12 +129,12 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   const SizedBox(height: 32),
                   // App Name
-                  const Text(
+                  Text(
                     'ScholarMate',
                     style: TextStyle(
                       fontSize: 40,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: textColor,
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -125,7 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                     'Your AI Research Workspace',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: subtitleColor,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -137,7 +156,11 @@ class _SplashScreenState extends State<SplashScreen>
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.accent,
+                        isDark
+                            ? AppColors.accent
+                            : const Color(
+                                0xFF3B82F6,
+                              ), // Blue 500 for light mode
                       ),
                     ),
                   ),
