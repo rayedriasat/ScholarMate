@@ -44,7 +44,7 @@ class AuthService extends ChangeNotifier {
     'openid',
     'profile',
     'email',
-    'https://www.googleapis.com/auth/drive',
+    'https://www.googleapis.com/auth/drive.file',
   ];
 
   StreamSubscription<GoogleSignInCredentials?>? _authStateSub;

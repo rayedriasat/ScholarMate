@@ -70,7 +70,7 @@ async def store_tokens(request: StoreTokensRequest):
             await supabase_service.store_encrypted_token(
                 user_id=db_user_id,
                 token_type="refresh_token",
-                encrypted_token=encryption_service.encrypt("CLIENT_MANAGED")
+                encrypted_token="CLIENT_MANAGED"
             )
         
         # Encrypt and store ID token if provided
