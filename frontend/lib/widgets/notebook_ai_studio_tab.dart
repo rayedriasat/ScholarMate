@@ -6,12 +6,18 @@ import '../services/notebook_service.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../screens/quiz_taking_screen.dart';
+import '../screens/flashcard_view_screen.dart';
 
 /// AI Studio tab with various AI tools
 class NotebookAiStudioTab extends StatefulWidget {
   final String folderId;
+  final Function(String content, String title, String toolType)? onViewContent;
 
-  const NotebookAiStudioTab({super.key, required this.folderId});
+  const NotebookAiStudioTab({
+    super.key,
+    required this.folderId,
+    this.onViewContent,
+  });
 
   @override
   State<NotebookAiStudioTab> createState() => _NotebookAiStudioTabState();
@@ -560,6 +566,12 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
   }
 
   void _viewOutput(NotebookAiOutput output) {
+    // If callback is provided and tool is supported, delegate to parent
+    if (widget.onViewContent != null && output.toolType == 'flashcard') {
+      widget.onViewContent!(output.content, output.title, output.toolType);
+      return;
+    }
+
     Widget contentWidget;
 
     try {
@@ -571,7 +583,7 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
           contentWidget = _buildSummaryView(output.content);
           break;
         case 'flashcard':
-          contentWidget = _buildFlashcardView(output.content);
+          contentWidget = _buildFlashcardView(output.content, output.title);
           break;
         default:
           contentWidget = Text(output.content);
@@ -784,85 +796,142 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
     }
   }
 
-  Widget _buildFlashcardView(String content) {
+  Widget _buildFlashcardView(String content, String title) {
     try {
-      final flashcards = jsonDecode(content) as List;
+      final flashcards = (jsonDecode(content) as List)
+          .cast<Map<String, dynamic>>();
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
-        children: flashcards.asMap().entries.map((entry) {
-          final index = entry.key;
-          final card = entry.value;
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Card ${index + 1}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Front:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          card['front'] ?? '',
-                          style: const TextStyle(fontSize: 15),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Back:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          card['back'] ?? '',
-                          style: const TextStyle(fontSize: 15),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+        children: [
+          // Flashcard Mode Banner
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.withOpacity(0.3)),
             ),
-          );
-        }).toList(),
+            child: Column(
+              children: [
+                const Icon(Icons.style, size: 32, color: Colors.orange),
+                const SizedBox(height: 8),
+                Text(
+                  '${flashcards.length} Flashcards Generated',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Review key concepts with Flashcards',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FlashcardViewScreen(
+                          title: title,
+                          flashcards: flashcards,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Start Review'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Preview Cards',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          ...flashcards.asMap().entries.map((entry) {
+            final index = entry.key;
+            final card = entry.value;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Card ${index + 1}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Front:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            card['front'] ?? '',
+                            style: const TextStyle(fontSize: 15),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Back:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            card['back'] ?? '',
+                            style: const TextStyle(fontSize: 15),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ],
       );
     } catch (e) {
       return Text('Error parsing flashcards: $e');

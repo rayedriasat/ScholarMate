@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../database/database.dart';
 import '../services/notebook_service.dart';
+import 'dart:convert';
 import '../widgets/notebook_files_tab.dart';
 import '../widgets/notebook_chat_tab.dart';
 import '../widgets/notebook_ai_studio_tab.dart';
 import 'notebook_folder_web_screen.dart';
+import 'flashcard_view_screen.dart';
 
 /// Detail screen for a single notebook folder
 class NotebookFolderScreen extends StatefulWidget {
@@ -28,10 +30,34 @@ class _NotebookFolderScreenState extends State<NotebookFolderScreen>
     _tabController = TabController(length: 3, vsync: this);
   }
 
+  Widget? _customChatContent;
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _handleViewContent(String content, String title, String toolType) {
+    if (toolType == 'flashcard') {
+      try {
+        final flashcards = (jsonDecode(content) as List)
+            .cast<Map<String, dynamic>>();
+        setState(() {
+          _customChatContent = FlashcardView(
+            flashcards: flashcards,
+            onClose: () {
+              setState(() {
+                _customChatContent = null;
+              });
+            },
+          );
+          _tabController.animateTo(1); // Switch to Chat tab
+        });
+      } catch (e) {
+        debugPrint('Error parsing flashcards: $e');
+      }
+    }
   }
 
   Future<void> _editFolder() async {
@@ -139,8 +165,11 @@ class _NotebookFolderScreenState extends State<NotebookFolderScreen>
         controller: _tabController,
         children: [
           NotebookFilesTab(folderId: widget.folder.id),
-          NotebookChatTab(folderId: widget.folder.id),
-          NotebookAiStudioTab(folderId: widget.folder.id),
+          _customChatContent ?? NotebookChatTab(folderId: widget.folder.id),
+          NotebookAiStudioTab(
+            folderId: widget.folder.id,
+            onViewContent: _handleViewContent,
+          ),
         ],
       ),
     );

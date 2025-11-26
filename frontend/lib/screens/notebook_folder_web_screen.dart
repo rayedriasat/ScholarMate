@@ -4,7 +4,9 @@ import '../database/database.dart';
 import '../services/notebook_service.dart';
 import '../widgets/notebook_files_tab.dart';
 import '../widgets/notebook_chat_tab.dart';
+import 'dart:convert';
 import '../widgets/notebook_ai_studio_tab.dart';
+import 'flashcard_view_screen.dart';
 
 /// Web-optimized 3-panel resizable layout for Notebook Studio
 /// Inspired by Google NotebookLM interface
@@ -27,9 +29,30 @@ class _NotebookFolderWebScreenState extends State<NotebookFolderWebScreen> {
   bool _leftPanelVisible = true;
   bool _rightPanelVisible = true;
 
+  // Custom content for middle panel (replaces Chat)
+  Widget? _middlePanelContent;
+
   // Minimum panel widths in pixels
   static const double _minPanelWidth = 200;
   static const double _dividerWidth = 8;
+
+  void _handleViewContent(String content, String title, String toolType) {
+    if (toolType == 'flashcard') {
+      try {
+        final flashcards = (jsonDecode(content) as List)
+            .cast<Map<String, dynamic>>();
+        setState(() {
+          _middlePanelContent = FlashcardView(
+            flashcards: flashcards,
+            // We'll handle the header/close button in the panel wrapper for Web
+            onClose: null,
+          );
+        });
+      } catch (e) {
+        debugPrint('Error parsing flashcards: $e');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -262,6 +285,49 @@ class _NotebookFolderWebScreenState extends State<NotebookFolderWebScreen> {
   }
 
   Widget _buildChatPanel() {
+    if (_middlePanelContent != null) {
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => setState(() => _middlePanelContent = null),
+                  tooltip: 'Close Review',
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Flashcard Review',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: _middlePanelContent!),
+        ],
+      );
+    }
+
     return Column(
       children: [
         _buildPanelHeader(
@@ -282,7 +348,12 @@ class _NotebookFolderWebScreenState extends State<NotebookFolderWebScreen> {
           title: 'AI Studio',
           subtitle: 'Generate content',
         ),
-        Expanded(child: NotebookAiStudioTab(folderId: widget.folder.id)),
+        Expanded(
+          child: NotebookAiStudioTab(
+            folderId: widget.folder.id,
+            onViewContent: _handleViewContent,
+          ),
+        ),
       ],
     );
   }
