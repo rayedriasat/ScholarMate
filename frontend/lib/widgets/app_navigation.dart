@@ -77,6 +77,7 @@ class _AppNavigationState extends State<AppNavigation> {
   @override
   Widget build(BuildContext context) {
     final isWideScreen = MediaQuery.of(context).size.width >= 800;
+    final statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       extendBody: true, // Important for floating bottom bar
@@ -116,22 +117,24 @@ class _AppNavigationState extends State<AppNavigation> {
               Expanded(
                 child: Stack(
                   children: [
-                    // Content
-                    Column(
-                      children: [
-                        // Main content
-                        Expanded(
-                          child: _showSettings
-                              ? _buildSettingsScreen(context)
-                              : widget.items[_selectedIndex].screen,
-                        ),
-                      ],
+                    // Content with safe area padding
+                    SafeArea(
+                      child: Column(
+                        children: [
+                          // Main content
+                          Expanded(
+                            child: _showSettings
+                                ? _buildSettingsScreen(context)
+                                : widget.items[_selectedIndex].screen,
+                          ),
+                        ],
+                      ),
                     ),
 
                     // Mobile Menu Button
                     if (!isWideScreen)
                       Positioned(
-                        top: 12,
+                        top: statusBarHeight + 8,
                         left: 12,
                         child: Builder(
                           builder: (context) => IconButton(
@@ -603,10 +606,12 @@ class _AppNavigationState extends State<AppNavigation> {
     BuildContext context,
     bool shouldShowCollapsed,
   ) {
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 24),
+        SizedBox(height: statusBarHeight + 16),
         // App logo and Title with toggle button
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -715,26 +720,29 @@ class _AppNavigationState extends State<AppNavigation> {
         ),
 
         // Settings section at bottom
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: _buildSidebarItem(
-            context,
-            NavigationItem(
-              id: 'settings',
-              icon: Icons.settings_outlined,
-              activeIcon: Icons.settings,
-              label: 'Settings',
-              screen: Container(),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: _buildSidebarItem(
+              context,
+              NavigationItem(
+                id: 'settings',
+                icon: Icons.settings_outlined,
+                activeIcon: Icons.settings,
+                label: 'Settings',
+                screen: Container(),
+              ),
+              _showSettings,
+              () {
+                _toggleSettings();
+                if (Scaffold.of(context).hasDrawer &&
+                    Scaffold.of(context).isDrawerOpen) {
+                  Navigator.of(context).pop();
+                }
+              },
+              shouldShowCollapsed,
             ),
-            _showSettings,
-            () {
-              _toggleSettings();
-              if (Scaffold.of(context).hasDrawer &&
-                  Scaffold.of(context).isDrawerOpen) {
-                Navigator.of(context).pop();
-              }
-            },
-            shouldShowCollapsed,
           ),
         ),
       ],
