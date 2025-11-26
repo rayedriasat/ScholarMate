@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../database/database.dart';
 import '../services/notebook_service.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../screens/quiz_taking_screen.dart';
 import '../screens/flashcard_view_screen.dart';
-import '../screens/audio_review_screen.dart';
 
 /// AI Studio tab with various AI tools
 class NotebookAiStudioTab extends StatefulWidget {
@@ -306,14 +306,38 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
           break;
 
         case 'audio':
-          // Audio generation not yet implemented
-          await service.generateAudioReview(
-            folderId: widget.folderId,
-            title:
-                'Audio Review - ${DateTime.now().toString().substring(0, 16)}',
-            audioUrl: '',
-            transcript: 'Audio generation coming soon',
-          );
+          try {
+            debugPrint(
+              '🔵 Generating audio review with ${fileIds.length} files...',
+            );
+            debugPrint('🔵 File IDs: $fileIds');
+            final response = await apiService.generateAudioReview(
+              userId: userId,
+              fileIds: fileIds,
+            );
+            debugPrint('🟢 Audio API response received');
+            debugPrint('🟢 Response keys: ${response.keys}');
+
+            // Extract segments and title from response
+            final segments = response['segments'] as List;
+            final title =
+                response['title'] as String? ??
+                'Audio Review - ${DateTime.now().toString().substring(0, 16)}';
+
+            debugPrint('🔵 Saving audio review to database...');
+            debugPrint('🔵 Title: $title');
+            debugPrint('🔵 Segments: ${segments.length}');
+
+            await service.generateAudioReview(
+              folderId: widget.folderId,
+              title: title,
+              segments: segments.cast<Map<String, dynamic>>(),
+            );
+            debugPrint('🟢 Audio review saved successfully');
+          } catch (e) {
+            debugPrint('🔴 Audio generation error: $e');
+            throw Exception('Audio generation failed: ${e.toString()}');
+          }
           break;
       }
 
@@ -568,10 +592,9 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
 
   void _viewOutput(NotebookAiOutput output) {
     // If callback is provided and tool is supported, delegate to parent
+    // Note: Audio is handled in dialog, not delegated to parent
     if (widget.onViewContent != null &&
-        (output.toolType == 'flashcard' ||
-            output.toolType == 'quiz' ||
-            output.toolType == 'audio')) {
+        (output.toolType == 'flashcard' || output.toolType == 'quiz')) {
       widget.onViewContent!(output.content, output.title, output.toolType);
       return;
     }
@@ -590,9 +613,7 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
           contentWidget = _buildFlashcardView(output.content, output.title);
           break;
         case 'audio':
-          contentWidget = Text(
-            'Audio review ready! Open in chat panel to play.',
-          );
+          contentWidget = _buildAudioView(output.content, output.title);
           break;
         default:
           contentWidget = Text(output.content);
@@ -953,6 +974,20 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
     }
   }
 
+  Widget _buildAudioView(String content, String title) {
+    try {
+      final data = jsonDecode(content);
+      final segments = (data['segments'] as List).cast<Map<String, dynamic>>();
+
+      return _AudioReviewPlayer(
+        title: data['title'] ?? title,
+        segments: segments,
+      );
+    } catch (e) {
+      return Text('Error parsing audio content: $e');
+    }
+  }
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
@@ -1050,4 +1085,375 @@ class _AiTool {
     required this.icon,
     required this.color,
   });
+}
+
+/// Audio review player with TTS
+class _AudioReviewPlayer extends StatefulWidget {
+  final String title;
+  final List<Map<String, dynamic>> segments;
+
+  const _AudioReviewPlayer({required this.title, required this.segments});
+
+  @override
+  State<_AudioReviewPlayer> createState() => _AudioReviewPlayerState();
+}
+
+class _AudioReviewPlayerState extends State<_AudioReviewPlayer> {
+  final FlutterTts _tts = FlutterTts();
+  int _currentSegmentIndex = 0;
+  bool _isPlaying = false;
+  bool _isPaused = false;
+  double _speechRate = 1.0;
+  double _pitch = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    try {
+      await _tts.setLanguage('en-US');
+      await _tts.setSpeechRate(_speechRate);
+      await _tts.setPitch(_pitch);
+      await _tts.setVolume(1.0);
+
+      _tts.setCompletionHandler(() {
+        if (_isPlaying && !_isPaused) {
+          _playNextSegment();
+        }
+      });
+
+      _tts.setErrorHandler((msg) {
+        debugPrint('TTS Error: $msg');
+        setState(() {
+          _isPlaying = false;
+          _isPaused = false;
+        });
+      });
+    } catch (e) {
+      debugPrint('TTS initialization error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopPlayback();
+    _tts.stop();
+    super.dispose();
+  }
+
+  Future<void> _playAudio() async {
+    if (_isPaused) {
+      // Resume from current segment
+      setState(() {
+        _isPlaying = true;
+        _isPaused = false;
+      });
+      await _playSegment(_currentSegmentIndex);
+    } else {
+      // Start from beginning
+      setState(() {
+        _isPlaying = true;
+        _isPaused = false;
+        _currentSegmentIndex = 0;
+      });
+      await _playSegment(0);
+    }
+  }
+
+  Future<void> _playSegment(int index) async {
+    if (index >= widget.segments.length || !_isPlaying) {
+      setState(() {
+        _isPlaying = false;
+        _isPaused = false;
+        _currentSegmentIndex = 0;
+      });
+      return;
+    }
+
+    setState(() => _currentSegmentIndex = index);
+
+    final segment = widget.segments[index];
+    final speaker = segment['speaker'] as String;
+    final text = segment['text'] as String;
+
+    try {
+      // Adjust voice slightly for different speakers
+      final isHost1 =
+          speaker.contains('1') || speaker.toLowerCase().contains('alex');
+      await _tts.setPitch(isHost1 ? 1.0 : 1.1);
+
+      // Speak the text
+      await _tts.speak(text);
+    } catch (e) {
+      debugPrint('Error playing segment: $e');
+      setState(() {
+        _isPlaying = false;
+        _isPaused = false;
+      });
+    }
+  }
+
+  void _playNextSegment() {
+    if (_isPlaying && !_isPaused) {
+      final nextIndex = _currentSegmentIndex + 1;
+      if (nextIndex < widget.segments.length) {
+        _playSegment(nextIndex);
+      } else {
+        setState(() {
+          _isPlaying = false;
+          _isPaused = false;
+          _currentSegmentIndex = 0;
+        });
+      }
+    }
+  }
+
+  Future<void> _pausePlayback() async {
+    await _tts.stop();
+    setState(() {
+      _isPlaying = false;
+      _isPaused = true;
+    });
+  }
+
+  Future<void> _stopPlayback() async {
+    await _tts.stop();
+    setState(() {
+      _isPlaying = false;
+      _isPaused = false;
+      _currentSegmentIndex = 0;
+    });
+  }
+
+  Future<void> _skipToSegment(int index) async {
+    await _stopPlayback();
+    setState(() => _currentSegmentIndex = index);
+  }
+
+  Future<void> _updateSpeechRate(double rate) async {
+    setState(() => _speechRate = rate);
+    await _tts.setSpeechRate(rate);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Player controls
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.headphones, size: 32, color: Colors.red),
+              const SizedBox(height: 8),
+              Text(
+                widget.title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${widget.segments.length} segments',
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              // Progress indicator
+              Row(
+                children: [
+                  Text(
+                    'Segment ${_currentSegmentIndex + 1}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: _currentSegmentIndex.toDouble(),
+                      min: 0,
+                      max: (widget.segments.length - 1).toDouble(),
+                      divisions: widget.segments.length - 1,
+                      onChanged: (value) {
+                        _skipToSegment(value.round());
+                      },
+                    ),
+                  ),
+                  Text(
+                    '${widget.segments.length}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Speech rate control
+              Row(
+                children: [
+                  const Icon(Icons.speed, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${_speechRate.toStringAsFixed(1)}x',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: _speechRate,
+                      min: 0.5,
+                      max: 2.0,
+                      divisions: 15,
+                      label: '${_speechRate.toStringAsFixed(1)}x',
+                      onChanged: (value) {
+                        _updateSpeechRate(value);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Playback controls
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.skip_previous),
+                    onPressed: _currentSegmentIndex > 0
+                        ? () => _skipToSegment(_currentSegmentIndex - 1)
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: _isPlaying ? _pausePlayback : _playAudio,
+                    icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                    label: Text(
+                      _isPlaying ? 'Pause' : (_isPaused ? 'Resume' : 'Play'),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      minimumSize: const Size(120, 48),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.stop),
+                    onPressed: _isPlaying || _isPaused ? _stopPlayback : null,
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.skip_next),
+                    onPressed: _currentSegmentIndex < widget.segments.length - 1
+                        ? () => _skipToSegment(_currentSegmentIndex + 1)
+                        : null,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Conversation Script',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        // Segments list
+        ...widget.segments.asMap().entries.map((entry) {
+          final index = entry.key;
+          final segment = entry.value;
+          final speaker = segment['speaker'] as String;
+          final text = segment['text'] as String;
+          final isHost1 =
+              speaker.contains('1') || speaker.toLowerCase().contains('alex');
+          final isCurrent = index == _currentSegmentIndex;
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            color: isCurrent ? Colors.red.withOpacity(0.1) : null,
+            elevation: isCurrent ? 4 : 1,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: isHost1
+                            ? Colors.blue.withOpacity(0.2)
+                            : Colors.green.withOpacity(0.2),
+                        child: Icon(
+                          isHost1 ? Icons.person : Icons.person_outline,
+                          color: isHost1 ? Colors.blue : Colors.green,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          speaker,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isHost1 ? Colors.blue : Colors.green,
+                          ),
+                        ),
+                      ),
+                      if (isCurrent && _isPlaying)
+                        const Icon(
+                          Icons.volume_up,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                      fontWeight: isCurrent
+                          ? FontWeight.w500
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+        const SizedBox(height: 16),
+        // Info banner
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, size: 20, color: Colors.blue),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'This is a podcast-style conversation about your materials. '
+                  'Use the player controls to listen through the segments.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

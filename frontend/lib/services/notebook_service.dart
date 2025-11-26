@@ -373,16 +373,12 @@ class NotebookService extends ChangeNotifier {
   Future<NotebookAiOutput> generateAudioReview({
     required String folderId,
     required String title,
-    required String audioUrl,
-    required String transcript,
+    required List<Map<String, dynamic>> segments,
   }) async {
     final outputId = _uuid.v4();
     final now = DateTime.now();
 
-    final content = jsonEncode({
-      'audioUrl': audioUrl,
-      'transcript': transcript,
-    });
+    final content = jsonEncode({'segments': segments, 'title': title});
 
     final companion = NotebookAiOutputsCompanion.insert(
       id: outputId,

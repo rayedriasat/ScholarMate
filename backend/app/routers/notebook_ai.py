@@ -521,19 +521,25 @@ Make it informative but conversational. Aim for a 3-5 minute discussion when rea
         if not context_chunks:
             raise ValueError("No content found in the selected files")
         
-        # Build context from chunks
-        context_text = "\n\n".join([
-            f"From {chunk.get('file_name', 'document')}:\n{chunk['text']}"
-            for chunk in context_chunks
-        ])
+        # Format context using RAG service method
+        context_text = rag_service._format_context(context_chunks)
         
         logger.info(f"📚 Retrieved {len(context_chunks)} context chunks")
         
-        # Generate conversational script
-        full_prompt = f"{prompt}\n\nDocument Content:\n{context_text}\n\nNow generate the podcast conversation:"
+        # Generate conversational script using chat interface
+        messages = [
+            {
+                "role": "system",
+                "content": "You are an expert at creating engaging podcast-style conversations. Always respond with valid JSON."
+            },
+            {
+                "role": "user",
+                "content": f"Context from documents:\n{context_text}\n\n{prompt}"
+            }
+        ]
         
-        response = await provider.generate(
-            prompt=full_prompt,
+        response = await provider.chat(
+            messages=messages,
             max_tokens=2000,
             temperature=0.8  # Higher temperature for more natural conversation
         )

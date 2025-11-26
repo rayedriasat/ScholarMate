@@ -10,7 +10,6 @@ import '../widgets/notebook_ai_studio_tab.dart';
 import 'notebook_folder_web_screen.dart';
 import 'flashcard_view_screen.dart';
 import 'quiz_taking_screen.dart';
-import 'audio_review_screen.dart';
 
 /// Detail screen for a single notebook folder
 class NotebookFolderScreen extends StatefulWidget {
@@ -78,26 +77,8 @@ class _NotebookFolderScreenState extends State<NotebookFolderScreen>
       } catch (e) {
         debugPrint('Error parsing quiz: $e');
       }
-    } else if (toolType == 'audio') {
-      try {
-        final segments = (jsonDecode(content) as List)
-            .cast<Map<String, dynamic>>();
-        setState(() {
-          _customChatContent = AudioReviewView(
-            title: title,
-            segments: segments,
-            onClose: () {
-              setState(() {
-                _customChatContent = null;
-              });
-            },
-          );
-          _tabController.animateTo(1); // Switch to Chat tab
-        });
-      } catch (e) {
-        debugPrint('Error parsing audio: $e');
-      }
     }
+    // Note: Audio is now handled directly in AI Studio tab dialog
   }
 
   Future<void> _editFolder() async {
