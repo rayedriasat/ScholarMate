@@ -46,14 +46,14 @@ class EmbeddingService:
         
         # HuggingFace API configuration
         self.hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
-        self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
-        # Use models endpoint (works with both old and new infrastructure)
-        self.api_url = f"https://router.huggingface.co/models/{self.model_name}"
+        self.model_name = "BAAI/bge-small-en-v1.5"
+        # Use official HF Inference API endpoint
+        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.model_name}/pipeline/feature-extraction"
         
         # Local model configuration (lazy-loaded)
         self._local_embeddings = None
         self._local_model_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "models", "all-MiniLM-L6-v2"
+            os.path.dirname(__file__), "..", "..", "models", "bge-small-en-v1.5"
         )
         
         # API availability tracking
@@ -84,10 +84,13 @@ class EmbeddingService:
         strategy = strategy or self.strategy
         
         if strategy == EmbeddingStrategy.AUTO:
-            # Use local model directly (API endpoint deprecated)
-            # This ensures consistent embeddings across all operations
-            logger.info("Using local model for consistent embeddings")
-            return await self._generate_with_local(texts)
+            # Try API first (faster, no RAM), fallback to local
+            try:
+                logger.info("Attempting API embedding generation")
+                return await self._generate_with_api(texts)
+            except Exception as e:
+                logger.warning(f"API failed, falling back to local model: {str(e)}")
+                return await self._generate_with_local(texts)
         
         elif strategy == EmbeddingStrategy.API:
             return await self._generate_with_api(texts)
@@ -125,36 +128,39 @@ class EmbeddingService:
                 "Content-Type": "application/json"
             }
             
-            # API accepts batch requests
+            # Official HF Inference API format
             payload = {
-                "inputs": texts,
-                "options": {
-                    "wait_for_model": True,  # Wait if model is loading
-                    "use_cache": True
-                }
+                "inputs": texts
             }
             
-            # Make API request (synchronous, but fast)
-            response = requests.post(
-                self.api_url,
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
-            
-            if response.status_code == 503:
-                # Model is loading, retry after delay
-                logger.info("Model loading, retrying in 5 seconds...")
-                await asyncio.sleep(5)
-                response = requests.post(
+            # Run in thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: requests.post(
                     self.api_url,
                     headers=headers,
                     json=payload,
-                    timeout=30
+                    timeout=60  # Increased timeout for large batches
+                )
+            )
+            
+            if response.status_code == 503:
+                # Model is loading, retry once
+                logger.info("Model loading, retrying in 3 seconds...")
+                await asyncio.sleep(3)
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: requests.post(
+                        self.api_url,
+                        headers=headers,
+                        json=payload,
+                        timeout=60
+                    )
                 )
             
             if response.status_code == 429:
-                raise ValueError("Rate limit exceeded. Try again later or use local model.")
+                raise ValueError("Rate limit exceeded")
             
             if response.status_code != 200:
                 raise ValueError(f"API error {response.status_code}: {response.text}")
@@ -163,10 +169,9 @@ class EmbeddingService:
             
             # API returns nested list for single input, flat list for batch
             if isinstance(embeddings[0], list) and isinstance(embeddings[0][0], list):
-                # Nested format: [[embedding1], [embedding2], ...]
                 embeddings = [emb[0] if isinstance(emb[0], list) else emb for emb in embeddings]
             
-            logger.info(f"Generated {len(embeddings)} embeddings via API")
+            logger.info(f"✓ Generated {len(embeddings)} embeddings via API")
             self._api_available = True
             
             return embeddings
@@ -179,16 +184,16 @@ class EmbeddingService:
     async def _generate_with_local(
         self,
         texts: List[str],
-        batch_size: int = 3
+        batch_size: int = 32
     ) -> List[List[float]]:
         """
         Generate embeddings using local HuggingFace model.
         
-        Memory-optimized: processes in small batches with cleanup.
+        Optimized for speed with larger batches.
         
         Args:
             texts: List of text strings
-            batch_size: Batch size for processing
+            batch_size: Batch size for processing (increased for speed)
             
         Returns:
             List of embedding vectors
@@ -200,26 +205,24 @@ class EmbeddingService:
             if self._local_embeddings is None:
                 await self._load_local_model()
             
-            # Process in small batches to minimize memory
+            # Process in larger batches for speed
             all_embeddings = []
             
             for i in range(0, len(texts), batch_size):
                 batch_texts = texts[i:i+batch_size]
                 
-                # Generate embeddings for batch
-                batch_embeddings = self._local_embeddings.embed_documents(batch_texts)
+                # Run in thread pool to avoid blocking
+                loop = asyncio.get_event_loop()
+                batch_embeddings = await loop.run_in_executor(
+                    None,
+                    self._local_embeddings.embed_documents,
+                    batch_texts
+                )
                 all_embeddings.extend(batch_embeddings)
-                
-                # Cleanup
-                del batch_texts
-                del batch_embeddings
-                gc.collect()
-                
-                await asyncio.sleep(0.1)
                 
                 logger.debug(f"Processed batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
             
-            logger.info(f"Generated {len(all_embeddings)} embeddings with local model")
+            logger.info(f"✓ Generated {len(all_embeddings)} embeddings with local model")
             return all_embeddings
             
         except Exception as e:
@@ -265,7 +268,7 @@ class EmbeddingService:
         """
         Generate embedding for a single query.
         
-        Uses local model for consistency with indexed documents.
+        Tries API first for speed, falls back to local model.
         
         Args:
             query: Query text
@@ -273,11 +276,23 @@ class EmbeddingService:
         Returns:
             Embedding vector
         """
-        # Use local model for consistency
-        if self._local_embeddings is None:
-            await self._load_local_model()
-        
-        return self._local_embeddings.embed_query(query)
+        # Try API first (faster)
+        try:
+            embeddings = await self._generate_with_api([query])
+            return embeddings[0]
+        except Exception as e:
+            logger.warning(f"API failed for query, using local model: {str(e)}")
+            
+            # Fallback to local model
+            if self._local_embeddings is None:
+                await self._load_local_model()
+            
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(
+                None,
+                self._local_embeddings.embed_query,
+                query
+            )
     
     def unload_local_model(self):
         """Unload local model to free memory."""

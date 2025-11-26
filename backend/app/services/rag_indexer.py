@@ -67,10 +67,10 @@ class RAGIndexer:
         )
         
         # Batch sizes for processing (configurable via env vars for memory tuning)
-        # CRITICAL: Keep these small to avoid memory spikes on Render free tier (512MB)
-        self.BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "3"))  # Chunks per batch - REDUCED
-        self.PAGE_BATCH_SIZE = int(os.getenv("PDF_PAGE_BATCH_SIZE", "2"))  # Pages per batch - REDUCED
-        self.PINECONE_BATCH_SIZE = int(os.getenv("PINECONE_BATCH_SIZE", "25"))  # Pinecone upsert batch - REDUCED
+        # Using API embeddings = no memory concerns, can use larger batches for speed
+        self.BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "80"))  # Chunks per batch - API optimized
+        self.PAGE_BATCH_SIZE = int(os.getenv("PDF_PAGE_BATCH_SIZE", "20"))  # Pages per batch - increased
+        self.PINECONE_BATCH_SIZE = int(os.getenv("PINECONE_BATCH_SIZE", "150"))  # Pinecone upsert batch - increased
         
         logger.info(f"Text splitter initialized: chunk_size=400, embedding_batch={self.BATCH_SIZE}, page_batch={self.PAGE_BATCH_SIZE}, pinecone_batch={self.PINECONE_BATCH_SIZE} (memory-optimized)")
         
