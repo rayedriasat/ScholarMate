@@ -216,7 +216,7 @@ Answer:""",
         
         Args:
             question: User's question
-            user_id: User UUID
+            user_id: User UUID or Google sub ID (will be converted to UUID)
             selected_file_ids: Optional list of file IDs to filter by
             top_k: Number of chunks to retrieve
             
@@ -225,6 +225,10 @@ Answer:""",
         """
         try:
             logger.info(f"Retrieving context for user {user_id}, top_k={top_k}")
+            
+            # Convert Google user ID to Supabase UUID if needed
+            resolved_user_id = await self._get_or_create_user_uuid(user_id)
+            logger.debug(f"Resolved user_id {user_id} to UUID {resolved_user_id}")
             
             # Generate query embedding using hybrid service (prioritizes API)
             query_embedding = await self.embedding_service.generate_query_embedding(question)
@@ -236,9 +240,9 @@ Answer:""",
                 filter_dict = {"file_id": {"$in": selected_file_ids}}
                 logger.info(f"Filtering by {len(selected_file_ids)} selected files")
             
-            # Query Pinecone namespace
+            # Query Pinecone namespace (use resolved UUID)
             results = self.pinecone_service.query_documents(
-                user_id=user_id,
+                user_id=resolved_user_id,
                 query_embeddings=[query_embedding],
                 n_results=top_k,
                 filter=filter_dict

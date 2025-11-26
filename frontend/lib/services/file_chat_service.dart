@@ -188,13 +188,13 @@ class FileChatService extends ChangeNotifier {
       return null;
     }
 
-    final messageId = _uuid.v4();
-    final threadId = await _ensureThreadExists(fileId);
+    final localMessageId = 'local_${_uuid.v4()}';
     final now = DateTime.now();
 
-    final message = model.FileChatMessage(
-      id: messageId,
-      threadId: threadId,
+    // Create local message first (optimistic update)
+    final localMessage = model.FileChatMessage(
+      id: localMessageId,
+      threadId: 'pending',
       fileId: fileId,
       userId: _currentUserId!,
       userName: _currentUserName!,
@@ -204,33 +204,78 @@ class FileChatService extends ChangeNotifier {
       isSynced: false,
     );
 
-    // Save locally first (optimistic update)
-    await _saveMessageToLocal(message);
+    // Save locally first
+    await _saveMessageToLocal(localMessage);
     notifyListeners();
 
     // Try to sync to Supabase
     try {
-      await _supabase.from('file_chat_messages').insert(message.toJson());
+      // Ensure thread exists and get proper UUID
+      final threadId = await _ensureThreadExists(fileId);
 
-      // Mark as synced
-      await (_database.update(_database.fileChatMessages)
-            ..where((m) => m.id.equals(messageId)))
-          .write(const FileChatMessagesCompanion(isSynced: drift.Value(true)));
+      // Only sync if we have a valid UUID thread (not local fallback)
+      if (!threadId.startsWith('local_')) {
+        // Create message with proper UUID for Supabase
+        final supabaseMessageId = _uuid.v4();
+        final messageData = {
+          'id': supabaseMessageId,
+          'thread_id': threadId,
+          'file_id': fileId,
+          'user_id': _currentUserId!,
+          'user_name': _currentUserName!,
+          'user_photo_url': _currentUserPhotoUrl,
+          'content': content,
+          'timestamp': now.toIso8601String(),
+        };
 
-      // Update thread
-      await _supabase
-          .from('file_chat_threads')
-          .update({
-            'updated_at': now.toIso8601String(),
-            'message_count': await _getMessageCount(fileId),
-          })
-          .eq('id', threadId);
+        await _supabase.from('file_chat_messages').insert(messageData);
 
-      return message.copyWith(isSynced: true);
+        // Update local message with Supabase ID and mark as synced
+        await _database.transaction(() async {
+          // Delete local message
+          await (_database.delete(
+            _database.fileChatMessages,
+          )..where((m) => m.id.equals(localMessageId))).go();
+
+          // Insert synced message with Supabase ID
+          await _database
+              .into(_database.fileChatMessages)
+              .insert(
+                FileChatMessagesCompanion.insert(
+                  id: supabaseMessageId,
+                  threadId: threadId,
+                  fileId: fileId,
+                  userId: _currentUserId!,
+                  userName: _currentUserName!,
+                  userPhotoUrl: drift.Value(_currentUserPhotoUrl),
+                  content: content,
+                  timestamp: now,
+                  isSynced: const drift.Value(true),
+                ),
+              );
+        });
+
+        // Update thread
+        await _supabase
+            .from('file_chat_threads')
+            .update({
+              'updated_at': now.toIso8601String(),
+              'message_count': await _getMessageCount(fileId),
+            })
+            .eq('id', threadId);
+
+        return localMessage.copyWith(
+          id: supabaseMessageId,
+          threadId: threadId,
+          isSynced: true,
+        );
+      }
+
+      return localMessage;
     } catch (e) {
       debugPrint('Error syncing message to Supabase: $e');
       // Message remains in local database with isSynced = false
-      return message;
+      return localMessage;
     }
   }
 
