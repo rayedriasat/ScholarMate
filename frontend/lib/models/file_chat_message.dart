@@ -9,6 +9,7 @@ class FileChatMessage {
   final String content;
   final DateTime timestamp;
   final bool isSynced;
+  final bool isRead;
 
   FileChatMessage({
     required this.id,
@@ -20,6 +21,7 @@ class FileChatMessage {
     required this.content,
     required this.timestamp,
     this.isSynced = false,
+    this.isRead = false,
   });
 
   /// Create from JSON (Supabase response)
@@ -34,6 +36,7 @@ class FileChatMessage {
       content: json['content'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
       isSynced: true,
+      isRead: json['is_read'] as bool? ?? false,
     );
   }
 
@@ -48,6 +51,7 @@ class FileChatMessage {
       'user_photo_url': userPhotoUrl,
       'content': content,
       'timestamp': timestamp.toIso8601String(),
+      'is_read': isRead,
     };
   }
 
@@ -61,6 +65,7 @@ class FileChatMessage {
     String? content,
     DateTime? timestamp,
     bool? isSynced,
+    bool? isRead,
   }) {
     return FileChatMessage(
       id: id ?? this.id,
@@ -72,6 +77,7 @@ class FileChatMessage {
       content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
       isSynced: isSynced ?? this.isSynced,
+      isRead: isRead ?? this.isRead,
     );
   }
 }

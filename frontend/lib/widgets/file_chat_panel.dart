@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../services/file_chat_service.dart';
 import '../models/file_chat_message.dart' as model;
 
@@ -29,6 +30,7 @@ class _FileChatPanelState extends State<FileChatPanel> {
   bool _isOpen = false;
   bool _isLoading = true;
   List<model.FileChatMessage> _messages = [];
+  int _unreadCount = 0;
   bool _initialized = false;
 
   @override
@@ -54,10 +56,15 @@ class _FileChatPanelState extends State<FileChatPanel> {
       );
 
       final messages = await chatService.fetchMessages(widget.fileId);
+      final unreadCount = await chatService.getUnreadCount(
+        widget.fileId,
+        widget.userId,
+      );
 
       if (mounted) {
         setState(() {
           _messages = messages;
+          _unreadCount = unreadCount;
           _isLoading = false;
         });
       }
@@ -77,10 +84,15 @@ class _FileChatPanelState extends State<FileChatPanel> {
     try {
       final chatService = context.read<FileChatService>();
       final messages = await chatService.fetchMessages(widget.fileId);
+      final unreadCount = await chatService.getUnreadCount(
+        widget.fileId,
+        widget.userId,
+      );
 
       if (mounted) {
         setState(() {
           _messages = messages;
+          _unreadCount = unreadCount;
         });
         _scrollToBottom();
       }
@@ -112,20 +124,41 @@ class _FileChatPanelState extends State<FileChatPanel> {
       await chatService.sendMessage(fileId: widget.fileId, content: content);
 
       final messages = await chatService.fetchMessages(widget.fileId);
+      final unreadCount = await chatService.getUnreadCount(
+        widget.fileId,
+        widget.userId,
+      );
       if (mounted) {
         setState(() {
           _messages = messages;
+          _unreadCount = unreadCount;
         });
         _scrollToBottom();
       }
     } catch (_) {}
   }
 
-  void _toggleChat() {
+  void _toggleChat() async {
     setState(() {
       _isOpen = !_isOpen;
     });
     if (_isOpen) {
+      // Mark messages as read when opening chat
+      try {
+        final chatService = context.read<FileChatService>();
+        await chatService.markMessagesAsRead(widget.fileId, widget.userId);
+        final unreadCount = await chatService.getUnreadCount(
+          widget.fileId,
+          widget.userId,
+        );
+        if (mounted) {
+          setState(() {
+            _unreadCount = unreadCount;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error marking messages as read: $e');
+      }
       Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
     }
   }
@@ -198,7 +231,7 @@ class _FileChatPanelState extends State<FileChatPanel> {
                 size: 22,
               ),
             ),
-            if (!_isOpen && _messages.isNotEmpty)
+            if (!_isOpen && _unreadCount > 0)
               Positioned(
                 top: -2,
                 right: -2,
@@ -217,7 +250,7 @@ class _FileChatPanelState extends State<FileChatPanel> {
                     minHeight: 20,
                   ),
                   child: Text(
-                    _messages.length > 9 ? '9+' : '${_messages.length}',
+                    _unreadCount > 9 ? '9+' : '$_unreadCount',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -464,7 +497,32 @@ class _FileChatPanelState extends State<FileChatPanel> {
     if (message.userPhotoUrl != null) {
       return CircleAvatar(
         radius: 12,
-        backgroundImage: NetworkImage(message.userPhotoUrl!),
+        backgroundImage: CachedNetworkImageProvider(message.userPhotoUrl!),
+        child: CachedNetworkImage(
+          imageUrl: message.userPhotoUrl!,
+          imageBuilder: (context, imageProvider) => Container(),
+          placeholder: (context, url) => const SizedBox.shrink(),
+          errorWidget: (context, url, error) => Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF10B981), Color(0xFF059669)],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                message.userName.isNotEmpty
+                    ? message.userName[0].toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
       );
     }
 
@@ -561,13 +619,23 @@ class _FileChatPanelState extends State<FileChatPanel> {
   }
 
   String _formatTime(DateTime timestamp) {
-    final now = DateTime.now();
-    final diff = now.difference(timestamp);
+    // Convert both to UTC for consistent comparison
+    final nowUtc = DateTime.now().toUtc();
+    final timestampUtc = timestamp.toUtc();
+    final diff = nowUtc.difference(timestampUtc);
+
+    // If timestamp is in the future (due to time sync issues), show "now"
+    if (diff.isNegative) {
+      return 'now';
+    }
 
     if (diff.inMinutes < 1) return 'now';
     if (diff.inHours < 1) return '${diff.inMinutes}m';
     if (diff.inDays < 1) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}d';
-    return '${timestamp.day}/${timestamp.month}';
+
+    // For display, use local time
+    final localTimestamp = timestamp.toLocal();
+    return '${localTimestamp.day}/${localTimestamp.month}';
   }
 }

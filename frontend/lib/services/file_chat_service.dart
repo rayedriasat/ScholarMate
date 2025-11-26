@@ -122,6 +122,7 @@ class FileChatService extends ChangeNotifier {
 
   /// Fetch messages for a file
   Future<List<model.FileChatMessage>> fetchMessages(String fileId) async {
+    debugPrint('Fetching messages for file: $fileId');
     try {
       // Try to fetch from Supabase
       final response = await _supabase
@@ -134,6 +135,8 @@ class FileChatService extends ChangeNotifier {
           .map((json) => model.FileChatMessage.fromJson(json))
           .toList();
 
+      debugPrint('Fetched ${messages.length} messages from Supabase');
+
       // Save to local database
       for (final message in messages) {
         await _saveMessageToLocal(message);
@@ -144,7 +147,9 @@ class FileChatService extends ChangeNotifier {
       debugPrint('Error fetching messages from Supabase: $e');
 
       // Fallback to local database
-      return await _getLocalMessages(fileId);
+      final localMessages = await _getLocalMessages(fileId);
+      debugPrint('Fetched ${localMessages.length} messages from local DB');
+      return localMessages;
     }
   }
 
@@ -173,6 +178,7 @@ class FileChatService extends ChangeNotifier {
             content: m.content,
             timestamp: m.timestamp,
             isSynced: m.isSynced,
+            isRead: m.isRead,
           ),
         )
         .toList();
@@ -202,6 +208,7 @@ class FileChatService extends ChangeNotifier {
       content: content,
       timestamp: now,
       isSynced: false,
+      isRead: true, // User's own messages are always read
     );
 
     // Save locally first
@@ -281,22 +288,57 @@ class FileChatService extends ChangeNotifier {
 
   /// Save message to local database
   Future<void> _saveMessageToLocal(model.FileChatMessage message) async {
-    await _database
-        .into(_database.fileChatMessages)
-        .insert(
-          FileChatMessagesCompanion.insert(
-            id: message.id,
-            threadId: message.threadId,
-            fileId: message.fileId,
-            userId: message.userId,
-            userName: message.userName,
-            userPhotoUrl: drift.Value(message.userPhotoUrl),
-            content: message.content,
-            timestamp: message.timestamp,
-            isSynced: drift.Value(message.isSynced),
-          ),
-          mode: drift.InsertMode.insertOrReplace,
+    try {
+      debugPrint('Saving message to local DB: ${message.id}');
+
+      // Check if message already exists
+      final existing = await (_database.select(
+        _database.fileChatMessages,
+      )..where((m) => m.id.equals(message.id))).getSingleOrNull();
+
+      if (existing != null) {
+        debugPrint(
+          'Message ${message.id} exists, updating (preserving isRead=${existing.isRead})',
         );
+        // Message exists, only update if it's not synced yet or update sync status
+        // Don't overwrite isRead status
+        await (_database.update(
+          _database.fileChatMessages,
+        )..where((m) => m.id.equals(message.id))).write(
+          FileChatMessagesCompanion(
+            isSynced: drift.Value(message.isSynced),
+            content: drift.Value(message.content),
+            timestamp: drift.Value(message.timestamp),
+            // Don't update isRead to preserve local read status
+          ),
+        );
+      } else {
+        debugPrint(
+          'Message ${message.id} is new, inserting with isRead=${message.isRead}',
+        );
+        // New message, insert it
+        await _database
+            .into(_database.fileChatMessages)
+            .insert(
+              FileChatMessagesCompanion.insert(
+                id: message.id,
+                threadId: message.threadId,
+                fileId: message.fileId,
+                userId: message.userId,
+                userName: message.userName,
+                userPhotoUrl: drift.Value(message.userPhotoUrl),
+                content: message.content,
+                timestamp: message.timestamp,
+                isSynced: drift.Value(message.isSynced),
+                isRead: drift.Value(message.isRead),
+              ),
+            );
+      }
+      debugPrint('Successfully saved message ${message.id}');
+    } catch (e, stackTrace) {
+      debugPrint('Error saving message to local DB: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
   }
 
   /// Get message count for a file
@@ -308,6 +350,33 @@ class FileChatService extends ChangeNotifier {
             .getSingle();
 
     return count.read(_database.fileChatMessages.id.count()) ?? 0;
+  }
+
+  /// Get unread message count for a file
+  Future<int> getUnreadCount(String fileId, String userId) async {
+    final count =
+        await (_database.selectOnly(_database.fileChatMessages)
+              ..addColumns([_database.fileChatMessages.id.count()])
+              ..where(_database.fileChatMessages.fileId.equals(fileId))
+              ..where(_database.fileChatMessages.userId.equals(userId).not())
+              ..where(_database.fileChatMessages.isRead.equals(false)))
+            .getSingle();
+
+    final unreadCount = count.read(_database.fileChatMessages.id.count()) ?? 0;
+    debugPrint('Unread count for file $fileId (user $userId): $unreadCount');
+    return unreadCount;
+  }
+
+  /// Mark all messages as read for a file
+  Future<void> markMessagesAsRead(String fileId, String userId) async {
+    debugPrint('Marking messages as read for file: $fileId, user: $userId');
+    final result =
+        await (_database.update(_database.fileChatMessages)
+              ..where((m) => m.fileId.equals(fileId))
+              ..where((m) => m.userId.equals(userId).not()))
+            .write(FileChatMessagesCompanion(isRead: drift.Value(true)));
+    debugPrint('Marked $result messages as read');
+    notifyListeners();
   }
 
   /// Check if user has access to file chat

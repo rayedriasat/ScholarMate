@@ -23,6 +23,7 @@ class FileChatMessages extends Table {
   TextColumn get content => text()();
   DateTimeColumn get timestamp => dateTime()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  BoolColumn get isRead => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};

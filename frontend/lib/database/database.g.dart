@@ -10698,6 +10698,19 @@ class $FileChatMessagesTable extends FileChatMessages
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isReadMeta = const VerificationMeta('isRead');
+  @override
+  late final GeneratedColumn<bool> isRead = GeneratedColumn<bool>(
+    'is_read',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_read" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -10709,6 +10722,7 @@ class $FileChatMessagesTable extends FileChatMessages
     content,
     timestamp,
     isSynced,
+    isRead,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -10790,6 +10804,12 @@ class $FileChatMessagesTable extends FileChatMessages
         isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
       );
     }
+    if (data.containsKey('is_read')) {
+      context.handle(
+        _isReadMeta,
+        isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta),
+      );
+    }
     return context;
   }
 
@@ -10835,6 +10855,10 @@ class $FileChatMessagesTable extends FileChatMessages
         DriftSqlType.bool,
         data['${effectivePrefix}is_synced'],
       )!,
+      isRead: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_read'],
+      )!,
     );
   }
 
@@ -10854,6 +10878,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
   final String content;
   final DateTime timestamp;
   final bool isSynced;
+  final bool isRead;
   const FileChatMessage({
     required this.id,
     required this.threadId,
@@ -10864,6 +10889,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
     required this.content,
     required this.timestamp,
     required this.isSynced,
+    required this.isRead,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10879,6 +10905,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
     map['content'] = Variable<String>(content);
     map['timestamp'] = Variable<DateTime>(timestamp);
     map['is_synced'] = Variable<bool>(isSynced);
+    map['is_read'] = Variable<bool>(isRead);
     return map;
   }
 
@@ -10895,6 +10922,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
       content: Value(content),
       timestamp: Value(timestamp),
       isSynced: Value(isSynced),
+      isRead: Value(isRead),
     );
   }
 
@@ -10913,6 +10941,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
       content: serializer.fromJson<String>(json['content']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      isRead: serializer.fromJson<bool>(json['isRead']),
     );
   }
   @override
@@ -10928,6 +10957,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
       'content': serializer.toJson<String>(content),
       'timestamp': serializer.toJson<DateTime>(timestamp),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'isRead': serializer.toJson<bool>(isRead),
     };
   }
 
@@ -10941,6 +10971,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
     String? content,
     DateTime? timestamp,
     bool? isSynced,
+    bool? isRead,
   }) => FileChatMessage(
     id: id ?? this.id,
     threadId: threadId ?? this.threadId,
@@ -10951,6 +10982,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
     content: content ?? this.content,
     timestamp: timestamp ?? this.timestamp,
     isSynced: isSynced ?? this.isSynced,
+    isRead: isRead ?? this.isRead,
   );
   FileChatMessage copyWithCompanion(FileChatMessagesCompanion data) {
     return FileChatMessage(
@@ -10965,6 +10997,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
       content: data.content.present ? data.content.value : this.content,
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      isRead: data.isRead.present ? data.isRead.value : this.isRead,
     );
   }
 
@@ -10979,7 +11012,8 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
           ..write('userPhotoUrl: $userPhotoUrl, ')
           ..write('content: $content, ')
           ..write('timestamp: $timestamp, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('isRead: $isRead')
           ..write(')'))
         .toString();
   }
@@ -10995,6 +11029,7 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
     content,
     timestamp,
     isSynced,
+    isRead,
   );
   @override
   bool operator ==(Object other) =>
@@ -11008,7 +11043,8 @@ class FileChatMessage extends DataClass implements Insertable<FileChatMessage> {
           other.userPhotoUrl == this.userPhotoUrl &&
           other.content == this.content &&
           other.timestamp == this.timestamp &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.isRead == this.isRead);
 }
 
 class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
@@ -11021,6 +11057,7 @@ class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
   final Value<String> content;
   final Value<DateTime> timestamp;
   final Value<bool> isSynced;
+  final Value<bool> isRead;
   final Value<int> rowid;
   const FileChatMessagesCompanion({
     this.id = const Value.absent(),
@@ -11032,6 +11069,7 @@ class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
     this.content = const Value.absent(),
     this.timestamp = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.isRead = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FileChatMessagesCompanion.insert({
@@ -11044,6 +11082,7 @@ class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
     required String content,
     required DateTime timestamp,
     this.isSynced = const Value.absent(),
+    this.isRead = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        threadId = Value(threadId),
@@ -11062,6 +11101,7 @@ class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
     Expression<String>? content,
     Expression<DateTime>? timestamp,
     Expression<bool>? isSynced,
+    Expression<bool>? isRead,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -11074,6 +11114,7 @@ class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
       if (content != null) 'content': content,
       if (timestamp != null) 'timestamp': timestamp,
       if (isSynced != null) 'is_synced': isSynced,
+      if (isRead != null) 'is_read': isRead,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -11088,6 +11129,7 @@ class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
     Value<String>? content,
     Value<DateTime>? timestamp,
     Value<bool>? isSynced,
+    Value<bool>? isRead,
     Value<int>? rowid,
   }) {
     return FileChatMessagesCompanion(
@@ -11100,6 +11142,7 @@ class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
       content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
       isSynced: isSynced ?? this.isSynced,
+      isRead: isRead ?? this.isRead,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -11134,6 +11177,9 @@ class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (isRead.present) {
+      map['is_read'] = Variable<bool>(isRead.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -11152,6 +11198,7 @@ class FileChatMessagesCompanion extends UpdateCompanion<FileChatMessage> {
           ..write('content: $content, ')
           ..write('timestamp: $timestamp, ')
           ..write('isSynced: $isSynced, ')
+          ..write('isRead: $isRead, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16726,6 +16773,7 @@ typedef $$FileChatMessagesTableCreateCompanionBuilder =
       required String content,
       required DateTime timestamp,
       Value<bool> isSynced,
+      Value<bool> isRead,
       Value<int> rowid,
     });
 typedef $$FileChatMessagesTableUpdateCompanionBuilder =
@@ -16739,6 +16787,7 @@ typedef $$FileChatMessagesTableUpdateCompanionBuilder =
       Value<String> content,
       Value<DateTime> timestamp,
       Value<bool> isSynced,
+      Value<bool> isRead,
       Value<int> rowid,
     });
 
@@ -16793,6 +16842,11 @@ class $$FileChatMessagesTableFilterComposer
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
     column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isRead => $composableBuilder(
+    column: $table.isRead,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -16850,6 +16904,11 @@ class $$FileChatMessagesTableOrderingComposer
     column: $table.isSynced,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isRead => $composableBuilder(
+    column: $table.isRead,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FileChatMessagesTableAnnotationComposer
@@ -16889,6 +16948,9 @@ class $$FileChatMessagesTableAnnotationComposer
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  GeneratedColumn<bool> get isRead =>
+      $composableBuilder(column: $table.isRead, builder: (column) => column);
 }
 
 class $$FileChatMessagesTableTableManager
@@ -16937,6 +16999,7 @@ class $$FileChatMessagesTableTableManager
                 Value<String> content = const Value.absent(),
                 Value<DateTime> timestamp = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<bool> isRead = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FileChatMessagesCompanion(
                 id: id,
@@ -16948,6 +17011,7 @@ class $$FileChatMessagesTableTableManager
                 content: content,
                 timestamp: timestamp,
                 isSynced: isSynced,
+                isRead: isRead,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -16961,6 +17025,7 @@ class $$FileChatMessagesTableTableManager
                 required String content,
                 required DateTime timestamp,
                 Value<bool> isSynced = const Value.absent(),
+                Value<bool> isRead = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FileChatMessagesCompanion.insert(
                 id: id,
@@ -16972,6 +17037,7 @@ class $$FileChatMessagesTableTableManager
                 content: content,
                 timestamp: timestamp,
                 isSynced: isSynced,
+                isRead: isRead,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

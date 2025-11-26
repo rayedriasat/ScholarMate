@@ -76,6 +76,7 @@ dependencies:
   flutter_onnxruntime: ^1.6.0
   llama_cpp_dart: ^0.1.2+1
   google_fonts: ^6.3.2
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
