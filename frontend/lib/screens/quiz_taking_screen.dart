@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'quiz_result_screen.dart';
 
-class QuizTakingScreen extends StatefulWidget {
+class QuizTakingScreen extends StatelessWidget {
   final String title;
   final List<Map<String, dynamic>> questions;
 
@@ -13,10 +13,35 @@ class QuizTakingScreen extends StatefulWidget {
   });
 
   @override
-  State<QuizTakingScreen> createState() => _QuizTakingScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: QuizView(
+        title: title,
+        questions: questions,
+        onClose: () => Navigator.pop(context),
+      ),
+    );
+  }
 }
 
-class _QuizTakingScreenState extends State<QuizTakingScreen> {
+class QuizView extends StatefulWidget {
+  final String title;
+  final List<Map<String, dynamic>> questions;
+  final VoidCallback? onClose;
+
+  const QuizView({
+    super.key,
+    required this.title,
+    required this.questions,
+    this.onClose,
+  });
+
+  @override
+  State<QuizView> createState() => _QuizViewState();
+}
+
+class _QuizViewState extends State<QuizView> {
   int _currentQuestionIndex = 0;
   // Map to store selected option index for each question
   final Map<int, int> _userAnswers = {};
@@ -97,7 +122,10 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
   }
 
   void _navigateToResults() {
-    Navigator.pushReplacement(
+    // If we are in a standalone screen (Navigator can pop), we might want to replace.
+    // But if embedded, we just push the result screen or handle it differently.
+    // For now, we'll push the result screen on top of the current context.
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => QuizResultScreen(
@@ -111,112 +139,120 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4.0),
-          child: LinearProgressIndicator(
-            value: (_currentQuestionIndex + 1) / widget.questions.length,
-            backgroundColor: Colors.grey[200],
-            valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          // Question Counter
+    return Column(
+      children: [
+        if (widget.onClose != null)
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Question ${_currentQuestionIndex + 1}/${widget.questions.length}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.bold,
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: widget.onClose,
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Exam Mode',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                const Text(
+                  'Quiz Mode',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
-
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              physics:
-                  const NeverScrollableScrollPhysics(), // Disable swipe to enforce navigation buttons
-              itemCount: widget.questions.length,
-              itemBuilder: (context, index) {
-                return _buildQuestionCard(widget.questions[index], index);
-              },
-            ),
+        LinearProgressIndicator(
+          value: (_currentQuestionIndex + 1) / widget.questions.length,
+          backgroundColor: Colors.grey[200],
+          valueColor: AlwaysStoppedAnimation<Color>(
+            Theme.of(context).colorScheme.primary,
           ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              offset: const Offset(0, -4),
-              blurRadius: 8,
-            ),
-          ],
         ),
-        child: Row(
-          children: [
-            if (_currentQuestionIndex > 0)
-              OutlinedButton.icon(
-                onPressed: _previousQuestion,
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Previous'),
-              )
-            else
-              const SizedBox(width: 100), // Spacer to keep alignment
-
-            const Spacer(),
-
-            FilledButton.icon(
-              onPressed: _nextQuestion,
-              label: Text(
-                _currentQuestionIndex == widget.questions.length - 1
-                    ? 'Submit'
-                    : 'Next',
+        // Question Counter
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Question ${_currentQuestionIndex + 1}/${widget.questions.length}',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              icon: Icon(
-                _currentQuestionIndex == widget.questions.length - 1
-                    ? Icons.check
-                    : Icons.arrow_forward,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Exam Mode',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-              iconAlignment: IconAlignment.end,
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            physics:
+                const NeverScrollableScrollPhysics(), // Disable swipe to enforce navigation buttons
+            itemCount: widget.questions.length,
+            itemBuilder: (context, index) {
+              return _buildQuestionCard(widget.questions[index], index);
+            },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                offset: const Offset(0, -4),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              if (_currentQuestionIndex > 0)
+                OutlinedButton.icon(
+                  onPressed: _previousQuestion,
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Previous'),
+                )
+              else
+                const SizedBox(width: 100), // Spacer to keep alignment
+
+              const Spacer(),
+
+              FilledButton.icon(
+                onPressed: _nextQuestion,
+                label: Text(
+                  _currentQuestionIndex == widget.questions.length - 1
+                      ? 'Submit'
+                      : 'Next',
+                ),
+                icon: Icon(
+                  _currentQuestionIndex == widget.questions.length - 1
+                      ? Icons.check
+                      : Icons.arrow_forward,
+                ),
+                iconAlignment: IconAlignment.end,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -259,7 +295,7 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
                     color: isSelected
                         ? Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.05)
+                          ).colorScheme.primary.withValues(alpha: 0.05)
                         : null,
                   ),
                   child: Row(

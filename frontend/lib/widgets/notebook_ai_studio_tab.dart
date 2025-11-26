@@ -567,7 +567,8 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
 
   void _viewOutput(NotebookAiOutput output) {
     // If callback is provided and tool is supported, delegate to parent
-    if (widget.onViewContent != null && output.toolType == 'flashcard') {
+    if (widget.onViewContent != null &&
+        (output.toolType == 'flashcard' || output.toolType == 'quiz')) {
       widget.onViewContent!(output.content, output.title, output.toolType);
       return;
     }
@@ -649,15 +650,21 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
                 FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(context); // Close dialog
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => QuizTakingScreen(
-                          title: title,
-                          questions: questions,
+                    if (widget.onViewContent != null) {
+                      // Use callback to display in chat area
+                      widget.onViewContent!(content, title, 'quiz');
+                    } else {
+                      // Fallback: navigate to dedicated screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => QuizTakingScreen(
+                            title: title,
+                            questions: questions,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
                   },
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Start Exam'),
@@ -930,7 +937,7 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       );
     } catch (e) {

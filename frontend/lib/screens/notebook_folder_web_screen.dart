@@ -7,6 +7,7 @@ import '../widgets/notebook_chat_tab.dart';
 import 'dart:convert';
 import '../widgets/notebook_ai_studio_tab.dart';
 import 'flashcard_view_screen.dart';
+import 'quiz_taking_screen.dart';
 
 /// Web-optimized 3-panel resizable layout for Notebook Studio
 /// Inspired by Google NotebookLM interface
@@ -44,12 +45,25 @@ class _NotebookFolderWebScreenState extends State<NotebookFolderWebScreen> {
         setState(() {
           _middlePanelContent = FlashcardView(
             flashcards: flashcards,
-            // We'll handle the header/close button in the panel wrapper for Web
             onClose: null,
           );
         });
       } catch (e) {
         debugPrint('Error parsing flashcards: $e');
+      }
+    } else if (toolType == 'quiz') {
+      try {
+        final questions = (jsonDecode(content) as List)
+            .cast<Map<String, dynamic>>();
+        setState(() {
+          _middlePanelContent = QuizView(
+            title: title,
+            questions: questions,
+            onClose: null,
+          );
+        });
+      } catch (e) {
+        debugPrint('Error parsing quiz: $e');
       }
     }
   }

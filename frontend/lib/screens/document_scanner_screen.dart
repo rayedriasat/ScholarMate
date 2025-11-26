@@ -793,7 +793,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                       ],
                     ),
                   );
-                }).toList(),
+                }),
                 if (document.tags.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Text(

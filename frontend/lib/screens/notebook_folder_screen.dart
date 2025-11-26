@@ -9,6 +9,7 @@ import '../widgets/notebook_chat_tab.dart';
 import '../widgets/notebook_ai_studio_tab.dart';
 import 'notebook_folder_web_screen.dart';
 import 'flashcard_view_screen.dart';
+import 'quiz_taking_screen.dart';
 
 /// Detail screen for a single notebook folder
 class NotebookFolderScreen extends StatefulWidget {
@@ -56,6 +57,25 @@ class _NotebookFolderScreenState extends State<NotebookFolderScreen>
         });
       } catch (e) {
         debugPrint('Error parsing flashcards: $e');
+      }
+    } else if (toolType == 'quiz') {
+      try {
+        final questions = (jsonDecode(content) as List)
+            .cast<Map<String, dynamic>>();
+        setState(() {
+          _customChatContent = QuizView(
+            title: title,
+            questions: questions,
+            onClose: () {
+              setState(() {
+                _customChatContent = null;
+              });
+            },
+          );
+          _tabController.animateTo(1); // Switch to Chat tab
+        });
+      } catch (e) {
+        debugPrint('Error parsing quiz: $e');
       }
     }
   }
