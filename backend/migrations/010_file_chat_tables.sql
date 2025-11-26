@@ -29,48 +29,31 @@ CREATE INDEX IF NOT EXISTS idx_file_chat_messages_file_id ON file_chat_messages(
 CREATE INDEX IF NOT EXISTS idx_file_chat_messages_timestamp ON file_chat_messages(timestamp);
 
 -- Row Level Security (RLS) policies
+-- Note: File access is controlled by Google Drive permissions, not Supabase
+-- These policies allow authenticated users to access chat data
+-- Backend API validates Drive permissions before serving data
 ALTER TABLE file_chat_threads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE file_chat_messages ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can view threads for files they have access to
-CREATE POLICY "Users can view file chat threads they have access to"
+-- Policy: Authenticated users can view all threads (backend validates Drive access)
+CREATE POLICY "Authenticated users can view file chat threads"
 ON file_chat_threads FOR SELECT
-USING (
-    file_id IN (
-        SELECT file_id FROM file_shares 
-        WHERE shared_with_user_id = auth.uid()::text
-    )
-);
+USING (auth.role() = 'authenticated');
 
--- Policy: Users can create threads for files they have access to
-CREATE POLICY "Users can create file chat threads for accessible files"
+-- Policy: Authenticated users can create threads (backend validates Drive access)
+CREATE POLICY "Authenticated users can create file chat threads"
 ON file_chat_threads FOR INSERT
-WITH CHECK (
-    file_id IN (
-        SELECT file_id FROM file_shares 
-        WHERE shared_with_user_id = auth.uid()::text
-    )
-);
+WITH CHECK (auth.role() = 'authenticated');
 
--- Policy: Users can view messages for files they have access to
-CREATE POLICY "Users can view file chat messages they have access to"
+-- Policy: Authenticated users can view all messages (backend validates Drive access)
+CREATE POLICY "Authenticated users can view file chat messages"
 ON file_chat_messages FOR SELECT
-USING (
-    file_id IN (
-        SELECT file_id FROM file_shares 
-        WHERE shared_with_user_id = auth.uid()::text
-    )
-);
+USING (auth.role() = 'authenticated');
 
--- Policy: Users can send messages to files they have access to
-CREATE POLICY "Users can send messages to accessible files"
+-- Policy: Authenticated users can send messages (backend validates Drive access)
+CREATE POLICY "Authenticated users can send messages"
 ON file_chat_messages FOR INSERT
-WITH CHECK (
-    file_id IN (
-        SELECT file_id FROM file_shares 
-        WHERE shared_with_user_id = auth.uid()::text
-    )
-);
+WITH CHECK (auth.role() = 'authenticated');
 
 -- Function to update thread message count
 CREATE OR REPLACE FUNCTION update_thread_message_count()
