@@ -430,5 +430,148 @@ Format your response as JSON:
         )
 
 
+class GenerateAudioRequest(BaseModel):
+    """Request for audio review generation."""
+    user_id: str
+    file_ids: List[str]
+    preferred_provider: Optional[str] = None
+
+
+class AudioSegment(BaseModel):
+    """Single audio segment in the conversation."""
+    speaker: str  # "Host 1" or "Host 2"
+    text: str
+
+
+class GenerateAudioResponse(BaseModel):
+    """Response for audio review generation."""
+    segments: List[AudioSegment]
+    title: str
+
+
+@router.post("/generate-audio", response_model=GenerateAudioResponse)
+async def generate_audio(request: GenerateAudioRequest) -> GenerateAudioResponse:
+    """
+    Generate conversational audio review script from selected files.
+    
+    Args:
+        request: Audio generation request
+        
+    Returns:
+        Generated conversation script
+    """
+    try:
+        logger.info(f"Generating audio review for user {request.user_id} with {len(request.file_ids)} files")
+        
+        # Get API key service for provider selection
+        api_key_service = get_api_key_service()
+        provider = await api_key_service.get_active_provider(
+            user_id=request.user_id,
+            preferred_provider=request.preferred_provider
+        )
+        
+        if not provider:
+            raise ValueError("No AI provider available")
+        
+        # Create prompt for conversational script generation
+        prompt = """Based on the provided documents, create an engaging podcast-style conversation between two AI hosts discussing the content.
+
+Host 1 (Alex) should be curious and ask questions.
+Host 2 (Sam) should provide explanations and insights.
+
+Make the conversation:
+- Natural and engaging (like a real podcast)
+- Cover key concepts and main ideas
+- Use simple language and analogies
+- Include transitions between topics
+- About 8-12 exchanges total
+
+Format your response as a JSON object with this structure:
+{
+  "title": "Brief title for the audio review",
+  "segments": [
+    {
+      "speaker": "Host 1",
+      "text": "Hey Sam, I've been reading about..."
+    },
+    {
+      "speaker": "Host 2", 
+      "text": "Great question Alex! Let me explain..."
+    }
+  ]
+}
+
+Make it informative but conversational. Aim for a 3-5 minute discussion when read aloud."""
+
+        # Get RAG service to retrieve context
+        rag_service = get_rag_query_service()
+        
+        # Resolve user ID to UUID
+        resolved_user_id = await rag_service._get_or_create_user_uuid(request.user_id)
+        
+        # Retrieve context from files
+        logger.info(f"🔍 Retrieving context with file_ids: {request.file_ids}")
+        context_chunks = await rag_service.retrieve_context(
+            question=prompt,
+            user_id=resolved_user_id,
+            selected_file_ids=request.file_ids,
+            top_k=15
+        )
+        
+        if not context_chunks:
+            raise ValueError("No content found in the selected files")
+        
+        # Build context from chunks
+        context_text = "\n\n".join([
+            f"From {chunk.get('file_name', 'document')}:\n{chunk['text']}"
+            for chunk in context_chunks
+        ])
+        
+        logger.info(f"📚 Retrieved {len(context_chunks)} context chunks")
+        
+        # Generate conversational script
+        full_prompt = f"{prompt}\n\nDocument Content:\n{context_text}\n\nNow generate the podcast conversation:"
+        
+        response = await provider.generate(
+            prompt=full_prompt,
+            max_tokens=2000,
+            temperature=0.8  # Higher temperature for more natural conversation
+        )
+        
+        # Parse response
+        import json
+        content = response['content']
+        
+        if '```json' in content:
+            content = content.split('```json')[1].split('```')[0].strip()
+        elif '```' in content:
+            content = content.split('```')[1].split('```')[0].strip()
+        
+        audio_data = json.loads(content)
+        
+        await api_key_service.log_usage(
+            user_id=request.user_id,
+            provider=provider.get_provider_name(),
+            endpoint="generate_audio",
+            request_tokens=response.get('usage', {}).get('prompt_tokens', 0),
+            response_tokens=response.get('usage', {}).get('completion_tokens', 0),
+            status="success"
+        )
+        
+        segments = [AudioSegment(**seg) for seg in audio_data['segments']]
+        title = audio_data.get('title', 'Audio Review')
+        
+        logger.info(f"✅ Generated {len(segments)} audio segments")
+        
+        return GenerateAudioResponse(segments=segments, title=title)
+        
+    except Exception as e:
+        logger.error(f"Audio generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate audio review: {str(e)}"
+        )
+
+
 # Enable forward references for nested models
 MindMapNode.model_rebuild()

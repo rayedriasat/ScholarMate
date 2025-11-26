@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../screens/quiz_taking_screen.dart';
 import '../screens/flashcard_view_screen.dart';
+import '../screens/audio_review_screen.dart';
 
 /// AI Studio tab with various AI tools
 class NotebookAiStudioTab extends StatefulWidget {
@@ -568,7 +569,9 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
   void _viewOutput(NotebookAiOutput output) {
     // If callback is provided and tool is supported, delegate to parent
     if (widget.onViewContent != null &&
-        (output.toolType == 'flashcard' || output.toolType == 'quiz')) {
+        (output.toolType == 'flashcard' ||
+            output.toolType == 'quiz' ||
+            output.toolType == 'audio')) {
       widget.onViewContent!(output.content, output.title, output.toolType);
       return;
     }
@@ -585,6 +588,11 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
           break;
         case 'flashcard':
           contentWidget = _buildFlashcardView(output.content, output.title);
+          break;
+        case 'audio':
+          contentWidget = Text(
+            'Audio review ready! Open in chat panel to play.',
+          );
           break;
         default:
           contentWidget = Text(output.content);

@@ -8,6 +8,7 @@ import 'dart:convert';
 import '../widgets/notebook_ai_studio_tab.dart';
 import 'flashcard_view_screen.dart';
 import 'quiz_taking_screen.dart';
+import 'audio_review_screen.dart';
 
 /// Web-optimized 3-panel resizable layout for Notebook Studio
 /// Inspired by Google NotebookLM interface
@@ -64,6 +65,20 @@ class _NotebookFolderWebScreenState extends State<NotebookFolderWebScreen> {
         });
       } catch (e) {
         debugPrint('Error parsing quiz: $e');
+      }
+    } else if (toolType == 'audio') {
+      try {
+        final segments = (jsonDecode(content) as List)
+            .cast<Map<String, dynamic>>();
+        setState(() {
+          _middlePanelContent = AudioReviewView(
+            title: title,
+            segments: segments,
+            onClose: null,
+          );
+        });
+      } catch (e) {
+        debugPrint('Error parsing audio: $e');
       }
     }
   }

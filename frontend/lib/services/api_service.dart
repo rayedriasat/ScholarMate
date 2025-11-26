@@ -642,6 +642,33 @@ class ApiService {
       throw ApiException('Failed to generate flashcards: $e');
     }
   }
+
+  /// Generate audio review script from files
+  Future<Map<String, dynamic>> generateAudioReview({
+    required String userId,
+    required List<String> fileIds,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/notebook-ai/generate-audio'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'user_id': userId, 'file_ids': fileIds}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data as Map<String, dynamic>;
+      } else {
+        throw ApiException(
+          'Failed to generate audio review: ${response.body}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to generate audio review: $e');
+    }
+  }
 }
 
 
