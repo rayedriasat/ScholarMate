@@ -170,7 +170,7 @@ Answer:""",
             # Convert Google user ID to Supabase UUID if needed
             # This handles both UUID format and Google sub format
             resolved_user_id = await self._get_or_create_user_uuid(user_id)
-            logger.debug(f"Resolved user_id {user_id} to UUID {resolved_user_id}")
+            logger.info(f"[NAMESPACE] Resolved user_id {user_id} to UUID {resolved_user_id}")
             
             # Step 1: Retrieve relevant context with source filtering
             retrieved_chunks = await self.retrieve_context(
@@ -226,9 +226,8 @@ Answer:""",
         try:
             logger.info(f"Retrieving context for user {user_id}, top_k={top_k}")
             
-            # Convert Google user ID to Supabase UUID if needed
-            resolved_user_id = await self._get_or_create_user_uuid(user_id)
-            logger.debug(f"Resolved user_id {user_id} to UUID {resolved_user_id}")
+            # user_id is already resolved UUID from caller
+            # No need to resolve again
             
             # Generate query embedding using hybrid service (prioritizes API)
             query_embedding = await self.embedding_service.generate_query_embedding(question)
@@ -237,12 +236,17 @@ Answer:""",
             filter_dict = None
             if selected_file_ids:
                 # Pinecone filter for file_id in selected_file_ids
-                filter_dict = {"file_id": {"$in": selected_file_ids}}
+                if len(selected_file_ids) == 1:
+                    # Single file: use equality filter
+                    filter_dict = {"file_id": {"$eq": selected_file_ids[0]}}
+                else:
+                    # Multiple files: use $in filter
+                    filter_dict = {"file_id": {"$in": selected_file_ids}}
                 logger.info(f"Filtering by {len(selected_file_ids)} selected files")
             
-            # Query Pinecone namespace (use resolved UUID)
+            # Query Pinecone namespace (user_id is already resolved UUID)
             results = self.pinecone_service.query_documents(
-                user_id=resolved_user_id,
+                user_id=user_id,
                 query_embeddings=[query_embedding],
                 n_results=top_k,
                 filter=filter_dict

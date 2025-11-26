@@ -153,6 +153,7 @@ class PineconeService:
             Query results with documents, metadatas, distances, and ids
         """
         namespace = self.get_user_namespace(user_id)
+        logger.info(f"[NAMESPACE] Querying Pinecone namespace: {namespace} for user_id: {user_id}")
         
         # Query for each embedding
         all_results = {

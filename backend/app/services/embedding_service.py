@@ -47,7 +47,8 @@ class EmbeddingService:
         # HuggingFace API configuration
         self.hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
         self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
-        self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{self.model_name}"
+        # Use models endpoint (works with both old and new infrastructure)
+        self.api_url = f"https://router.huggingface.co/models/{self.model_name}"
         
         # Local model configuration (lazy-loaded)
         self._local_embeddings = None
@@ -83,12 +84,10 @@ class EmbeddingService:
         strategy = strategy or self.strategy
         
         if strategy == EmbeddingStrategy.AUTO:
-            # Try API first, fallback to local
-            try:
-                return await self._generate_with_api(texts)
-            except Exception as e:
-                logger.warning(f"API embedding failed, falling back to local: {str(e)}")
-                return await self._generate_with_local(texts)
+            # Use local model directly (API endpoint deprecated)
+            # This ensures consistent embeddings across all operations
+            logger.info("Using local model for consistent embeddings")
+            return await self._generate_with_local(texts)
         
         elif strategy == EmbeddingStrategy.API:
             return await self._generate_with_api(texts)
@@ -266,7 +265,7 @@ class EmbeddingService:
         """
         Generate embedding for a single query.
         
-        Always tries API first for queries (fast, low volume).
+        Uses local model for consistency with indexed documents.
         
         Args:
             query: Query text
@@ -274,18 +273,11 @@ class EmbeddingService:
         Returns:
             Embedding vector
         """
-        try:
-            # Try API first for queries
-            embeddings = await self._generate_with_api([query])
-            return embeddings[0]
-        except Exception as e:
-            logger.warning(f"API query embedding failed, using local: {str(e)}")
-            
-            # Fallback to local
-            if self._local_embeddings is None:
-                await self._load_local_model()
-            
-            return self._local_embeddings.embed_query(query)
+        # Use local model for consistency
+        if self._local_embeddings is None:
+            await self._load_local_model()
+        
+        return self._local_embeddings.embed_query(query)
     
     def unload_local_model(self):
         """Unload local model to free memory."""

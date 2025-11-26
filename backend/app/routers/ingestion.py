@@ -230,3 +230,50 @@ async def reindex_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to start reindexing job"
         )
+
+
+
+@router.delete("/clear/{user_id}")
+async def clear_user_namespace(
+    user_id: str = Path(..., description="User ID to clear namespace for")
+) -> dict:
+    """
+    Clear all embeddings for a user (delete entire namespace).
+    
+    Use this when you need to re-index all documents from scratch,
+    such as after an embedding model or API endpoint change.
+    
+    Args:
+        user_id: User UUID or Google sub ID
+        
+    Returns:
+        Success message with namespace info
+        
+    Raises:
+        HTTPException: For deletion errors
+    """
+    try:
+        logger.info(f"Clearing namespace for user {user_id}")
+        
+        rag_indexer = get_rag_indexer()
+        
+        # Delete entire namespace
+        success = rag_indexer.pinecone_service.delete_namespace(user_id)
+        
+        if success:
+            namespace = rag_indexer.pinecone_service.get_user_namespace(user_id)
+            logger.info(f"Successfully cleared namespace {namespace}")
+            return {
+                "success": True,
+                "message": f"Cleared all embeddings for user {user_id}",
+                "namespace": namespace
+            }
+        else:
+            raise ValueError("Failed to clear namespace")
+        
+    except Exception as e:
+        logger.error(f"Failed to clear namespace: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to clear namespace: {str(e)}"
+        )
