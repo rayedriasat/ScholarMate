@@ -90,6 +90,15 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   drift_dev: ^2.29.0
   build_runner: ^2.10.1
+  flutter_launcher_icons: ^0.14.4
+
+# Flutter Launcher Icons configuration
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/scholarmate_logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/scholarmate_logo.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
