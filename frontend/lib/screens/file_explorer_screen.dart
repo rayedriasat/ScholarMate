@@ -66,8 +66,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   final Set<String> _selectedFiles = {};
   bool _showFABMenu = false;
   // bool _showTagFilter = false; // Unused
-  Set<String> _selectedTagIds = {};
-  TagFilterMode _filterMode = TagFilterMode.any;
+  final Set<String> _selectedTagIds = {};
+  final TagFilterMode _filterMode = TagFilterMode.any;
   String _searchQuery = '';
   FileSortOption _sortOption = FileSortOption.name;
   bool _sortAscending = true;

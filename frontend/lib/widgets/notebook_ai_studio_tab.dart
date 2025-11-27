@@ -1104,7 +1104,7 @@ class _AudioReviewPlayerState extends State<_AudioReviewPlayer> {
   bool _isPlaying = false;
   bool _isPaused = false;
   double _speechRate = 1.0;
-  double _pitch = 1.0;
+  final double _pitch = 1.0;
 
   @override
   void initState() {

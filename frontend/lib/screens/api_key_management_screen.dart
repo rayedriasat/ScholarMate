@@ -544,7 +544,7 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButtonFormField<ProviderConfig>(
-                    value: _selectedProvider,
+                    initialValue: _selectedProvider,
                     decoration: const InputDecoration(
                       labelText: 'Provider',
                       labelStyle: TextStyle(color: Colors.white70),
