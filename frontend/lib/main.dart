@@ -53,24 +53,31 @@ void main() async {
   await themeService.initialize();
 
   runApp(
-    ScholarMateApp(cacheService: cacheService, themeService: themeService),
+    ScholarMateApp(
+      cacheService: cacheService,
+      themeService: themeService,
+      configService: configService,
+    ),
   );
 }
 
 class ScholarMateApp extends StatelessWidget {
   final CacheService cacheService;
   final SimpleThemeService themeService;
+  final ConfigService configService;
 
   const ScholarMateApp({
     super.key,
     required this.cacheService,
     required this.themeService,
+    required this.configService,
   });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<ConfigService>.value(value: configService),
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider.value(value: cacheService),
         ChangeNotifierProvider.value(value: themeService),
@@ -149,7 +156,7 @@ class ScholarMateApp extends StatelessWidget {
               previous ??
               AnnotationService(database: cache.database, cacheService: cache),
         ),
-        Provider<OCRService>(create: (context) => OCRService(ConfigService())),
+        Provider<OCRService>(create: (context) => OCRService(configService)),
         ChangeNotifierProxyProvider3<
           ConfigService,
           AuthService,
@@ -157,7 +164,7 @@ class ScholarMateApp extends StatelessWidget {
           DocumentExtractionService
         >(
           create: (context) => DocumentExtractionService(
-            configService: ConfigService(),
+            configService: configService,
             authService: context.read<AuthService>(),
             ocrService: context.read<OCRService>(),
           ),
@@ -220,7 +227,7 @@ class ScholarMateApp extends StatelessWidget {
         ),
         ProxyProvider<AuthService, MetadataService>(
           create: (context) => MetadataService(
-            baseUrl: ConfigService().apiBaseUrl,
+            baseUrl: configService.apiBaseUrl,
             getToken: () =>
                 context.read<AuthService>().currentUser?.idToken ?? '',
             getUserId: () => context.read<AuthService>().currentUser?.id ?? '',
@@ -228,7 +235,7 @@ class ScholarMateApp extends StatelessWidget {
           update: (context, auth, previous) =>
               previous ??
               MetadataService(
-                baseUrl: ConfigService().apiBaseUrl,
+                baseUrl: configService.apiBaseUrl,
                 getToken: () => auth.currentUser?.idToken ?? '',
                 getUserId: () => auth.currentUser?.id ?? '',
               ),
@@ -253,7 +260,7 @@ class ScholarMateApp extends StatelessWidget {
         ),
         Provider<CollaborationService>(
           create: (context) =>
-              CollaborationService(ConfigService(), Supabase.instance.client),
+              CollaborationService(configService, Supabase.instance.client),
         ),
         // Realtime service for annotation sync
         Provider<RealtimeService>(
@@ -270,7 +277,7 @@ class ScholarMateApp extends StatelessWidget {
           create: (context) => AnnotationSyncService(
             database: context.read<AppDatabase>(),
             authService: context.read<AuthService>(),
-            baseUrl: ConfigService().apiBaseUrl,
+            baseUrl: configService.apiBaseUrl,
             realtimeService: context.read<RealtimeService>(),
           ),
           update: (context, database, auth, realtime, previous) =>
@@ -278,7 +285,7 @@ class ScholarMateApp extends StatelessWidget {
               AnnotationSyncService(
                 database: database,
                 authService: auth,
-                baseUrl: ConfigService().apiBaseUrl,
+                baseUrl: configService.apiBaseUrl,
                 realtimeService: realtime,
               ),
         ),
