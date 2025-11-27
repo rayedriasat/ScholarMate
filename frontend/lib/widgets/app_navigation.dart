@@ -54,6 +54,15 @@ class _AppNavigationState extends State<AppNavigation> {
   static const double _minSidebarWidth = 60;
   static const double _maxSidebarWidthPercent = 0.6;
 
+  // Global key to access scaffold from anywhere
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Swipe gesture tracking
+  double _swipeStartX = 0;
+  double _swipeCurrentX = 0;
+  static const double _minSwipeDistance =
+      100; // Minimum swipe distance to open drawer
+
   @override
   void initState() {
     super.initState();
@@ -80,64 +89,103 @@ class _AppNavigationState extends State<AppNavigation> {
     final statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Scaffold(
+      key: _scaffoldKey,
       extendBody: true, // Important for floating bottom bar
+      drawerEnableOpenDragGesture:
+          false, // Disable edge swipe (conflicts with back gesture)
+      // Use builder to keep drawer in memory and minimize rebuilds
+      drawerScrimColor: Colors.black.withValues(alpha: 0.5),
       drawer: !isWideScreen
           ? Drawer(
               width: 280,
               backgroundColor: Colors.transparent,
-              child: GlassContainer(
-                width: 280,
-                height: double.infinity,
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
-                border: Border(
-                  right: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: 1,
+              elevation: 0,
+              child: RepaintBoundary(
+                child: GlassContainer(
+                  width: 280,
+                  height: double.infinity,
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
                   ),
+                  border: Border(
+                    right: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                      width: 1,
+                    ),
+                  ),
+                  color: Theme.of(context).cardColor,
+                  child: _buildNavigationContent(context, false),
                 ),
-                color: Theme.of(context).cardColor,
-                child: _buildNavigationContent(context, false),
               ),
             )
           : null,
-      body: Stack(
-        children: [
-          // Global Background
-          const Positioned.fill(child: AnimatedBackground()),
+      body: GestureDetector(
+        // Swipe right from anywhere to open drawer (mobile only)
+        onHorizontalDragStart: !isWideScreen
+            ? (details) {
+                _swipeStartX = details.globalPosition.dx;
+                _swipeCurrentX = details.globalPosition.dx;
+              }
+            : null,
+        onHorizontalDragUpdate: !isWideScreen
+            ? (details) {
+                _swipeCurrentX = details.globalPosition.dx;
+              }
+            : null,
+        onHorizontalDragEnd: !isWideScreen
+            ? (details) {
+                // Calculate swipe distance
+                final swipeDistance = _swipeCurrentX - _swipeStartX;
 
-          Row(
-            children: [
-              // Persistent Sidebar for web/desktop
-              if (isWideScreen) _buildSidebar(context),
+                // Only open drawer if:
+                // 1. Swiped right (positive distance)
+                // 2. Swipe distance is greater than minimum threshold
+                // 3. Drawer is not already open
+                if (swipeDistance > _minSwipeDistance &&
+                    !(_scaffoldKey.currentState?.isDrawerOpen ?? false)) {
+                  _scaffoldKey.currentState?.openDrawer();
+                }
 
-              // Main content area
-              Expanded(
-                child: Stack(
-                  children: [
-                    // Content with safe area padding
-                    SafeArea(
-                      child: Column(
-                        children: [
-                          // Main content
-                          Expanded(
-                            child: _showSettings
-                                ? _buildSettingsScreen(context)
-                                : widget.items[_selectedIndex].screen,
-                          ),
-                        ],
+                // Reset swipe tracking
+                _swipeStartX = 0;
+                _swipeCurrentX = 0;
+              }
+            : null,
+        child: Stack(
+          children: [
+            // Global Background
+            const Positioned.fill(child: AnimatedBackground()),
+
+            Row(
+              children: [
+                // Persistent Sidebar for web/desktop
+                if (isWideScreen) _buildSidebar(context),
+
+                // Main content area
+                Expanded(
+                  child: Stack(
+                    children: [
+                      // Content with safe area padding
+                      SafeArea(
+                        child: Column(
+                          children: [
+                            // Main content
+                            Expanded(
+                              child: _showSettings
+                                  ? _buildSettingsScreen(context)
+                                  : widget.items[_selectedIndex].screen,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    // Mobile Menu Button
-                    if (!isWideScreen)
-                      Positioned(
-                        top: statusBarHeight + 8,
-                        left: 12,
-                        child: Builder(
-                          builder: (context) => IconButton(
+                      // Mobile Menu Button
+                      if (!isWideScreen)
+                        Positioned(
+                          top: statusBarHeight + 8,
+                          left: 12,
+                          child: IconButton(
                             icon: const Icon(Icons.menu),
                             style: IconButton.styleFrom(
                               backgroundColor: Theme.of(
@@ -148,17 +196,17 @@ class _AppNavigationState extends State<AppNavigation> {
                               ).colorScheme.onSurface,
                             ),
                             onPressed: () {
-                              Scaffold.of(context).openDrawer();
+                              _scaffoldKey.currentState?.openDrawer();
                             },
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -241,35 +289,64 @@ class _AppNavigationState extends State<AppNavigation> {
     VoidCallback onTap,
     bool forceCollapsed,
   ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(6),
-          child: Tooltip(
-            message: forceCollapsed ? item.label : '',
-            child: Container(
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            splashColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+            highlightColor: Theme.of(
+              context,
+            ).primaryColor.withValues(alpha: 0.1),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
               padding: forceCollapsed
-                  ? const EdgeInsets.all(10)
-                  : const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ? const EdgeInsets.all(12)
+                  : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
+                gradient: isSelected
+                    ? LinearGradient(
+                        colors: [
+                          Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.15),
+                          Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.08),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(12),
+                border: isSelected
+                    ? Border.all(
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.3),
+                        width: 1,
+                      )
+                    : null,
               ),
               child: forceCollapsed
                   ? Center(
-                      child: Icon(
-                        isSelected ? (item.activeIcon ?? item.icon) : item.icon,
-                        color: isSelected
-                            ? Theme.of(context).primaryColor
-                            : Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        size: 20,
+                      child: Tooltip(
+                        message: item.label,
+                        child: Icon(
+                          isSelected
+                              ? (item.activeIcon ?? item.icon)
+                              : item.icon,
+                          color: isSelected
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          size: 22,
+                        ),
                       ),
                     )
                   : Row(
@@ -283,9 +360,9 @@ class _AppNavigationState extends State<AppNavigation> {
                               : Theme.of(
                                   context,
                                 ).colorScheme.onSurface.withValues(alpha: 0.7),
-                          size: 20,
+                          size: 22,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Text(
                             item.label,
@@ -293,15 +370,25 @@ class _AppNavigationState extends State<AppNavigation> {
                               color: isSelected
                                   ? Theme.of(context).primaryColor
                                   : Theme.of(context).colorScheme.onSurface
-                                        .withValues(alpha: 0.8),
-                              fontSize: 14,
+                                        .withValues(alpha: 0.85),
+                              fontSize: 15,
                               fontWeight: isSelected
                                   ? FontWeight.w600
-                                  : FontWeight.normal,
+                                  : FontWeight.w500,
+                              letterSpacing: 0.2,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (isSelected)
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                       ],
                     ),
             ),
@@ -706,10 +793,10 @@ class _AppNavigationState extends State<AppNavigation> {
                   widget.items[i],
                   i == _selectedIndex,
                   () {
+                    // Update state immediately
                     _onItemTapped(i);
-                    // Close drawer if open (on mobile)
-                    if (Scaffold.of(context).hasDrawer &&
-                        Scaffold.of(context).isDrawerOpen) {
+                    // Then close drawer if open (on mobile)
+                    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
                       Navigator.of(context).pop();
                     }
                   },
@@ -735,9 +822,10 @@ class _AppNavigationState extends State<AppNavigation> {
               ),
               _showSettings,
               () {
+                // Update state immediately
                 _toggleSettings();
-                if (Scaffold.of(context).hasDrawer &&
-                    Scaffold.of(context).isDrawerOpen) {
+                // Then close drawer if open (on mobile)
+                if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
                   Navigator.of(context).pop();
                 }
               },
