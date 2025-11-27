@@ -354,14 +354,6 @@ class _AppInitializerState extends State<AppInitializer> {
         serverClientId: kIsWeb ? null : configService.googleClientId,
       );
 
-      // DEBUG: Bypass login for UI testing
-      // Set to true to skip login screen
-      const bool kDebugBypassLogin = true;
-
-      if (kDebugBypassLogin && kDebugMode) {
-        await authService.mockLogin();
-      }
-
       // Listen to auth state changes
       authService.authStateChanges.listen((user) {
         if (mounted) {

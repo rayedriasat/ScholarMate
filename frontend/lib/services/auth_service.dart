@@ -199,34 +199,6 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Mock login for testing/debugging
-  Future<void> mockLogin() async {
-    debugPrint('Performing MOCK login...');
-    _setLoading(true);
-
-    try {
-      // Create a dummy user
-      final user = User(
-        id: 'mock-user-id',
-        email: 'test@scholarmate.com',
-        displayName: 'Test User',
-        photoUrl: null,
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
-        idToken: 'mock-id-token',
-        tokenExpiry: DateTime.now().add(const Duration(days: 1)),
-      );
-
-      _currentUser = user;
-      _authStateController.add(user);
-      notifyListeners();
-
-      debugPrint('Mock login successful');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
   /// Silent sign-in (restores previous session without user interaction)
   /// Recommended to call on app startup
   Future<User?> silentSignIn() async {
