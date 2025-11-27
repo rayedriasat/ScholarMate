@@ -1244,16 +1244,33 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: Chip(
-                          avatar: const Icon(Icons.picture_as_pdf, size: 16),
+                          avatar: Icon(
+                            Icons.picture_as_pdf,
+                            size: 16,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                          ),
                           label: Text(
                             widget.preselectedFileName!,
-                            style: const TextStyle(fontSize: 12),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
                           ),
                           backgroundColor: Theme.of(
                             context,
-                          ).primaryColor.withValues(alpha: 0.1),
+                          ).colorScheme.primaryContainer,
                           side: BorderSide.none,
-                          deleteIcon: const Icon(Icons.close, size: 16),
+                          deleteIcon: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                          ),
                           onDeleted: () =>
                               _toggleSourceSelection(widget.preselectedFileId!),
                         ),
@@ -1264,13 +1281,24 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       Chip(
                         label: Text(
                           '${_selectedFileIds.length} source${_selectedFileIds.length == 1 ? '' : 's'} selected',
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                          ),
                         ),
                         backgroundColor: Theme.of(
                           context,
-                        ).primaryColor.withValues(alpha: 0.1),
+                        ).colorScheme.primaryContainer,
                         side: BorderSide.none,
-                        deleteIcon: const Icon(Icons.close, size: 16),
+                        deleteIcon: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                        ),
                         onDeleted: _clearAllSources,
                       ),
                   ],
