@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/animated_background.dart';
 import '../theme/app_colors.dart';
 
 /// Payment failed screen displayed after unsuccessful payment
@@ -19,46 +20,69 @@ class PaymentFailedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Payment Failed',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false, // Remove back button
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
+    return Stack(
+      children: [
+        const Positioned.fill(child: AnimatedBackground()),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                title: Text(
+                  'Payment Failed',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
+                centerTitle: true,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                floating: true,
+                snap: true,
+                automaticallyImplyLeading: false,
+              ),
+              SliverSafeArea(
+                sliver: SliverPadding(
+                  padding: EdgeInsets.zero,
+                  sliver: SliverToBoxAdapter(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width > 600 ? 500.0 : MediaQuery.of(context).size.width,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                  const SizedBox(height: 20),
 
-              // Error icon
-              _buildErrorIcon(),
-              const SizedBox(height: 32),
+                  // Error icon
+                  _buildErrorIcon(),
+                  const SizedBox(height: 32),
 
-              // Error message
-              _buildErrorMessage(),
-              const SizedBox(height: 32),
+                  // Error message
+                  _buildErrorMessage(),
+                  const SizedBox(height: 32),
 
-              // Transaction details (if available)
-              if (transactionId != null) ...[
-                _buildTransactionDetails(context),
-                const SizedBox(height: 32),
-              ],
+                  // Transaction details (if available)
+                  if (transactionId != null) ...[
+                    _buildTransactionDetails(context),
+                    const SizedBox(height: 32),
+                  ],
 
-              // Action buttons
-              _buildActionButtons(context),
+                  // Action buttons
+                  _buildActionButtons(context),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 

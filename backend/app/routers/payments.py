@@ -257,7 +257,7 @@ async def verify_payment(request: PaymentVerifyRequest):
                 f"reason={message}",
                 extra={
                     "transaction_id": request.transaction_id,
-                    "message": message
+                    "failure_reason": message
                 }
             )
         

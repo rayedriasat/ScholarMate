@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/animated_background.dart';
 import '../theme/app_colors.dart';
 
 /// Payment success screen displayed after successful payment
@@ -19,44 +20,67 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Payment Successful',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false, // Remove back button
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
+    return Stack(
+      children: [
+        const Positioned.fill(child: AnimatedBackground()),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                title: Text(
+                  'Payment Successful',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
+                centerTitle: true,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                floating: true,
+                snap: true,
+                automaticallyImplyLeading: false,
+              ),
+              SliverSafeArea(
+                sliver: SliverPadding(
+                  padding: EdgeInsets.zero,
+                  sliver: SliverToBoxAdapter(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width > 600 ? 500.0 : MediaQuery.of(context).size.width,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                  const SizedBox(height: 20),
 
-              // Success icon
-              _buildSuccessIcon(),
-              const SizedBox(height: 32),
+                  // Success icon
+                  _buildSuccessIcon(),
+                  const SizedBox(height: 32),
 
-              // Premium activation banner
-              _buildPremiumBanner(),
-              const SizedBox(height: 32),
+                  // Premium activation banner
+                  _buildPremiumBanner(),
+                  const SizedBox(height: 32),
 
-              // Transaction details
-              _buildTransactionDetails(context),
-              const SizedBox(height: 32),
+                  // Transaction details
+                  _buildTransactionDetails(context),
+                  const SizedBox(height: 32),
 
-              // Back to Settings button
-              _buildBackButton(context),
+                  // Back to Settings button
+                  _buildBackButton(context),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 

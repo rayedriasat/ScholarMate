@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/animated_background.dart';
 import '../theme/app_colors.dart';
 import '../services/config_service.dart';
 import '../services/subscription_service.dart';
@@ -257,68 +258,93 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Pay with $_paymentMethodName',
-          style: const TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Payment method header
-                _buildPaymentMethodHeader(),
-                const SizedBox(height: 32),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = screenWidth > 600 ? 500.0 : screenWidth;
 
-                // Amount display
-                _buildAmountDisplay(),
-                const SizedBox(height: 32),
+    return Stack(
+      children: [
+        const Positioned.fill(child: AnimatedBackground()),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                title: Text(
+                  'Pay with $_paymentMethodName',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
+                centerTitle: true,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                floating: true,
+                snap: true,
+                iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+              ),
+              SliverSafeArea(
+                sliver: SliverPadding(
+                  padding: EdgeInsets.zero,
+                  sliver: SliverToBoxAdapter(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: maxWidth),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Form(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Payment method header
+                        _buildPaymentMethodHeader(),
+                        const SizedBox(height: 24),
 
-                // Payment method specific fields
-                if (widget.paymentMethod == 'bkash')
-                  _buildBkashFields()
-                else
-                  _buildCardFields(),
+                        // Amount display
+                        _buildAmountDisplay(),
+                        const SizedBox(height: 24),
 
-                const SizedBox(height: 32),
+                        // Payment method specific fields
+                        if (widget.paymentMethod == 'bkash')
+                          _buildBkashFields()
+                        else
+                          _buildCardFields(),
 
-                // Pay Now button
-                _buildPayNowButton(),
+                        const SizedBox(height: 24),
 
-                const SizedBox(height: 16),
+                        // Pay Now button
+                        _buildPayNowButton(),
 
-                // Security notice
-                _buildSecurityNotice(),
-              ],
-            ),
+                        const SizedBox(height: 16),
+
+                        // Security notice
+                        _buildSecurityNotice(),
+                      ],
+                    ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildPaymentMethodHeader() {
     return GlassContainer(
       borderRadius: BorderRadius.circular(16),
-      color: AppColors.surface,
-      padding: const EdgeInsets.all(20),
+      color: Theme.of(context).cardColor,
+      padding: const EdgeInsets.all(16),
+      border: Border.all(color: Theme.of(context).dividerColor),
       child: Row(
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: _paymentMethodColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
@@ -326,28 +352,28 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
             child: Icon(
               _paymentMethodIcon,
               color: _paymentMethodColor,
-              size: 28,
+              size: 24,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _paymentMethodName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   'Enter your payment details',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -362,7 +388,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     return GlassContainer(
       borderRadius: BorderRadius.circular(16),
       color: _paymentMethodColor.withValues(alpha: 0.1),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       border: Border.all(
         color: _paymentMethodColor.withValues(alpha: 0.3),
         width: 1,
@@ -372,25 +398,25 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
           Text(
             'Amount to Pay',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontSize: 13,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             '$_currency ${_amount.toStringAsFixed(2)}',
             style: TextStyle(
               color: _paymentMethodColor,
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             'Premium Subscription (1 Year)',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              fontSize: 11,
             ),
           ),
         ],
@@ -528,42 +554,44 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
           validator: validator,
           inputFormatters: inputFormatters,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
-              color: Colors.white.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             prefixIcon: Icon(
               icon,
               color: _paymentMethodColor,
+              size: 20,
             ),
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: AppColors.surface,
+            fillColor: Theme.of(context).cardColor,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Theme.of(context).dividerColor,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Theme.of(context).dividerColor,
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -588,7 +616,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
             ),
             errorStyle: const TextStyle(
               color: Colors.red,
-              fontSize: 12,
+              fontSize: 11,
             ),
           ),
         ),
@@ -601,10 +629,10 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
       onPressed: (_isFormValid && !_isProcessing) ? _handlePayNow : null,
       style: ElevatedButton.styleFrom(
         backgroundColor: _paymentMethodColor,
-        disabledBackgroundColor: AppColors.surfaceLight,
+        disabledBackgroundColor: Theme.of(context).disabledColor,
         foregroundColor: Colors.white,
         disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -612,8 +640,8 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
       ),
       child: _isProcessing
           ? const SizedBox(
-              height: 20,
-              width: 20,
+              height: 18,
+              width: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -622,12 +650,12 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
           : Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock, size: 20),
+                const Icon(Icons.lock, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Pay $_currency ${_amount.toStringAsFixed(2)}',
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -642,15 +670,15 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
       children: [
         Icon(
           Icons.shield,
-          size: 16,
-          color: Colors.white.withValues(alpha: 0.5),
+          size: 14,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Text(
           'Your payment information is secure',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            fontSize: 11,
           ),
         ),
       ],
@@ -812,14 +840,14 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
           'Payment Error',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
         content: Text(
           'An error occurred while processing your payment:\n\n$error\n\nPlease check your internet connection and try again.',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
         ),
         actions: [
           TextButton(

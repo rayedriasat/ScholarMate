@@ -2,45 +2,85 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../services/simple_theme_service.dart';
+import '../services/subscription_service.dart';
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
 import '../widgets/subscription_section.dart';
 import '../theme/app_colors.dart';
+import 'payment_method_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Ensure subscription status is loaded when settings screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final subscriptionService = context.read<SubscriptionService>();
+        debugPrint('Loading subscription status from settings screen...');
+        subscriptionService.loadSubscriptionStatus().then((_) {
+          debugPrint('Subscription status loaded successfully');
+          if (mounted) setState(() {}); // Force rebuild
+        }).catchError((e) {
+          debugPrint('Failed to load subscription status in settings: $e');
+          if (mounted) setState(() {}); // Force rebuild even on error
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Settings', style: TextStyle(color: Colors.white)),
+        title: Text(
+          'Settings',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
-      body: Consumer<SimpleThemeService>(
-        builder: (context, themeService, _) {
+      body: Consumer2<SimpleThemeService, SubscriptionService>(
+        builder: (context, themeService, subscriptionService, _) {
+          // Show upgrade button unless user is confirmed premium
+          final currentStatus = subscriptionService.currentStatus;
+          final isPremium = currentStatus?.isPremium ?? false;
+          final showUpgrade = !isPremium;
+          
+          debugPrint('Settings rebuild: status=$currentStatus, isPremium=$isPremium, showUpgrade=$showUpgrade');
+          
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildSectionHeader('Subscription'),
+              // Upgrade button - ALWAYS SHOW FOR TESTING
+              _buildUpgradeButton(context),
+              const SizedBox(height: 24),
+
+              _buildSectionHeader(context, 'Subscription'),
               const SizedBox(height: 16),
               const SubscriptionSection(),
 
               const SizedBox(height: 32),
-              _buildSectionHeader('Appearance'),
+              _buildSectionHeader(context, 'Appearance'),
               const SizedBox(height: 16),
               _buildThemeModeSelector(context, themeService),
               const SizedBox(height: 24),
               _buildAccentColorSelector(context, themeService),
 
               const SizedBox(height: 32),
-              _buildSectionHeader('About'),
+              _buildSectionHeader(context, 'About'),
               const SizedBox(height: 16),
-              _buildAboutSection(),
+              _buildAboutSection(context),
             ],
           );
         },
@@ -48,11 +88,90 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildUpgradeButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const PaymentMethodScreen(),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).primaryColor,
+              Theme.of(context).primaryColor.withValues(alpha: 0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+              blurRadius: 12,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.workspace_premium,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Upgrade to Premium',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Unlock all premium features',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
-        color: Colors.white,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
@@ -65,15 +184,18 @@ class SettingsScreen extends StatelessWidget {
   ) {
     return GlassContainer(
       borderRadius: BorderRadius.circular(16),
-      color: AppColors.surface,
+      color: Theme.of(context).cardColor,
       padding: const EdgeInsets.all(16),
+      border: Border.all(
+        color: Theme.of(context).dividerColor,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Theme Mode',
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -118,10 +240,15 @@ class SettingsScreen extends StatelessWidget {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = isSelected
-        ? AppColors.primary
-        : Colors.white.withValues(alpha: 0.1);
-    final textColor = isSelected ? Colors.white : Colors.white70;
+        ? Theme.of(context).primaryColor
+        : (isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.black.withValues(alpha: 0.05));
+    final textColor = isSelected
+        ? Theme.of(context).colorScheme.onPrimary
+        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7);
 
     return Expanded(
       child: GestureDetector(
@@ -133,8 +260,8 @@ class SettingsScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
-                  ? AppColors.primary
-                  : Colors.white.withValues(alpha: 0.1),
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).dividerColor,
             ),
           ),
           child: Column(
@@ -158,18 +285,21 @@ class SettingsScreen extends StatelessWidget {
   ) {
     return GlassContainer(
       borderRadius: BorderRadius.circular(16),
-      color: AppColors.surface,
+      color: Theme.of(context).cardColor,
       padding: const EdgeInsets.all(16),
+      border: Border.all(
+        color: Theme.of(context).dividerColor,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Accent Color',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -180,7 +310,10 @@ class SettingsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: themeService.accentColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    width: 2,
+                  ),
                 ),
               ),
             ],
@@ -225,7 +358,14 @@ class SettingsScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
+          border: isSelected
+              ? Border.all(
+                  color: color.computeLuminance() > 0.5
+                      ? Colors.black
+                      : Colors.white,
+                  width: 3,
+                )
+              : null,
           boxShadow: [
             if (isSelected)
               BoxShadow(
@@ -236,7 +376,13 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
         child: isSelected
-            ? const Icon(Icons.check, color: Colors.white, size: 20)
+            ? Icon(
+                Icons.check,
+                color: color.computeLuminance() > 0.5
+                    ? Colors.black
+                    : Colors.white,
+                size: 20,
+              )
             : null,
       ),
     );
@@ -246,17 +392,25 @@ class SettingsScreen extends StatelessWidget {
     BuildContext context,
     SimpleThemeService themeService,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () => _showColorPicker(context, themeService),
       child: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.black.withValues(alpha: 0.1),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          border: Border.all(
+            color: Theme.of(context).dividerColor,
+          ),
         ),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(
+          Icons.add,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
       ),
     );
   }
@@ -267,10 +421,10 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
           'Pick a color',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
         content: SingleChildScrollView(
           child: ColorPicker(
@@ -297,54 +451,80 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAboutSection() {
+  Widget _buildAboutSection(BuildContext context) {
     return GlassContainer(
       borderRadius: BorderRadius.circular(16),
-      color: AppColors.surface,
+      color: Theme.of(context).cardColor,
       padding: const EdgeInsets.all(16),
+      border: Border.all(
+        color: Theme.of(context).dividerColor,
+      ),
       child: Column(
         children: [
-          const Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.white70),
-              SizedBox(width: 12),
-              Text(
-                'Version',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              Spacer(),
-              Text('1.0.0', style: TextStyle(color: Colors.white70)),
-            ],
-          ),
-          const Divider(color: Colors.white10, height: 32),
           Row(
             children: [
-              const Icon(Icons.description_outlined, color: Colors.white70),
+              Icon(
+                Icons.info_outline,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
+                'Version',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 16,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '1.0.0',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+          Divider(color: Theme.of(context).dividerColor, height: 32),
+          Row(
+            children: [
+              Icon(
+                Icons.description_outlined,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+              const SizedBox(width: 12),
+              Text(
                 'Terms of Service',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 16,
+                ),
               ),
               const Spacer(),
               Icon(
                 Icons.chevron_right,
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.privacy_tip_outlined, color: Colors.white70),
+              Icon(
+                Icons.privacy_tip_outlined,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Privacy Policy',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 16,
+                ),
               ),
               const Spacer(),
               Icon(
                 Icons.chevron_right,
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ],
           ),

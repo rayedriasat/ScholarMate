@@ -26,6 +26,9 @@ import os
 # from .sslcommerz_gateway import SSLCommerzGateway
 # from .bkash_gateway import BkashOfficialGateway
 
+# Singleton instance for mock gateway (to preserve in-memory transactions)
+_mock_gateway_instance = None
+
 
 def get_payment_gateway() -> PaymentGatewayInterface:
     """
@@ -73,11 +76,15 @@ def get_payment_gateway() -> PaymentGatewayInterface:
        - BKASH_API_URL
     3. Uncomment the bKash case below
     """
+    global _mock_gateway_instance
+    
     gateway_type = os.getenv("PAYMENT_GATEWAY_TYPE", "mock").lower()
     
     if gateway_type == "mock":
-        # Return mock gateway for demonstration and testing
-        return MockPaymentGateway()
+        # Return singleton mock gateway to preserve in-memory transactions
+        if _mock_gateway_instance is None:
+            _mock_gateway_instance = MockPaymentGateway()
+        return _mock_gateway_instance
     
     # TODO: Add SSLCommerz gateway case
     # elif gateway_type == "sslcommerz":

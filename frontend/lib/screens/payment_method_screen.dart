@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/ui/glass_container.dart';
+import '../widgets/ui/animated_background.dart';
 import '../theme/app_colors.dart';
 import 'payment_form_screen.dart';
 
@@ -10,69 +11,88 @@ class PaymentMethodScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Select Payment Method',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header text
-              const Text(
-                'Choose your preferred payment method',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = screenWidth > 600 ? 500.0 : screenWidth;
 
-              // Payment method cards
-              Expanded(
-                child: ListView(
-                  children: [
-                    _PaymentMethodCard(
-                      icon: Icons.phone_android,
-                      title: 'bKash',
-                      subtitle: 'Pay with your mobile wallet',
-                      color: AppColors.accent,
-                      onTap: () => _navigateToPaymentForm(context, 'bkash'),
-                    ),
-                    const SizedBox(height: 16),
-                    _PaymentMethodCard(
-                      icon: Icons.credit_card,
-                      title: 'Debit Card',
-                      subtitle: 'Pay with your debit card',
-                      color: AppColors.primary,
-                      onTap: () => _navigateToPaymentForm(context, 'debit_card'),
-                    ),
-                    const SizedBox(height: 16),
-                    _PaymentMethodCard(
-                      icon: Icons.credit_score,
-                      title: 'Credit Card',
-                      subtitle: 'Pay with your credit card',
-                      color: AppColors.secondary,
-                      onTap: () => _navigateToPaymentForm(context, 'credit_card'),
-                    ),
-                  ],
+    return Stack(
+      children: [
+        const Positioned.fill(child: AnimatedBackground()),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                title: Text(
+                  'Select Payment Method',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
+                centerTitle: true,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                floating: true,
+                snap: true,
+                iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+              ),
+              SliverSafeArea(
+                sliver: SliverPadding(
+                  padding: EdgeInsets.zero,
+                  sliver: SliverToBoxAdapter(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Header text
+                      Text(
+                        'Choose your preferred payment method',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          fontSize: 16,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Payment method cards
+                      _PaymentMethodCard(
+                        icon: Icons.phone_android,
+                        title: 'bKash',
+                        subtitle: 'Pay with your mobile wallet',
+                        color: AppColors.accent,
+                        onTap: () => _navigateToPaymentForm(context, 'bkash'),
+                      ),
+                      const SizedBox(height: 16),
+                      _PaymentMethodCard(
+                        icon: Icons.credit_card,
+                        title: 'Debit Card',
+                        subtitle: 'Pay with your debit card',
+                        color: AppColors.primary,
+                        onTap: () => _navigateToPaymentForm(context, 'debit_card'),
+                      ),
+                      const SizedBox(height: 16),
+                      _PaymentMethodCard(
+                        icon: Icons.credit_score,
+                        title: 'Credit Card',
+                        subtitle: 'Pay with your credit card',
+                        color: AppColors.secondary,
+                        onTap: () => _navigateToPaymentForm(context, 'credit_card'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -113,6 +133,8 @@ class _PaymentMethodCardState extends State<_PaymentMethodCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -125,12 +147,12 @@ class _PaymentMethodCardState extends State<_PaymentMethodCard> {
             ..scale(_isHovered ? 1.02 : 1.0),
           child: GlassContainer(
             borderRadius: BorderRadius.circular(16),
-            color: AppColors.surface,
+            color: Theme.of(context).cardColor,
             padding: const EdgeInsets.all(20),
             border: Border.all(
               color: _isHovered
                   ? widget.color.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.1),
+                  : Theme.of(context).dividerColor,
               width: _isHovered ? 2 : 1,
             ),
             child: Row(
@@ -158,8 +180,8 @@ class _PaymentMethodCardState extends State<_PaymentMethodCard> {
                     children: [
                       Text(
                         widget.title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
@@ -168,7 +190,7 @@ class _PaymentMethodCardState extends State<_PaymentMethodCard> {
                       Text(
                         widget.subtitle,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           fontSize: 14,
                         ),
                       ),
@@ -181,7 +203,7 @@ class _PaymentMethodCardState extends State<_PaymentMethodCard> {
                   Icons.arrow_forward_ios,
                   color: _isHovered
                       ? widget.color
-                      : Colors.white.withValues(alpha: 0.5),
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                   size: 20,
                 ),
               ],

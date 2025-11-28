@@ -9,6 +9,7 @@ import 'ui/animated_background.dart';
 import 'api_key_settings_tile.dart';
 import '../services/config_service.dart';
 import '../screens/settings_screen.dart';
+import '../screens/payment_method_screen.dart';
 
 /// Navigation item model
 class NavigationItem {
@@ -408,6 +409,47 @@ class _AppNavigationState extends State<AppNavigation> {
     );
   }
 
+  Widget _buildInfoRow(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          size: 18,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            fontSize: 14,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
   Widget _buildThemeToggle(BuildContext context) {
     final themeService = context.watch<SimpleThemeService>();
     final isDark = themeService.isDarkMode;
@@ -529,6 +571,85 @@ class _AppNavigationState extends State<AppNavigation> {
     );
   }
 
+  Widget _buildUpgradeButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const PaymentMethodScreen(),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).primaryColor,
+              Theme.of(context).primaryColor.withValues(alpha: 0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+              blurRadius: 12,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.workspace_premium,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Upgrade to Premium',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Unlock all premium features',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleSignOut(BuildContext context) async {
     final authService = context.read<AuthService>();
 
@@ -574,205 +695,185 @@ class _AppNavigationState extends State<AppNavigation> {
   Widget _buildSettingsScreen(BuildContext context) {
     final user = context.read<AuthService>().currentUser;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Settings',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // User Profile Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Theme.of(context).primaryColor,
-                  child: Text(
-                    user?.email.substring(0, 1).toUpperCase() ?? 'U',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+    return Consumer<SubscriptionService>(
+      builder: (context, subscriptionService, _) {
+        final status = subscriptionService.currentStatus;
+        final isPremium = status?.isPremium ?? false;
+        final planName = isPremium ? 'Premium' : 'Free Plan';
+        
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Settings',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.email ?? 'User',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        'Free Plan',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                OutlinedButton(
-                  onPressed: () => _handleSignOut(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                  ),
-                  child: const Text('Sign Out'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Appearance Section
-          Text(
-            'Appearance',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            child: _buildThemeToggle(context),
-          ),
-          const SizedBox(height: 24),
-
-          // API Keys Section
-          Text(
-            'API Configuration',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            child: Column(
-              children: [
-                ApiKeySettingsTile(
-                  userId: user?.id ?? '',
-                  baseUrl: ConfigService().apiBaseUrl,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUpgradeButton(BuildContext context, bool shouldShowCollapsed) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          // Navigate to Settings screen
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const SettingsScreen(),
-            ),
-          );
-          // Close drawer if open (on mobile)
-          if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-            Navigator.of(context).pop();
-          }
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: shouldShowCollapsed
-              ? const EdgeInsets.all(12)
-              : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).primaryColor,
-                Theme.of(context).primaryColor.withValues(alpha: 0.8),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
-                blurRadius: 8,
-                spreadRadius: 0,
               ),
-            ],
-          ),
-          child: shouldShowCollapsed
-              ? Center(
-                  child: Tooltip(
-                    message: 'Upgrade to Premium',
-                    child: Icon(
-                      Icons.workspace_premium,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: 24),
+
+              // Upgrade Button (only for free users)
+              if (!isPremium) ...[
+                _buildUpgradeButton(context),
+                const SizedBox(height: 24),
+              ],
+
+              // User Profile Section
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.workspace_premium,
-                      color: Colors.white,
-                      size: 20,
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Theme.of(context).primaryColor,
+                          child: Text(
+                            user?.email.substring(0, 1).toUpperCase() ?? 'U',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user?.email ?? 'User',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  if (isPremium)
+                                    Icon(
+                                      Icons.workspace_premium,
+                                      size: 14,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                  if (isPremium) const SizedBox(width: 4),
+                                  Text(
+                                    planName,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isPremium
+                                          ? Theme.of(context).primaryColor
+                                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                      fontWeight: isPremium ? FontWeight.w600 : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        OutlinedButton(
+                          onPressed: () => _handleSignOut(context),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                          ),
+                          child: const Text('Sign Out'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Upgrade',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                      ),
+                    
+                    // Premium subscription details
+                    if (isPremium && status != null) ...[
+                      const SizedBox(height: 16),
+                      Divider(color: Theme.of(context).dividerColor),
+                      const SizedBox(height: 16),
+                      if (status.activatedAt != null)
+                        _buildInfoRow(
+                          context,
+                          'Activated',
+                          _formatDate(status.activatedAt!),
+                          Icons.check_circle_outline,
+                        ),
+                      if (status.expiresAt != null) ...[
+                        const SizedBox(height: 12),
+                        _buildInfoRow(
+                          context,
+                          'Valid Until',
+                          _formatDate(status.expiresAt!),
+                          Icons.event_outlined,
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Appearance Section
+              Text(
+                'Appearance',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: _buildThemeToggle(context),
+              ),
+              const SizedBox(height: 24),
+
+              // API Keys Section
+              Text(
+                'API Configuration',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: Column(
+                  children: [
+                    ApiKeySettingsTile(
+                      userId: user?.id ?? '',
+                      baseUrl: ConfigService().apiBaseUrl,
                     ),
                   ],
                 ),
-        ),
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
+
+
 
   Widget _buildNavigationContent(
     BuildContext context,
@@ -889,20 +990,6 @@ class _AppNavigationState extends State<AppNavigation> {
                 ),
             ],
           ),
-        ),
-
-        // Upgrade button (only for free users)
-        Consumer<SubscriptionService>(
-          builder: (context, subscriptionService, _) {
-            // Only show upgrade button for free users
-            if (subscriptionService.isFree) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: _buildUpgradeButton(context, shouldShowCollapsed),
-              );
-            }
-            return const SizedBox.shrink();
-          },
         ),
 
         // Settings section at bottom

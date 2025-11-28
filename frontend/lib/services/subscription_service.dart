@@ -20,11 +20,8 @@ class SubscriptionException implements Exception {
 
 /// Service for managing subscription and payment operations
 class SubscriptionService extends ChangeNotifier {
-  // Singleton instance
-  static final SubscriptionService _instance =
-      SubscriptionService._internal();
-  factory SubscriptionService() => _instance;
-  SubscriptionService._internal();
+  // Remove singleton pattern to work properly with Provider
+  SubscriptionService();
 
   final _config = ConfigService();
   final _authService = AuthService();
