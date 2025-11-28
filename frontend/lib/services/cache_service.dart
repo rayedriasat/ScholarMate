@@ -115,6 +115,28 @@ class CacheService extends ChangeNotifier {
     return await _database.isPdfCached(fileId);
   }
 
+  /// Cache PDF thumbnail
+  Future<void> cachePdfThumbnail(String fileId, Uint8List thumbnailBytes) async {
+    // Store thumbnail in a simple key-value format using file metadata
+    // For now, we'll use the existing cached_pdfs table with a special suffix
+    final thumbnailId = '${fileId}_thumbnail';
+    await _database.insertCachedPdf(
+      CachedPdfsCompanion(
+        fileId: drift.Value(thumbnailId),
+        pdfBytes: drift.Value(thumbnailBytes),
+        cachedAt: drift.Value(DateTime.now()),
+        fileSize: drift.Value(thumbnailBytes.length),
+      ),
+    );
+  }
+
+  /// Get cached PDF thumbnail
+  Future<Uint8List?> getPdfThumbnail(String fileId) async {
+    final thumbnailId = '${fileId}_thumbnail';
+    final cachedThumbnail = await _database.getCachedPdf(thumbnailId);
+    return cachedThumbnail?.pdfBytes;
+  }
+
   /// Cache annotation
   Future<void> cacheAnnotation(Map<String, dynamic> annotation) async {
     await _database.insertAnnotation(

@@ -20,6 +20,7 @@ import '../widgets/indexing_progress_panel.dart';
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
 import '../widgets/ui/modern_text_field.dart';
+import 'package:frontend/widgets/pdf_thumbnail.dart';
 import 'pdf_viewer_screen.dart';
 import 'markdown_viewer_screen.dart';
 import 'document_scanner_screen.dart';
@@ -1182,16 +1183,16 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
     if (screenWidth > 1200) {
       crossAxisCount = 4;
-      childAspectRatio = 0.55;
+      childAspectRatio = 0.85;
     } else if (screenWidth > 800) {
       crossAxisCount = 3;
-      childAspectRatio = 0.55;
+      childAspectRatio = 0.85;
     } else if (screenWidth > 500) {
       crossAxisCount = 2;
-      childAspectRatio = 0.55;
+      childAspectRatio = 0.85;
     } else {
       crossAxisCount = 2;
-      childAspectRatio = 0.5;
+      childAspectRatio = 0.8;
     }
 
     return GridView.builder(
@@ -1256,33 +1257,37 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           children: [
             // Thumbnail/Preview area with status indicators
             Expanded(
-              flex: 3,
+              flex: 4,
               child: Stack(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: file.isFolder
-                          ? Colors.blue.withValues(alpha: 0.1)
-                          : (file.isPdf
-                                ? Colors.red.withValues(alpha: 0.1)
-                                : Colors.green.withValues(alpha: 0.1)),
+                  // Show PDF thumbnail for PDFs, otherwise show icon
+                  if (file.isPdf)
+                    ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        file.isFolder
-                            ? Icons.folder
-                            : (file.isPdf
-                                  ? Icons.picture_as_pdf
-                                  : Icons.description),
-                        size: 48,
+                      child: PdfThumbnail(
+                        file: file,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  else
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
                         color: file.isFolder
-                            ? Colors.blue
-                            : (file.isPdf ? Colors.red : Colors.green),
+                            ? Colors.blue.withValues(alpha: 0.1)
+                            : Colors.green.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          file.isFolder ? Icons.folder : Icons.description,
+                          size: 48,
+                          color: file.isFolder ? Colors.blue : Colors.green,
+                        ),
                       ),
                     ),
-                  ),
                   // Status badges
                   if (file.isShared)
                     Positioned(
@@ -1304,158 +1309,88 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             // File info with metadata
-            Expanded(
-              flex: 1,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Flexible(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // File name
-                  Text(
-                    file.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurface,
+                  Expanded(
+                    child: Text(
+                      file.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
-                  // Metadata row
-                  Row(
-                    children: [
-                      if (!file.isFolder) ...[
-                        Icon(
-                          Icons.insert_drive_file,
-                          size: 11,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.5),
+                  const SizedBox(width: 4),
+                  // Menu button
+                  PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      size: 14,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.surface
+                        : Colors.white,
+                    onSelected: (value) {
+                      if (value == 'rename') _showRenameDialog(file);
+                      if (value == 'delete') _showDeleteConfirmation(file);
+                      if (value == 'share') _shareFile(file);
+                      if (value == 'reindex') _reindexFile(file);
+                      if (value == 'manage_tags') {
+                        showDialog(
+                          context: context,
+                          builder: (context) => TagSelectionDialog(
+                            fileIds: [file.id],
+                            currentTags: [],
+                          ),
+                        );
+                      }
+                      if (value == 'chat_with_folder') {
+                        _chatWithSpecificFolder(file);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'rename',
+                        child: Text('Rename'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'share',
+                        child: Text('Share'),
+                      ),
+                      if (file.isPdf)
+                        const PopupMenuItem(
+                          value: 'reindex',
+                          child: Text('Reindex'),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          file.isPdf ? 'PDF' : 'MD',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.5),
-                            fontSize: 10,
-                          ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.red),
                         ),
-                        const SizedBox(width: 8),
-                      ],
-                      if (!file.isFolder && file.size != null) ...[
-                        Icon(
-                          Icons.storage,
-                          size: 11,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.5),
+                      ),
+                      if (file.isFolder)
+                        const PopupMenuItem(
+                          value: 'chat_with_folder',
+                          child: Text('Chat with Folder'),
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            file.formattedSize,
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.5),
-                              fontSize: 10,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                      const Spacer(),
-                      PopupMenuButton<String>(
-                        icon: Icon(
-                          Icons.more_vert,
-                          size: 16,
-                          color: Theme.of(context).iconTheme.color,
-                        ),
-                        padding: EdgeInsets.zero,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? AppColors.surface
-                            : Colors.white,
-                        onSelected: (value) {
-                          if (value == 'rename') _showRenameDialog(file);
-                          if (value == 'delete') _showDeleteConfirmation(file);
-                          if (value == 'share') _shareFile(file);
-                          if (value == 'reindex') _reindexFile(file);
-                          if (value == 'manage_tags') {
-                            showDialog(
-                              context: context,
-                              builder: (context) => TagSelectionDialog(
-                                fileIds: [file.id],
-                                currentTags: [],
-                              ),
-                            );
-                          }
-                          if (value == 'chat_with_folder') {
-                            _chatWithSpecificFolder(file);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'rename',
-                            child: Text('Rename'),
-                          ),
-                          const PopupMenuItem(
-                            value: 'share',
-                            child: Text('Share'),
-                          ),
-                          if (file.isPdf)
-                            const PopupMenuItem(
-                              value: 'reindex',
-                              child: Text('Reindex'),
-                            ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Text(
-                              'Delete',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
-                          if (file.isFolder)
-                            const PopupMenuItem(
-                              value: 'chat_with_folder',
-                              child: Text('Chat with Folder'),
-                            ),
-                          const PopupMenuItem(
-                            value: 'manage_tags',
-                            child: Text('Manage Tags'),
-                          ),
-                        ],
+                      const PopupMenuItem(
+                        value: 'manage_tags',
+                        child: Text('Manage Tags'),
                       ),
                     ],
                   ),
-                  // Date
-                  if (file.modifiedTime != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 11,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatDate(file.modifiedTime),
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.5),
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
             ),
