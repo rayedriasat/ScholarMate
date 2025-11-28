@@ -4,6 +4,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../services/simple_theme_service.dart';
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
+import '../widgets/subscription_section.dart';
 import '../theme/app_colors.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -25,6 +26,11 @@ class SettingsScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              _buildSectionHeader('Subscription'),
+              const SizedBox(height: 16),
+              const SubscriptionSection(),
+
+              const SizedBox(height: 32),
               _buildSectionHeader('Appearance'),
               const SizedBox(height: 16),
               _buildThemeModeSelector(context, themeService),

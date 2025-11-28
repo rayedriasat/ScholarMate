@@ -4,5 +4,8 @@
   "GOOGLE_REDIRECT_URI": "http://localhost:8080/auth/callback",
   "API_BASE_URL": "http://localhost:8000",
   "SUPABASE_URL": "https://your-project.supabase.co",
-  "SUPABASE_ANON_KEY": "your-supabase-anon-key"
+  "SUPABASE_ANON_KEY": "your-supabase-anon-key",
+  "PAYMENT_ENABLED": "true",
+  "PREMIUM_PRICE": "500",
+  "PREMIUM_CURRENCY": "BDT"
 }

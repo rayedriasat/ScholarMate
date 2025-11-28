@@ -26,6 +26,7 @@ import 'services/realtime_service.dart';
 import 'services/annotation_sync_service.dart';
 import 'services/document_extraction_service.dart';
 import 'services/file_chat_service.dart';
+import 'services/subscription_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -301,6 +302,10 @@ class ScholarMateApp extends StatelessWidget {
                 database: database,
                 supabase: Supabase.instance.client,
               ),
+        ),
+        // Subscription service for payment and subscription management
+        ChangeNotifierProvider<SubscriptionService>(
+          create: (_) => SubscriptionService(),
         ),
       ],
       child: Consumer<SimpleThemeService>(

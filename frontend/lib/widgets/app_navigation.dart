@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/simple_theme_service.dart';
+import '../services/subscription_service.dart';
 import '../theme/app_colors.dart';
 import 'ui/glass_container.dart';
 import 'ui/animated_background.dart';
 import 'api_key_settings_tile.dart';
 import '../services/config_service.dart';
+import '../screens/settings_screen.dart';
 
 /// Navigation item model
 class NavigationItem {
@@ -67,6 +69,14 @@ class _AppNavigationState extends State<AppNavigation> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
+    
+    // Load subscription status when navigation is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final subscriptionService = context.read<SubscriptionService>();
+      subscriptionService.loadSubscriptionStatus().catchError((e) {
+        debugPrint('Failed to load subscription status: $e');
+      });
+    });
   }
 
   void _onItemTapped(int index) {
@@ -689,6 +699,81 @@ class _AppNavigationState extends State<AppNavigation> {
     );
   }
 
+  Widget _buildUpgradeButton(BuildContext context, bool shouldShowCollapsed) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Navigate to Settings screen
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const SettingsScreen(),
+            ),
+          );
+          // Close drawer if open (on mobile)
+          if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+            Navigator.of(context).pop();
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: shouldShowCollapsed
+              ? const EdgeInsets.all(12)
+              : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).primaryColor,
+                Theme.of(context).primaryColor.withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                blurRadius: 8,
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: shouldShowCollapsed
+              ? Center(
+                  child: Tooltip(
+                    message: 'Upgrade to Premium',
+                    child: Icon(
+                      Icons.workspace_premium,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.workspace_premium,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Upgrade',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildNavigationContent(
     BuildContext context,
     bool shouldShowCollapsed,
@@ -804,6 +889,20 @@ class _AppNavigationState extends State<AppNavigation> {
                 ),
             ],
           ),
+        ),
+
+        // Upgrade button (only for free users)
+        Consumer<SubscriptionService>(
+          builder: (context, subscriptionService, _) {
+            // Only show upgrade button for free users
+            if (subscriptionService.isFree) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: _buildUpgradeButton(context, shouldShowCollapsed),
+              );
+            }
+            return const SizedBox.shrink();
+          },
         ),
 
         // Settings section at bottom
