@@ -359,7 +359,8 @@ class AuthService extends ChangeNotifier {
   /// Get current access token
   /// Returns null if user is not authenticated or token is not available
   /// Automatically refreshes expired tokens using silentSignIn
-  Future<String?> getAccessToken() async {
+  /// [forceRefresh] - if true, ignores expiry time and forces a refresh
+  Future<String?> getAccessToken({bool forceRefresh = false}) async {
     if (_currentUser?.accessToken == null) return null;
 
     final now = DateTime.now();
@@ -369,7 +370,7 @@ class AuthService extends ChangeNotifier {
         _currentUser!.tokenExpiry != null &&
         expiryThreshold.isAfter(_currentUser!.tokenExpiry!);
 
-    if (needsRefresh) {
+    if (forceRefresh || needsRefresh) {
       if (_isRefreshing) {
         // Wait for ongoing refresh to complete
         int attempts = 0;
@@ -382,7 +383,9 @@ class AuthService extends ChangeNotifier {
 
       _isRefreshing = true;
       try {
-        debugPrint('Token expiring, attempting refresh...');
+        debugPrint(
+          'Token ${forceRefresh ? "force refresh" : "expiring"}, attempting refresh...',
+        );
         final newToken = await _refreshAccessToken();
 
         if (newToken != null) {
@@ -390,6 +393,14 @@ class AuthService extends ChangeNotifier {
         }
 
         debugPrint('Token refresh failed - user may need to sign in again');
+        // If force refresh failed, we might still return the old token if it's not strictly expired
+        // But usually if refresh fails, the session is bad.
+        // However, to avoid breaking UI if offline, we return current token if not strictly expired
+        if (!forceRefresh &&
+            _currentUser!.tokenExpiry != null &&
+            now.isBefore(_currentUser!.tokenExpiry!)) {
+          return _currentUser!.accessToken;
+        }
         return null;
       } finally {
         _isRefreshing = false;
@@ -406,8 +417,18 @@ class AuthService extends ChangeNotifier {
     // Decode ID token to extract user information
     final userInfo = _decodeIdToken(credentials.idToken);
 
-    // Calculate token expiry (Google tokens typically expire in 1 hour)
-    final tokenExpiry = DateTime.now().add(const Duration(minutes: 50));
+    // Calculate token expiry
+    // Prefer 'exp' claim from ID token if available
+    DateTime tokenExpiry;
+    if (userInfo.containsKey('exp') && userInfo['exp'] is int) {
+      final exp = userInfo['exp'] as int;
+      tokenExpiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+      debugPrint('Token expiry set from ID token: $tokenExpiry');
+    } else {
+      // Fallback to 50 minutes from now
+      tokenExpiry = DateTime.now().add(const Duration(minutes: 50));
+      debugPrint('Token expiry set to default (50m): $tokenExpiry');
+    }
 
     // Note: credentials.refreshToken is often null because the package
     // stores it internally in platform-specific secure storage.
