@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 from dotenv import load_dotenv
-from .routers import auth, annotations, ocr, ai, tags, sharing, ingestion, api_keys, metadata, embeddings, notebook_ai, collaboration, analytics, search, extraction, file_chat
+from .routers import auth, annotations, ocr, ai, tags, sharing, ingestion, api_keys, metadata, embeddings, notebook_ai, collaboration, analytics, search, extraction, file_chat, payments
 from .middleware import RequestLoggingMiddleware
 from .utils.logging_config import setup_logging, get_logger
 from .utils.exception_handlers import (
@@ -83,6 +83,7 @@ app.include_router(analytics.router)
 app.include_router(search.router)
 app.include_router(extraction.router)
 app.include_router(file_chat.router)
+app.include_router(payments.router)
 
 logger.info("Application configured successfully")
 

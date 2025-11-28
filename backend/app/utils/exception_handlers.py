@@ -60,13 +60,37 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     request_id = getattr(request.state, "request_id", "unknown")
     user_id = request.headers.get("X-User-ID", "anonymous")
     
+    # Convert errors to JSON-serializable format
+    errors = exc.errors()
+    serializable_errors = []
+    for error in errors:
+        serializable_error = {
+            "type": error.get("type"),
+            "loc": error.get("loc"),
+            "msg": error.get("msg"),
+            "input": error.get("input"),
+        }
+        # Convert ctx to serializable format (ctx may contain non-serializable objects)
+        if "ctx" in error:
+            ctx = error["ctx"]
+            serializable_ctx = {}
+            for key, value in ctx.items():
+                # Convert any non-serializable values to strings
+                try:
+                    import json
+                    json.dumps(value)
+                    serializable_ctx[key] = value
+                except (TypeError, ValueError):
+                    serializable_ctx[key] = str(value)
+            serializable_error["ctx"] = serializable_ctx
+        serializable_errors.append(serializable_error)
+    
     logger.warning(
-        f"Validation error: {str(exc)}",
+        f"Validation error: {exc.errors()}",
         extra={
             "request_id": request_id,
             "user_id": user_id,
             "path": request.url.path,
-            "errors": exc.errors(),
         }
     )
     
@@ -77,7 +101,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                 "message": "Validation error",
                 "status_code": status.HTTP_422_UNPROCESSABLE_ENTITY,
                 "request_id": request_id,
-                "details": exc.errors(),
+                "details": serializable_errors,
             }
         },
         headers={"X-Request-ID": request_id}
