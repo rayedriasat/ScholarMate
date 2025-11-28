@@ -10,6 +10,7 @@ import 'api_key_settings_tile.dart';
 import '../services/config_service.dart';
 import '../screens/settings_screen.dart';
 import '../screens/payment_method_screen.dart';
+import '../screens/transaction_history_screen.dart';
 
 /// Navigation item model
 class NavigationItem {
@@ -450,6 +451,14 @@ class _AppNavigationState extends State<AppNavigation> {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
+  void _showTransactionHistory(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const TransactionHistoryScreen(),
+      ),
+    );
+  }
+
   Widget _buildThemeToggle(BuildContext context) {
     final themeService = context.watch<SimpleThemeService>();
     final isDark = themeService.isDarkMode;
@@ -815,6 +824,30 @@ class _AppNavigationState extends State<AppNavigation> {
                           Icons.event_outlined,
                         ),
                       ],
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showTransactionHistory(context),
+                          icon: Icon(
+                            Icons.receipt_long,
+                            size: 18,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          label: Text(
+                            'View Transaction History',
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
                     ],
                   ],
                 ),
