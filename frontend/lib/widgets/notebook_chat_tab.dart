@@ -5,6 +5,9 @@ import '../database/database.dart';
 import '../services/notebook_service.dart';
 import '../services/ai_chat_service.dart';
 import '../services/auth_service.dart';
+import '../services/pdf_viewer_manager.dart';
+import '../services/connectivity_service.dart';
+import '../screens/pdf_viewer_screen.dart';
 
 /// Chat tab for notebook folder
 class NotebookChatTab extends StatefulWidget {
@@ -382,6 +385,8 @@ class _MessageBubble extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final fileName = citation['file_name'] ?? 'Unknown';
     final pageNumber = citation['page_number'] ?? 0;
+    final fileId = citation['file_id'] ?? '';
+    final snippet = citation['snippet'] ?? '';
 
     final backgroundColor = colorScheme.primaryContainer;
     final textColor = colorScheme.onPrimaryContainer;
@@ -389,27 +394,79 @@ class _MessageBubble extends StatelessWidget {
 
     return Tooltip(
       message: 'Source: $fileName, Page $pageNumber',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.picture_as_pdf, size: 14, color: textColor),
-            const SizedBox(width: 4),
-            Text(
-              '$fileName (p. $pageNumber)',
-              style: TextStyle(
-                fontSize: 12,
-                color: textColor,
-                fontWeight: FontWeight.w500,
+      child: InkWell(
+        onTap: () async {
+          // Navigate to PDF with highlighted text
+          try {
+            // Read services before async operations to avoid context issues
+            final pdfManager = context.read<PdfViewerManager>();
+            final connectivityService = context.read<ConnectivityService>();
+
+            final isCached = await pdfManager.isPdfCached(fileId);
+
+            if (!isCached) {
+              if (!connectivityService.isOnline) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'PDF not cached and device is offline. Please connect to download the file.',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                return;
+              }
+            }
+
+            if (context.mounted) {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PdfViewerScreen(
+                    fileId: fileId,
+                    fileName: fileName,
+                    initialPage: pageNumber,
+                    highlightText: snippet,
+                  ),
+                ),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to open PDF: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.picture_as_pdf, size: 14, color: textColor),
+              const SizedBox(width: 4),
+              Text(
+                '$fileName (p. $pageNumber)',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: textColor,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

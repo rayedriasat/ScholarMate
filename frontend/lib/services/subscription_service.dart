@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'api_service.dart';
 import 'auth_service.dart';
 import 'config_service.dart';
 import '../models/subscription_status.dart';
@@ -136,7 +135,9 @@ class SubscriptionService extends ChangeNotifier {
             .map((json) => Transaction.fromJson(json))
             .toList();
         _historyCacheTime = DateTime.now();
-        debugPrint('Payment history loaded: ${_paymentHistory.length} transactions');
+        debugPrint(
+          'Payment history loaded: ${_paymentHistory.length} transactions',
+        );
       } else {
         throw SubscriptionException(
           'Failed to load payment history: ${response.body}',

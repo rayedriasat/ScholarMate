@@ -112,23 +112,32 @@ class RAGQueryService:
         # Initialize hybrid embedding service (prioritizes API for queries)
         self.embedding_service = get_embedding_service(strategy=EmbeddingStrategy.AUTO)
         
-        # Define prompt template for RAG
+        # Define prompt template for Agentic RAG
         self.prompt_template = PromptTemplate(
-            template="""You are a helpful AI assistant that answers questions based on the provided context from research documents.
+            template="""You are ScholarMate AI, an intelligent research assistant.
 
-Context from documents:
+Context from selected documents:
 {context}
 
-Question: {question}
+User's Available Files (not selected but available):
+{available_files}
+
+Conversation History:
+{history}
+
+Current Question: {question}
 
 Instructions:
-- Answer the question based ONLY on the information provided in the context above
-- If the context doesn't contain enough information to answer the question, say so
-- Be concise and accurate
-- Reference specific information from the context when possible
+1.  **Prioritize Context**: Your primary source is "Context from selected documents". Use it to answer the question and cite specific information.
+2.  **Hybrid Answer**: If the context provides a partial answer, use it and supplement with your general knowledge to provide a complete answer.
+3.  **General Knowledge Fallback**: ONLY if the context is completely empty or unrelated to the question, answer using your general knowledge.
+    -   In this specific case (no context found), briefly mention: "I couldn't find this in the selected documents, but..."
+4.  **Agentic File Suggestions**: If the question seems related to one of the "User's Available Files" that is not currently selected, suggest adding it.
+5.  **Context Awareness**: Use "Conversation History" to understand follow-up questions (e.g., "tell me more about that" or "answer the questions you just listed").
+6.  **Tone**: Be helpful, professional, and concise.
 
 Answer:""",
-            input_variables=["context", "question"]
+            input_variables=["context", "question", "history", "available_files"]
         )
         
         logger.info("RAG Query Service initialized with hybrid embedding service")
@@ -139,7 +148,9 @@ Answer:""",
         user_id: str,
         selected_file_ids: Optional[List[str]] = None,
         top_k: int = 5,
-        preferred_provider: Optional[str] = None
+        preferred_provider: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
+        available_files: Optional[List[Dict[str, Any]]] = None
     ) -> ChatResponse:
         """
         Query user's vector store with source filtering using multi-provider AI.
@@ -157,6 +168,8 @@ Answer:""",
             selected_file_ids: Optional list of file IDs to filter sources
             top_k: Number of chunks to retrieve
             preferred_provider: Optional preferred AI provider
+            history: Optional conversation history
+            available_files: Optional list of available files metadata
             
         Returns:
             ChatResponse with answer and citations
@@ -181,18 +194,18 @@ Answer:""",
             )
             
             if not retrieved_chunks:
-                logger.warning(f"No relevant context found for query")
-                return ChatResponse(
-                    message="I couldn't find any relevant information in the selected documents to answer your question.",
-                    citations=[]
-                )
+                logger.info(f"No relevant context found, proceeding with general knowledge")
+                # Do NOT return early. Proceed to generate response with empty context.
+                # The prompt instructions will handle the "no context" case.
             
             # Step 2: Generate response with citations using multi-provider
             response = await self.generate_response_with_provider(
                 question=question,
                 context=retrieved_chunks,
                 user_id=resolved_user_id,
-                preferred_provider=preferred_provider
+                preferred_provider=preferred_provider,
+                history=history,
+                available_files=available_files
             )
             
             logger.info(f"RAG query completed with {len(response.citations)} citations")
@@ -341,7 +354,9 @@ Answer:""",
         question: str,
         context: List[RetrievedChunk],
         user_id: str,
-        preferred_provider: Optional[str] = None
+        preferred_provider: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
+        available_files: Optional[List[Dict[str, Any]]] = None
     ) -> ChatResponse:
         """
         Generate AI response using user's preferred provider with fallback.
@@ -356,6 +371,8 @@ Answer:""",
             context: List of retrieved chunks
             user_id: User UUID
             preferred_provider: Optional preferred provider name
+            history: Optional conversation history
+            available_files: Optional list of available files metadata
             
         Returns:
             ChatResponse with answer and citations
@@ -369,10 +386,32 @@ Answer:""",
             # Format context for prompt
             context_text = self._format_context(context)
             
+            # Format history
+            history_text = ""
+            if history:
+                # Take last 5 messages to avoid token limit
+                recent_history = history[-5:]
+                for msg in recent_history:
+                    role = msg.get('role', 'unknown')
+                    content = msg.get('content', '')
+                    history_text += f"{role.upper()}: {content}\n"
+            
+            # Format available files
+            files_text = ""
+            if available_files:
+                # Filter out selected files
+                selected_ids = {c.file_id for c in context}
+                other_files = [f for f in available_files if f.get('id') not in selected_ids]
+                # Limit to 20 files to avoid token limit
+                for f in other_files[:20]:
+                    files_text += f"- {f.get('name')} (ID: {f.get('id')})\n"
+
             # Generate prompt using template
             prompt = self.prompt_template.format(
-                context=context_text,
-                question=question
+                context=context_text if context_text else "No relevant context found in selected documents.",
+                question=question,
+                history=history_text,
+                available_files=files_text
             )
             
             messages = [

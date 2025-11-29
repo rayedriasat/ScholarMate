@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:js_interop';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -16,7 +17,7 @@ import '../models/markdown_note.dart';
 import '../models/extracted_document.dart';
 import 'markdown_editor_screen.dart';
 import 'extracted_document_detail_screen.dart';
-import 'package:universal_html/html.dart' as html;
+import 'package:web/web.dart' as web;
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
 import '../theme/app_colors.dart';
@@ -232,13 +233,17 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
       final uint8list = Uint8List.fromList(bytes);
 
       // Trigger browser download
-      final blob = html.Blob([uint8list], 'application/pdf');
-      final url = html.Url.createObjectUrlFromBlob(blob);
+      final blob = web.Blob(
+        [uint8list.toJS].toJS,
+        web.BlobPropertyBag(type: 'application/pdf'),
+      );
+      final url = web.URL.createObjectURL(blob);
       // ignore: unused_local_variable
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute('download', fileName)
+      final anchor = web.HTMLAnchorElement()
+        ..href = url
+        ..download = fileName
         ..click();
-      html.Url.revokeObjectUrl(url);
+      web.URL.revokeObjectURL(url);
 
       debugPrint('🔵 PDF downloaded: $fileName');
 

@@ -5,14 +5,14 @@ import '../services/subscription_service.dart';
 import '../models/transaction.dart';
 import '../widgets/ui/animated_background.dart';
 import '../widgets/ui/glass_container.dart';
-import '../theme/app_colors.dart';
 
 /// Transaction history screen showing payment history
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
 
   @override
-  State<TransactionHistoryScreen> createState() => _TransactionHistoryScreenState();
+  State<TransactionHistoryScreen> createState() =>
+      _TransactionHistoryScreenState();
 }
 
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
@@ -55,14 +55,18 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               SliverAppBar(
                 title: Text(
                   'Transaction History',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
                 centerTitle: true,
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 floating: true,
                 snap: true,
-                iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+                iconTheme: IconThemeData(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               SliverSafeArea(
                 sliver: SliverPadding(
@@ -75,7 +79,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                           padding: const EdgeInsets.all(24.0),
                           child: Consumer<SubscriptionService>(
                             builder: (context, subscriptionService, _) {
-                              final history = subscriptionService.paymentHistory;
+                              final history =
+                                  subscriptionService.paymentHistory;
                               final isLoading = subscriptionService.isLoading;
 
                               if (isLoading && history.isEmpty) {
@@ -110,7 +115,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       border: Border.all(color: Theme.of(context).dividerColor),
       child: Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+          valueColor: AlwaysStoppedAnimation<Color>(
+            Theme.of(context).primaryColor,
+          ),
         ),
       ),
     );
@@ -126,14 +133,18 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         children: [
           Icon(
             Icons.receipt_long_outlined,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.3),
             size: 64,
           ),
           const SizedBox(height: 16),
           Text(
             'No transactions yet',
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -217,7 +228,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                     Text(
                       dateFormat.format(transaction.createdAt),
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
                         fontSize: 13,
                       ),
                     ),
@@ -259,7 +272,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           Text(
             'ID: ${transaction.transactionId}',
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 12,
               fontFamily: 'monospace',
             ),

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'config_service.dart';
 import '../models/chat_message.dart';
+import '../models/drive_file.dart';
 
 /// Exception thrown when AI chat API calls fail
 class AIChatException implements Exception {
@@ -31,6 +32,8 @@ class AIChatService {
     required String userId,
     List<String>? selectedFileIds,
     int topK = 5,
+    List<ChatMessage>? history,
+    List<DriveFile>? availableFiles,
   }) async {
     try {
       final requestBody = {
@@ -41,6 +44,23 @@ class AIChatService {
 
       if (selectedFileIds != null && selectedFileIds.isNotEmpty) {
         requestBody['selected_file_ids'] = selectedFileIds;
+      }
+
+      if (history != null && history.isNotEmpty) {
+        requestBody['history'] = history
+            .map(
+              (msg) => {
+                'role': msg.isUser ? 'user' : 'assistant',
+                'content': msg.content,
+              },
+            )
+            .toList();
+      }
+
+      if (availableFiles != null && availableFiles.isNotEmpty) {
+        requestBody['available_files'] = availableFiles
+            .map((file) => {'id': file.id, 'name': file.name})
+            .toList();
       }
 
       final response = await http.post(

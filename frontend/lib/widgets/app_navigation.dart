@@ -8,7 +8,6 @@ import 'ui/glass_container.dart';
 import 'ui/animated_background.dart';
 import 'api_key_settings_tile.dart';
 import '../services/config_service.dart';
-import '../screens/settings_screen.dart';
 import '../screens/payment_method_screen.dart';
 import '../screens/transaction_history_screen.dart';
 
@@ -71,7 +70,7 @@ class _AppNavigationState extends State<AppNavigation> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    
+
     // Load subscription status when navigation is initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final subscriptionService = context.read<SubscriptionService>();
@@ -427,7 +426,9 @@ class _AppNavigationState extends State<AppNavigation> {
         Text(
           '$label: ',
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
             fontSize: 14,
           ),
         ),
@@ -445,17 +446,25 @@ class _AppNavigationState extends State<AppNavigation> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   void _showTransactionHistory(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const TransactionHistoryScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
     );
   }
 
@@ -584,9 +593,7 @@ class _AppNavigationState extends State<AppNavigation> {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const PaymentMethodScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const PaymentMethodScreen()),
         );
       },
       child: Container(
@@ -648,11 +655,7 @@ class _AppNavigationState extends State<AppNavigation> {
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 20,
-            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
           ],
         ),
       ),
@@ -709,7 +712,7 @@ class _AppNavigationState extends State<AppNavigation> {
         final status = subscriptionService.currentStatus;
         final isPremium = status?.isPremium ?? false;
         final planName = isPremium ? 'Premium' : 'Free Plan';
-        
+
         return SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -765,7 +768,9 @@ class _AppNavigationState extends State<AppNavigation> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                               Row(
@@ -783,8 +788,13 @@ class _AppNavigationState extends State<AppNavigation> {
                                       fontSize: 12,
                                       color: isPremium
                                           ? Theme.of(context).primaryColor
-                                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                      fontWeight: isPremium ? FontWeight.w600 : FontWeight.normal,
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.6),
+                                      fontWeight: isPremium
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
                                     ),
                                   ),
                                 ],
@@ -802,7 +812,7 @@ class _AppNavigationState extends State<AppNavigation> {
                         ),
                       ],
                     ),
-                    
+
                     // Premium subscription details
                     if (isPremium && status != null) ...[
                       const SizedBox(height: 16),
@@ -905,8 +915,6 @@ class _AppNavigationState extends State<AppNavigation> {
       },
     );
   }
-
-
 
   Widget _buildNavigationContent(
     BuildContext context,

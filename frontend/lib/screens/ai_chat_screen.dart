@@ -240,6 +240,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
         selectedFileIds: _selectedFileIds.isNotEmpty
             ? _selectedFileIds.toList()
             : null,
+        history: _messages,
+        availableFiles: _availableFiles,
       );
 
       setState(() {
@@ -464,6 +466,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
               fileId: citation.fileId,
               fileName: citation.fileName,
               initialPage: citation.pageNumber,
+              highlightText: citation.snippet,
             ),
           ),
         );

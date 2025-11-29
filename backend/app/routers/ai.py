@@ -201,7 +201,9 @@ async def rag_chat(request: RAGChatRequest) -> RAGChatResponse:
             user_id=request.user_id,
             selected_file_ids=request.selected_file_ids,
             top_k=request.top_k,
-            preferred_provider=request.preferred_provider
+            preferred_provider=request.preferred_provider,
+            history=request.history,
+            available_files=request.available_files
         )
         
         # Convert to Pydantic models

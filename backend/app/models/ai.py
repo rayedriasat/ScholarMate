@@ -2,7 +2,7 @@
 AI-related Pydantic models for request/response validation.
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field
 
 
@@ -56,6 +56,8 @@ class RAGChatRequest(BaseModel):
     selected_file_ids: Optional[List[str]] = Field(None, description="Optional list of file IDs to filter sources")
     top_k: int = Field(5, ge=1, le=20, description="Number of chunks to retrieve (1-20)")
     preferred_provider: Optional[str] = Field(None, description="Preferred AI provider (groq, openai, anthropic, etc.)")
+    history: Optional[List[Dict[str, str]]] = Field(None, description="Conversation history (role, content)")
+    available_files: Optional[List[Dict[str, Any]]] = Field(None, description="List of available files (id, name)")
 
 
 class Citation(BaseModel):

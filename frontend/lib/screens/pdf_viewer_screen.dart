@@ -30,6 +30,7 @@ class PdfViewerScreen extends StatefulWidget {
   final String? fileName;
   final int? initialPage;
   final String? searchQuery;
+  final String? highlightText;
 
   const PdfViewerScreen({
     super.key,
@@ -38,6 +39,7 @@ class PdfViewerScreen extends StatefulWidget {
     this.fileName,
     this.initialPage,
     this.searchQuery,
+    this.highlightText,
   }) : assert(
          file != null || (fileId != null && fileName != null),
          'Either file or both fileId and fileName must be provided',
@@ -95,7 +97,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     _initializeAnnotationSettings();
     _initializeAnalytics();
 
-    // Navigate to initial page and/or trigger search
+    // Navigate to initial page and/or trigger search/highlight
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // First, jump to the initial page if specified
       if (widget.initialPage != null && widget.initialPage! > 0) {
@@ -106,37 +108,43 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
         }
       }
 
-      // Show notification
+      // Show notification for citation navigation
       if (mounted &&
-          (widget.initialPage != null || widget.searchQuery != null)) {
+          (widget.initialPage != null || widget.highlightText != null)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(
-                  widget.searchQuery != null ? Icons.search : Icons.bookmark,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                const Icon(Icons.bookmark, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    widget.searchQuery != null
-                        ? 'Searching for "${widget.searchQuery}"${widget.initialPage != null ? " on page ${widget.initialPage}" : ""}'
-                        : 'Navigated to page ${widget.initialPage} from citation',
+                    'Navigated to page ${widget.initialPage} from citation',
                   ),
                 ),
               ],
             ),
             backgroundColor: Colors.blue,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
 
-      // Then trigger search if searchQuery is provided
-      if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
+      // Highlight text directly if provided (from citation)
+      if (widget.highlightText != null && widget.highlightText!.isNotEmpty) {
+        // Wait for page jump to complete
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          // Use searchText but don't show search UI
+          _pdfViewerController.searchText(
+            widget.highlightText!,
+            searchOption: TextSearchOption.caseSensitive,
+          );
+        }
+      }
+      // Handle manual search query (legacy support)
+      else if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
         // Wait for page jump to complete
         await Future.delayed(const Duration(milliseconds: 800));
         if (mounted) {
@@ -149,6 +157,28 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
           if (mounted) {
             _performSearch();
           }
+        }
+
+        // Show search notification
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.search, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Searching for "${widget.searchQuery}"${widget.initialPage != null ? " on page ${widget.initialPage}" : ""}',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.blue,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       }
     });

@@ -6,7 +6,6 @@ import '../services/subscription_service.dart';
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
 import '../widgets/subscription_section.dart';
-import '../theme/app_colors.dart';
 import 'payment_method_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -25,13 +24,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         final subscriptionService = context.read<SubscriptionService>();
         debugPrint('Loading subscription status from settings screen...');
-        subscriptionService.loadSubscriptionStatus().then((_) {
-          debugPrint('Subscription status loaded successfully');
-          if (mounted) setState(() {}); // Force rebuild
-        }).catchError((e) {
-          debugPrint('Failed to load subscription status in settings: $e');
-          if (mounted) setState(() {}); // Force rebuild even on error
-        });
+        subscriptionService
+            .loadSubscriptionStatus()
+            .then((_) {
+              debugPrint('Subscription status loaded successfully');
+              if (mounted) setState(() {}); // Force rebuild
+            })
+            .catchError((e) {
+              debugPrint('Failed to load subscription status in settings: $e');
+              if (mounted) setState(() {}); // Force rebuild even on error
+            });
       }
     });
   }
@@ -48,7 +50,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
       ),
       body: Consumer2<SimpleThemeService, SubscriptionService>(
         builder: (context, themeService, subscriptionService, _) {
@@ -56,9 +60,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final currentStatus = subscriptionService.currentStatus;
           final isPremium = currentStatus?.isPremium ?? false;
           final showUpgrade = !isPremium;
-          
-          debugPrint('Settings rebuild: status=$currentStatus, isPremium=$isPremium, showUpgrade=$showUpgrade');
-          
+
+          debugPrint(
+            'Settings rebuild: status=$currentStatus, isPremium=$isPremium, showUpgrade=$showUpgrade',
+          );
+
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -92,9 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const PaymentMethodScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const PaymentMethodScreen()),
         );
       },
       child: Container(
@@ -156,11 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 20,
-            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
           ],
         ),
       ),
@@ -186,9 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       borderRadius: BorderRadius.circular(16),
       color: Theme.of(context).cardColor,
       padding: const EdgeInsets.all(16),
-      border: Border.all(
-        color: Theme.of(context).dividerColor,
-      ),
+      border: Border.all(color: Theme.of(context).dividerColor),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -244,8 +242,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final color = isSelected
         ? Theme.of(context).primaryColor
         : (isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.05));
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.05));
     final textColor = isSelected
         ? Theme.of(context).colorScheme.onPrimary
         : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7);
@@ -287,9 +285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       borderRadius: BorderRadius.circular(16),
       color: Theme.of(context).cardColor,
       padding: const EdgeInsets.all(16),
-      border: Border.all(
-        color: Theme.of(context).dividerColor,
-      ),
+      border: Border.all(color: Theme.of(context).dividerColor),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -403,14 +399,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ? Colors.white.withValues(alpha: 0.1)
               : Colors.black.withValues(alpha: 0.1),
           shape: BoxShape.circle,
-          border: Border.all(
-            color: Theme.of(context).dividerColor,
-          ),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
-        child: Icon(
-          Icons.add,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
+        child: Icon(Icons.add, color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }
@@ -456,16 +447,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       borderRadius: BorderRadius.circular(16),
       color: Theme.of(context).cardColor,
       padding: const EdgeInsets.all(16),
-      border: Border.all(
-        color: Theme.of(context).dividerColor,
-      ),
+      border: Border.all(color: Theme.of(context).dividerColor),
       child: Column(
         children: [
           Row(
             children: [
               Icon(
                 Icons.info_outline,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 12),
               Text(
@@ -479,7 +470,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(
                 '1.0.0',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -489,7 +482,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Icon(
                 Icons.description_outlined,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 12),
               Text(
@@ -502,7 +497,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Spacer(),
               Icon(
                 Icons.chevron_right,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ],
           ),
@@ -511,7 +508,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Icon(
                 Icons.privacy_tip_outlined,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 12),
               Text(
@@ -524,7 +523,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Spacer(),
               Icon(
                 Icons.chevron_right,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ],
           ),
