@@ -60,10 +60,15 @@ class BackendDriveService:
             logger.error(f"Failed to fetch file {file_id}: {str(e)}")
             if hasattr(e, 'response') and e.response is not None:
                 if e.response.status_code == 401:
-                    raise ValueError("Access token expired or invalid. Please refresh token in app and retry.")
+                    logger.warning(f"401 Unauthorized for file {file_id} - token may be expired")
+                    raise ValueError("TOKEN_EXPIRED")
                 elif e.response.status_code == 404:
                     raise ValueError(f"File {file_id} not found in Google Drive")
                 elif e.response.status_code == 403:
+                    # Check if it's a scope issue
+                    error_body = e.response.text
+                    if 'insufficient' in error_body.lower() or 'scope' in error_body.lower():
+                        raise ValueError("INSUFFICIENT_SCOPE")
                     raise ValueError(f"Access denied to file {file_id}. Check permissions.")
             raise ValueError(f"Failed to fetch file from Drive: {str(e)}")
     
@@ -106,9 +111,14 @@ class BackendDriveService:
             logger.error(f"Failed to fetch metadata for file {file_id}: {str(e)}")
             if hasattr(e, 'response') and e.response is not None:
                 if e.response.status_code == 401:
-                    raise ValueError("Access token expired or invalid. Please refresh token in app and retry.")
+                    logger.warning(f"401 Unauthorized for file {file_id} - token may be expired")
+                    raise ValueError("TOKEN_EXPIRED")
                 elif e.response.status_code == 404:
                     raise ValueError(f"File {file_id} not found in Google Drive")
+                elif e.response.status_code == 403:
+                    error_body = e.response.text
+                    if 'insufficient' in error_body.lower() or 'scope' in error_body.lower():
+                        raise ValueError("INSUFFICIENT_SCOPE")
             raise ValueError(f"Failed to fetch file metadata: {str(e)}")
 
 

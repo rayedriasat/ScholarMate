@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in_all_platforms/google_sign_in_all_platforms.dart';
+import 'package:http/http.dart' as http;
 import '../models/user.dart';
 import 'storage_service.dart';
 import 'api_service.dart';
@@ -201,6 +202,7 @@ class AuthService extends ChangeNotifier {
 
   /// Silent sign-in (restores previous session without user interaction)
   /// Recommended to call on app startup
+  /// Follows official recommendation: silentSignIn() ?? lightweightSignIn()
   Future<User?> silentSignIn() async {
     if (!_isInitialized) {
       debugPrint('AuthService not initialized');
@@ -210,18 +212,27 @@ class AuthService extends ChangeNotifier {
     try {
       debugPrint('Attempting silent sign-in...');
 
-      final credentials = await _googleSignIn!.silentSignIn();
+      // Try silent sign-in first (uses stored credentials)
+      var credentials = await _googleSignIn!.silentSignIn();
+
+      // If silent sign-in fails, try lightweight sign-in (official recommendation)
+      if (credentials == null) {
+        debugPrint(
+          'Silent sign-in returned no credentials, trying lightweight sign-in...',
+        );
+        credentials = await _googleSignIn!.lightweightSignIn();
+      }
 
       if (credentials == null) {
-        debugPrint('Silent sign-in returned no credentials');
+        debugPrint(
+          'Both silent and lightweight sign-in returned no credentials',
+        );
         return null;
       }
 
       // Validate credentials have necessary tokens
       if (credentials.accessToken.isEmpty) {
-        debugPrint(
-          'ERROR: Silent sign-in returned credentials without access token!',
-        );
+        debugPrint('ERROR: Sign-in returned credentials without access token!');
         debugPrint(
           'This usually means the OAuth session has expired or been revoked.',
         );
@@ -243,10 +254,10 @@ class AuthService extends ChangeNotifier {
       _authStateController.add(user);
       notifyListeners();
 
-      debugPrint('Silent sign-in successful for user: ${user.email}');
+      debugPrint('Sign-in successful for user: ${user.email}');
       return user;
     } catch (e) {
-      debugPrint('Silent sign-in failed: $e');
+      debugPrint('Sign-in failed: $e');
       debugPrint('Stack trace: ${StackTrace.current}');
       return null;
     }
@@ -324,16 +335,36 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Refresh access token using silentSignIn
-  /// The package handles refresh tokens internally via platform credential storage
+  /// Refresh access token using multiple strategies
+  /// 1. Try silentSignIn (recommended by google_sign_in_all_platforms)
+  /// 2. Try lightweightSignIn (official fallback)
+  /// 3. Fall back to manual refresh token if available
   Future<String?> _refreshAccessToken() async {
+    // Strategy 1: Use silentSignIn (recommended approach)
+    // The package handles refresh tokens internally via platform secure storage
     try {
       debugPrint('Refreshing access token via silentSignIn...');
 
-      final credentials = await _googleSignIn!.silentSignIn();
+      var credentials = await _googleSignIn!.silentSignIn();
+
+      // Strategy 2: Try lightweightSignIn if silentSignIn fails (official recommendation)
+      if (credentials == null || credentials.accessToken.isEmpty) {
+        debugPrint('Silent sign-in failed, trying lightweight sign-in...');
+        credentials = await _googleSignIn!.lightweightSignIn();
+      }
 
       if (credentials == null || credentials.accessToken.isEmpty) {
-        debugPrint('Silent sign-in failed to return valid credentials');
+        debugPrint('Both silent and lightweight sign-in failed');
+
+        // Strategy 3: Try manual refresh token as last resort
+        if (_currentUser?.refreshToken != null) {
+          debugPrint('Trying manual refresh token...');
+          final newToken = await refreshAccessTokenWithRefreshToken();
+          if (newToken != null) {
+            return newToken;
+          }
+        }
+
         return null;
       }
 
@@ -352,13 +383,20 @@ class AuthService extends ChangeNotifier {
       return credentials.accessToken;
     } catch (e) {
       debugPrint('Token refresh failed: $e');
+
+      // Last resort: try manual refresh token
+      if (_currentUser?.refreshToken != null) {
+        debugPrint('Trying manual refresh token as last resort...');
+        return await refreshAccessTokenWithRefreshToken();
+      }
+
       return null;
     }
   }
 
   /// Get current access token
   /// Returns null if user is not authenticated or token is not available
-  /// Automatically refreshes expired tokens using silentSignIn
+  /// Automatically refreshes expired tokens using refresh token
   /// [forceRefresh] - if true, ignores expiry time and forces a refresh
   Future<String?> getAccessToken({bool forceRefresh = false}) async {
     if (_currentUser?.accessToken == null) return null;
@@ -410,6 +448,63 @@ class AuthService extends ChangeNotifier {
     return _currentUser!.accessToken;
   }
 
+  /// Refresh access token using Google OAuth2 refresh token
+  /// This is the proper way to maintain persistent login
+  Future<String?> refreshAccessTokenWithRefreshToken() async {
+    if (_currentUser?.refreshToken == null) {
+      debugPrint('No refresh token available');
+      return null;
+    }
+
+    try {
+      debugPrint('Refreshing access token using refresh token...');
+
+      final configService = ConfigService();
+      final clientId = configService.googleClientId;
+      final clientSecret = configService.googleClientSecret;
+
+      // Make direct OAuth2 token refresh request
+      final response = await http.post(
+        Uri.parse('https://oauth2.googleapis.com/token'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {
+          'client_id': clientId,
+          'client_secret': clientSecret ?? '',
+          'refresh_token': _currentUser!.refreshToken!,
+          'grant_type': 'refresh_token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final newAccessToken = data['access_token'] as String;
+        final expiresIn = data['expires_in'] as int;
+
+        // Update user with new token
+        final updatedUser = _currentUser!.copyWith(
+          accessToken: newAccessToken,
+          tokenExpiry: DateTime.now().add(Duration(seconds: expiresIn)),
+        );
+
+        _currentUser = updatedUser;
+        await StorageService.storeUser(updatedUser);
+        await _storeUserInBackend(updatedUser);
+        notifyListeners();
+
+        debugPrint('Access token refreshed successfully using refresh token');
+        return newAccessToken;
+      } else {
+        debugPrint(
+          'Token refresh failed: ${response.statusCode} - ${response.body}',
+        );
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error refreshing token with refresh token: $e');
+      return null;
+    }
+  }
+
   /// Create User object from GoogleSignInCredentials
   Future<User> _createUserFromCredentials(
     GoogleSignInCredentials credentials,
@@ -425,14 +520,14 @@ class AuthService extends ChangeNotifier {
       tokenExpiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
       debugPrint('Token expiry set from ID token: $tokenExpiry');
     } else {
-      // Fallback to 50 minutes from now
-      tokenExpiry = DateTime.now().add(const Duration(minutes: 50));
-      debugPrint('Token expiry set to default (50m): $tokenExpiry');
+      // Fallback to 1 hour from now (Google's default)
+      tokenExpiry = DateTime.now().add(const Duration(hours: 1));
+      debugPrint('Token expiry set to default (1h): $tokenExpiry');
     }
 
-    // Note: credentials.refreshToken is often null because the package
-    // stores it internally in platform-specific secure storage.
-    // We preserve it if available, but silentSignIn() handles refresh automatically.
+    // Note: google_sign_in_all_platforms stores refresh tokens internally
+    // in platform-specific secure storage. The refreshToken field may be null
+    // but the package handles token refresh automatically via silentSignIn().
     String? effectiveRefreshToken = credentials.refreshToken;
 
     if ((effectiveRefreshToken == null || effectiveRefreshToken.isEmpty) &&
