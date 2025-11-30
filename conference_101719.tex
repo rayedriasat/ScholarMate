@@ -1,0 +1,360 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{ScholarMate: An Offline-First Cross-Platform AI Research Workspace with Real-Time Collaboration}
+
+\author{
+\IEEEauthorblockN{Rayed Riasat Rabbi, Jawadul Karim Tanzim, Barshon Basak, Mezbah Uddin Ahmed}
+\IEEEauthorblockA{
+\textit{Department of Electrical and Computer Engineering (ECE)} \\
+\textit{North South University} \\
+Plot \#15, Block \#B, Bashundhara \\
+Dhaka--1229, Bangladesh \\
+rayed.rabbi@northsouth.edu, jawadul.tanzim@northsouth.edu, barshon.basak@northsouth.edu, mezbah.ahmed@northsouth.edu
+}
+}
+
+\maketitle
+
+\begin{abstract}
+This paper introduces ScholarMate, an offline-first research workspace that tackles major issues in managing academic documents and collaborative research. ScholarMate uses a hybrid setup with Flutter for cross-platform deployment and FastAPI for backend services. It allows researchers to handle PDF libraries with AI-powered semantic search, real-time collaboration, and strong annotation features while ensuring complete data ownership through Google Drive integration. The system uses a namespace-based vector isolation strategy with Pinecone for efficient retrieval-augmented generation. It also supports offline-first operations through local SQLite caching with Drift and enables real-time collaboration using Supabase Realtime. Performance tests show fast query response times, and it successfully runs on multiple platforms (Android, Web, Windows) using entirely free-tier services. The design provides full feature availability across all platforms while keeping complete control over user data and requiring no infrastructure costs for individual researchers.
+\end{abstract}
+
+\begin{IEEEkeywords}
+offline-first architecture, cross-platform development, retrieval-augmented generation, real-time collaboration, document management, semantic search, Flutter, vector databases
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Modern academic research relies more and more on digital document management systems. However, current solutions come with serious issues such as vendor lock-in due to proprietary storage, limited offline capability, high subscription fees, and poor support for collaborative annotation. Researchers require tools that ensure data ownership, function well without internet access, support AI-driven document analysis, and allow smooth collaboration between institutions.
+
+ScholarMate tackles these problems with a design that blends offline-first principles with cloud-based AI features. The system keeps all user documents in their personal Google Drive accounts. This approach ensures data ownership while offering useful features like optical character recognition (OCR), text-to-speech, semantic search using RAG, and collaborative annotations.
+
+The key contributions of this work include:
+
+\begin{itemize}
+\item A hybrid offline-first architecture enabling full functionality without internet connectivity while synchronizing seamlessly when online
+\item A namespace-based vector isolation strategy for multi-tenant RAG systems using shared infrastructure
+\item Cross-platform deployment achieving feature parity across six platforms from a single codebase
+\item Real-time collaboration system with conflict resolution for distributed annotation workflows
+\item Complete implementation using free-tier services, eliminating cost barriers for individual researchers
+\end{itemize}
+
+\section{Related Work}
+
+\subsection{Document Management Systems}
+
+Traditional document management systems like Mendeley \cite{b1} and Zotero \cite{b2} provide reference management but lack offline-first architecture and AI-powered semantic search. Cloud-based solutions such as Notion and Evernote offer collaboration features but require constant internet connectivity and store data on proprietary servers.
+
+\subsection{Offline-First Applications}
+
+CouchDB and PouchDB pioneered offline-first database synchronization \cite{b3}, but focus primarily on structured data rather than document-centric workflows. Progressive Web Apps (PWAs) enable offline functionality for web applications but face limitations in native platform integration and file system access.
+
+\subsection{Retrieval-Augmented Generation}
+
+Recent advances in RAG systems \cite{b4} demonstrate improved accuracy for question-answering tasks by grounding large language model responses in retrieved context. However, existing implementations typically assume cloud-only deployment and do not address multi-tenant isolation or offline operation requirements.
+
+\subsection{Real-Time Collaboration}
+
+Operational Transformation (OT) \cite{b5} and Conflict-free Replicated Data Types (CRDTs) \cite{b6} provide theoretical foundations for real-time collaboration. Commercial implementations like Google Docs achieve low-latency synchronization but require proprietary infrastructure. ScholarMate adapts these concepts for document annotation workflows using open-source components.
+
+\section{System Architecture}
+
+\subsection{Overview}
+
+ScholarMate employs a three-tier architecture (Fig. 1) consisting of: (1) cross-platform Flutter frontend with local Drift database, (2) FastAPI backend providing AI orchestration and OCR services, and (3) cloud infrastructure layer including Supabase PostgreSQL for metadata, Pinecone for vector storage, and Google Drive for document storage.
+
+\subsection{Offline-First Design}
+
+The offline-first architecture implements a local-first data model where all operations execute against a local SQLite database (Drift) with automatic background synchronization. The system maintains three data structures:
+
+\begin{itemize}
+\item \textbf{Local Cache}: Complete mirror of user's document metadata, annotations, and tags stored in Drift tables
+\item \textbf{Sync Queue}: Ordered list of pending operations (create, update, delete) awaiting network connectivity
+\item \textbf{Conflict Log}: Record of synchronization conflicts with timestamps and resolution strategies
+\end{itemize}
+
+When network connectivity is unavailable, operations execute optimistically against the local cache and enqueue for later synchronization. Upon reconnection, the sync manager processes queued operations using a last-write-wins conflict resolution strategy with full history preservation.
+
+\subsection{Cross-Platform Frontend}
+
+The Flutter-based frontend achieves true cross-platform deployment through careful abstraction of platform-specific capabilities. Key components include:
+
+\textbf{Platform Detection Layer}: Runtime detection of platform capabilities (mobile camera, desktop file system, web storage APIs) enables conditional feature availability.
+
+\textbf{Drift Database}: Cross-platform SQLite abstraction providing identical API across all platforms including web (via SQL.js WebAssembly compilation).
+
+\textbf{Provider Pattern}: Dependency injection and state management using Flutter Provider package ensures reactive UI updates and proper resource lifecycle management.
+
+\textbf{Syncfusion PDF Viewer}: Commercial-grade PDF rendering with annotation support compiled to native code on mobile/desktop and WebAssembly for web deployment.
+
+\subsection{Backend Services}
+
+The FastAPI backend provides stateless microservices for computationally intensive operations:
+
+\textbf{OCR Service}: The OCR engine processes scanned documents and images, extracting text for indexing and search. Supports 100+ languages with configurable accuracy parameters.
+
+\textbf{RAG Indexer}: Extracts text from PDFs using PyPDF2, chunks content using recursive character splitting (1000-character chunks with 200-character overlap), and generates embeddings using the BAAI/bge-small-en-v1.5 model via API-based inference. This model produces 384-dimensional embeddings with significantly improved semantic alignment compared to MiniLM-class models, especially for dense retrieval tasks. All chunk embeddings, along with metadata, are stored in Pinecone for efficient vector search.
+
+
+\textbf{RAG Query Service}: Processes natural language queries by generating query embeddings, performing cosine similarity search in Pinecone (top-k=5), formatting retrieved context with source citations, and generating responses via GROQ API (llama-3.3-70b-versatile model), as well as through user-provided API keys.
+
+\textbf{Collaboration Service}: Manages annotation synchronization, conflict detection, and resolution using Supabase Realtime WebSocket connections. Users can chat realtime while viewing a pdf.
+
+\subsection{Vector Database Architecture}
+
+ScholarMate implements a novel namespace-based isolation strategy for multi-tenant vector storage. Rather than creating separate Pinecone indexes per user (expensive and slow), the system uses a single shared index with per-user namespaces:
+
+\begin{equation}
+namespace = \text{user\_} + \text{hash}(user\_id)
+\end{equation}
+
+Each vector stores comprehensive metadata:
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+{
+  "id": "file_id_chunk_index",
+  "values": [0.123, -0.456, ...],
+  "metadata": {
+    "file_id": "uuid",
+    "file_name": "paper.pdf",
+    "page_number": 5,
+    "chunk_index": 12,
+    "text": "chunk content...",
+    "user_id": "uuid"
+  }
+}
+\end{lstlisting}
+
+This architecture provides O(1) user isolation, enables efficient resource sharing, and maintains security through namespace-scoped queries.
+
+\subsection{Real-Time Collaboration}
+
+The collaboration system implements a hybrid approach combining optimistic UI updates with eventual consistency:
+
+\textbf{Annotation Creation}: User creates annotation locally (instant UI feedback), saves to Supabase via REST API (durable storage), Supabase Realtime broadcasts change event, collaborators receive event and update local cache.
+
+\textbf{Conflict Resolution}: Last-write-wins strategy based on server timestamps, full history preservation in audit log, conflict notification UI for manual review when needed.
+
+\textbf{Live chat}: WebSocket-based system allows users to chat in realtime with eachother while reading a pdf, in a small windowed view.
+
+% \textbf{Presence Tracking}: WebSocket-based presence system tracks active users per document, broadcasts cursor positions and page numbers, implements automatic cleanup after 30 seconds of inactivity.
+
+\section{Implementation}
+
+\subsection{Technology Stack}
+
+\textbf{Frontend}: Flutter 3.0+, Drift (SQLite), Syncfusion PDF Viewer, Provider (state management), Google Sign-In v7, Flutter TTS
+
+\textbf{Backend}: Python 3.12, FastAPI, Uvicorn, Tesseract OCR, PyPDF2, Cryptography (Fernet encryption), BAAI/bge-small-en-v1.5 embedding model (API inference)
+
+\textbf{Infrastructure}: Supabase (PostgreSQL + Realtime), Pinecone (vector database), Google Drive API, GROQ API (LLM inference)
+
+\textbf{Package Management}: uv for Python (pyproject.toml), flutter pub for Dart
+
+\subsection{Database Schema}
+
+The Supabase PostgreSQL schema implements comprehensive metadata tracking with Row Level Security (RLS) policies:
+
+\textbf{Core Tables}: users, files, folders, annotations, tags, file\_tags
+
+\textbf{Collaboration Tables}: shares, collaboration\_sessions, file\_chat\_messages
+
+\textbf{AI Tables}: ingestion\_jobs, api\_usage\_logs, user\_api\_keys
+
+\textbf{Analytics Tables}: user\_analytics, file\_analytics
+
+All tables include RLS policies ensuring users can only access their own data or explicitly shared resources. Foreign key constraints maintain referential integrity, and indexes optimize common query patterns.
+
+\subsection{Authentication and Security}
+
+ScholarMate implements OAuth 2.0 authentication via Google with the following security measures:
+
+\begin{itemize}
+\item Access tokens stored encrypted (Fernet/AES-256) in Supabase
+\item Refresh tokens enable long-lived sessions without re-authentication
+\item Google Drive scope limited to application folder (drive.file)
+\item API keys for AI providers encrypted at rest
+\item All communication over HTTPS/WSS
+\item RLS policies enforce data isolation
+\end{itemize}
+
+\subsection{Offline Operation}
+
+The offline operation workflow implements a sophisticated synchronization protocol:
+
+\textbf{Write Operations}: Execute against local Drift database, enqueue in sync\_queue table with operation type and payload, display optimistic UI update, background sync attempts when connectivity detected.
+
+\textbf{Read Operations}: Always serve from local cache, background refresh from server when online, conflict detection on sync, user notification for conflicts requiring manual resolution.
+
+\textbf{Conflict Resolution}: Compare timestamps (local vs server), apply last-write-wins for automatic resolution, preserve both versions in conflict\_log, notify user for manual review of important conflicts.
+
+\section{Performance Evaluation}
+
+\subsection{Query Performance}
+
+Performance testing on a corpus of 100 research papers (average 10 pages each) demonstrates:
+
+\textbf{Indexing Performance}: 60 seconds per 10-page PDF (10s text extraction, 50s embedding generation, 0.2s upload)
+
+\textbf{Query Latency}: 1.25 seconds average (0.1s embedding, 0.1s vector search, 1.0s LLM inference, 0.05s formatting)
+
+\textbf{Offline Operations}: Annotation creation under 50ms, local search under 100ms, PDF rendering 1-2 seconds initial load
+
+\subsection{Scalability}
+
+The architecture scales horizontally through stateless backend services:
+
+\textbf{Vector Capacity}: Pinecone free tier supports 100,000 vectors, sufficient for 100 PDFs per user with 1000 chunks each, enabling 10 users with substantial libraries on free tier.
+
+\textbf{Backend Scaling}: Stateless FastAPI services enable horizontal scaling behind load balancer, shared Pinecone index eliminates per-instance storage requirements.
+
+\textbf{Frontend Performance}: Local-first architecture ensures UI responsiveness independent of backend load, background sync prevents blocking user operations.
+
+\subsection{Cross-Platform Compatibility}
+
+Testing across multiple platforms confirms feature parity:
+
+\begin{table}[h]
+\caption{Platform Feature Matrix}
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Feature} & \textbf{Android} & \textbf{Web} & \textbf{Windows} \\
+\hline
+PDF Viewing    & \checkmark & \checkmark & \checkmark \\
+Annotations    & \checkmark & \checkmark & \checkmark \\
+OCR           & \checkmark & \checkmark & \checkmark \\
+Offline Mode  & \checkmark & \checkmark & \checkmark \\
+Real-time     & \checkmark & \checkmark & \checkmark \\
+TTS           & \checkmark & \checkmark & \checkmark \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+
+\subsection{Cost Analysis}
+
+Complete deployment using free-tier services:
+
+\textbf{Supabase}: 500MB database, 2GB bandwidth, unlimited API requests (free tier)
+
+\textbf{Pinecone}: 100,000 vectors, 2GB storage, 1 serverless index (free tier)
+
+\textbf{GROQ}: 14,400 requests/day, llama-3.3-70b-versatile (free tier)
+
+\textbf{Google Drive}: 15GB storage per user (free tier)
+
+\textbf{Backend Hosting}: Render.com free tier (750 hours/month) or self-hosted
+
+Total infrastructure cost: \$0/month for individual researchers
+
+\section{Use Cases and Applications}
+
+\subsection{Individual Research}
+
+Researchers use ScholarMate to:
+\begin{itemize}
+\item Organize personal PDF libraries with tags and folders
+\item Annotate papers with highlights and comments
+\item Ask questions about their research corpus via RAG
+\item Work offline during travel or in low-connectivity environments
+\item Maintain complete data ownership in personal Google Drive
+\end{itemize}
+
+\subsection{Collaborative Research}
+
+Research teams leverage collaboration features:
+\begin{itemize}
+\item Share folders with role-based permissions (Viewer/Editor)
+\item Annotate shared documents with real-time synchronization
+\item Discuss papers via per-file chat threads
+\end{itemize}
+
+\subsection{Literature Review}
+
+The RAG system accelerates literature review:
+\begin{itemize}
+\item Semantic search across entire document corpus
+\item Citation-backed answers with source page numbers
+\item Cross-document concept discovery
+\item Automated summarization of research themes
+\item Export chat conversations as Markdown notes
+\end{itemize}
+
+\section{Discussion}
+
+\subsection{Advantages}
+
+\textbf{Data Sovereignty}: Storing documents in user-owned Google Drive accounts eliminates vendor lock-in and ensures researchers maintain control over their intellectual property.
+
+\textbf{Offline Capability}: The offline-first architecture enables productive work in environments with limited or no internet connectivity, critical for field research and international travel.
+
+\textbf{Cost Accessibility}: Zero-cost deployment using free-tier services removes financial barriers for individual researchers and small institutions in developing regions.
+
+\textbf{Cross-Platform Reach}: Single codebase deployment across six platforms maximizes accessibility and reduces development maintenance burden.
+
+\subsection{Limitations}
+
+\textbf{Free Tier Constraints}: Pinecone free tier limits total vector count to 100,000, restricting corpus size for individual users. Migration to paid tier or alternative vector databases required for larger deployments.
+
+\textbf{Embedding Model}: While the BAAI/bge-small-en-v1.5 model provides strong semantic retrieval performance in a lightweight configuration, larger models (e.g., bge-base or bge-large) may yield higher accuracy at increased API cost and latency.
+
+
+\textbf{Conflict Resolution}: Last-write-wins strategy may lose data in high-conflict scenarios. Future work should explore CRDT-based approaches for finer-grained conflict resolution.
+
+\textbf{Mobile OCR}: Tesseract OCR accuracy varies with image quality. Integration of cloud-based OCR services (Google Vision API) could improve accuracy for challenging documents.
+
+\subsection{Future Work}
+
+Planned enhancements include:
+
+\begin{itemize}
+\item Advanced annotation types (freehand drawing, audio notes)
+\item Track team member presence and activity
+\item Hierarchical tag systems with auto-tagging via ML
+\item Citation graph visualization for literature mapping
+\item Integration with reference managers (BibTeX, Zotero)
+\item Multi-modal RAG supporting images and tables
+\item Federated learning for privacy-preserving model fine-tuning
+\end{itemize}
+
+\section{Conclusion}
+
+ScholarMate demonstrates that you can create effective research tools using free-tier services. It allows data ownership, works offline, and is compatible with various platforms. The offline-first setup, which uses namespace-based vector isolation, provides a strong foundation for AI-powered document management. Real-time collaboration tools enable research teams to work well together, and the no-cost deployment model makes it accessible to researchers around the world.
+
+The system's open design and clear documentation simplify extensions and customization for specific research needs. By combining modern web technologies like Flutter and FastAPI with cloud services such as Supabase and Pinecone, along with user-owned storage like Google Drive, ScholarMate offers a new approach to managing academic documents. It focuses on user control, accessibility, and teamwork.
+
+\section*{Acknowledgment}
+
+The authors thank the open-source community for the foundational technologies enabling this work, including Flutter, FastAPI, Supabase, and the HuggingFace Transformers library.
+
+\begin{thebibliography}{00}
+\bibitem{b1} Mendeley Ltd., ``Mendeley Reference Manager,'' https://www.mendeley.com, 2024.
+\bibitem{b2} Corporation for Digital Scholarship, ``Zotero,'' https://www.zotero.org, 2024.
+\bibitem{b3} J. C. Anderson, J. Lehnardt, and N. Slater, ``CouchDB: The Definitive Guide,'' O'Reilly Media, 2010.
+\bibitem{b4} P. Lewis et al., ``Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks,'' in Proc. NeurIPS, 2020, pp. 9459-9474.
+\bibitem{b5} C. A. Ellis and S. J. Gibbs, ``Concurrency Control in Groupware Systems,'' in Proc. ACM SIGMOD, 1989, pp. 399-407.
+\bibitem{b6} M. Shapiro et al., ``Conflict-Free Replicated Data Types,'' in Proc. SSS, 2011, pp. 386-400.
+\bibitem{b7} Google LLC, ``Flutter: Build apps for any screen,'' https://flutter.dev, 2024.
+\bibitem{b8} S. Ramirez, ``FastAPI: Modern, fast web framework for building APIs,'' https://fastapi.tiangolo.com, 2024.
+\bibitem{b9} Supabase Inc., ``Supabase: The Open Source Firebase Alternative,'' https://supabase.com, 2024.
+\bibitem{b10} Pinecone Systems Inc., ``Pinecone: Vector Database for Machine Learning,'' https://www.pinecone.io, 2024.
+\end{thebibliography}
+
+\end{document}
