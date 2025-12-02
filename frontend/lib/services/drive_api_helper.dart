@@ -4,47 +4,38 @@ import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 
 /// Helper service for making Google Drive API calls with automatic token refresh
+///
+/// Uses AuthService.getAuthenticatedClient() which handles token refresh automatically
+/// via the google_sign_in_all_platforms package.
 class DriveApiHelper {
   final AuthService _authService;
 
   DriveApiHelper(this._authService);
 
-  /// Make an authenticated HTTP GET request with automatic token refresh
-  /// Retries once with refreshed token if initial request returns 401
+  /// Get authenticated HTTP client
+  Future<http.Client> _getClient() async {
+    final client = await _authService.getAuthenticatedClient();
+    if (client == null) {
+      throw Exception('No authenticated client available. Please sign in.');
+    }
+    return client;
+  }
+
+  /// Make an authenticated HTTP GET request
   Future<http.Response> authenticatedGet(
     Uri uri, {
     Map<String, String>? headers,
     int maxRetries = 1,
   }) async {
-    String? accessToken = await _authService.getAccessToken();
-
-    if (accessToken == null) {
-      throw Exception('No access token available. Please sign in.');
-    }
-
-    final authHeaders = {'Authorization': 'Bearer $accessToken', ...?headers};
-
     try {
-      final response = await http.get(uri, headers: authHeaders);
+      final client = await _getClient();
+      final response = await client.get(uri, headers: headers);
 
-      // If 401 Unauthorized, try refreshing token and retry
       if (response.statusCode == 401 && maxRetries > 0) {
-        debugPrint('Got 401, refreshing token and retrying...');
-
-        // Force refresh the token
-        accessToken = await _authService.getAccessToken(forceRefresh: true);
-
-        if (accessToken == null) {
-          throw Exception('Token refresh failed. Please sign in again.');
-        }
-
-        // Retry with new token
-        final retryHeaders = {
-          'Authorization': 'Bearer $accessToken',
-          ...?headers,
-        };
-
-        return await http.get(uri, headers: retryHeaders);
+        debugPrint('Got 401, retrying with fresh client...');
+        // Try to get a fresh client (will attempt silent sign-in)
+        final freshClient = await _getClient();
+        return await freshClient.get(uri, headers: headers);
       }
 
       return response;
@@ -54,7 +45,7 @@ class DriveApiHelper {
     }
   }
 
-  /// Make an authenticated HTTP POST request with automatic token refresh
+  /// Make an authenticated HTTP POST request
   Future<http.Response> authenticatedPost(
     Uri uri, {
     Map<String, String>? headers,
@@ -62,42 +53,21 @@ class DriveApiHelper {
     Encoding? encoding,
     int maxRetries = 1,
   }) async {
-    String? accessToken = await _authService.getAccessToken();
-
-    if (accessToken == null) {
-      throw Exception('No access token available. Please sign in.');
-    }
-
-    final authHeaders = {'Authorization': 'Bearer $accessToken', ...?headers};
-
     try {
-      final response = await http.post(
+      final client = await _getClient();
+      final response = await client.post(
         uri,
-        headers: authHeaders,
+        headers: headers,
         body: body,
         encoding: encoding,
       );
 
-      // If 401 Unauthorized, try refreshing token and retry
       if (response.statusCode == 401 && maxRetries > 0) {
-        debugPrint('Got 401, refreshing token and retrying...');
-
-        // Force refresh the token
-        accessToken = await _authService.getAccessToken(forceRefresh: true);
-
-        if (accessToken == null) {
-          throw Exception('Token refresh failed. Please sign in again.');
-        }
-
-        // Retry with new token
-        final retryHeaders = {
-          'Authorization': 'Bearer $accessToken',
-          ...?headers,
-        };
-
-        return await http.post(
+        debugPrint('Got 401, retrying with fresh client...');
+        final freshClient = await _getClient();
+        return await freshClient.post(
           uri,
-          headers: retryHeaders,
+          headers: headers,
           body: body,
           encoding: encoding,
         );
@@ -110,7 +80,7 @@ class DriveApiHelper {
     }
   }
 
-  /// Make an authenticated HTTP PATCH request with automatic token refresh
+  /// Make an authenticated HTTP PATCH request
   Future<http.Response> authenticatedPatch(
     Uri uri, {
     Map<String, String>? headers,
@@ -118,42 +88,21 @@ class DriveApiHelper {
     Encoding? encoding,
     int maxRetries = 1,
   }) async {
-    String? accessToken = await _authService.getAccessToken();
-
-    if (accessToken == null) {
-      throw Exception('No access token available. Please sign in.');
-    }
-
-    final authHeaders = {'Authorization': 'Bearer $accessToken', ...?headers};
-
     try {
-      final response = await http.patch(
+      final client = await _getClient();
+      final response = await client.patch(
         uri,
-        headers: authHeaders,
+        headers: headers,
         body: body,
         encoding: encoding,
       );
 
-      // If 401 Unauthorized, try refreshing token and retry
       if (response.statusCode == 401 && maxRetries > 0) {
-        debugPrint('Got 401, refreshing token and retrying...');
-
-        // Force refresh the token
-        accessToken = await _authService.getAccessToken(forceRefresh: true);
-
-        if (accessToken == null) {
-          throw Exception('Token refresh failed. Please sign in again.');
-        }
-
-        // Retry with new token
-        final retryHeaders = {
-          'Authorization': 'Bearer $accessToken',
-          ...?headers,
-        };
-
-        return await http.patch(
+        debugPrint('Got 401, retrying with fresh client...');
+        final freshClient = await _getClient();
+        return await freshClient.patch(
           uri,
-          headers: retryHeaders,
+          headers: headers,
           body: body,
           encoding: encoding,
         );
@@ -166,41 +115,20 @@ class DriveApiHelper {
     }
   }
 
-  /// Make an authenticated HTTP DELETE request with automatic token refresh
+  /// Make an authenticated HTTP DELETE request
   Future<http.Response> authenticatedDelete(
     Uri uri, {
     Map<String, String>? headers,
     int maxRetries = 1,
   }) async {
-    String? accessToken = await _authService.getAccessToken();
-
-    if (accessToken == null) {
-      throw Exception('No access token available. Please sign in.');
-    }
-
-    final authHeaders = {'Authorization': 'Bearer $accessToken', ...?headers};
-
     try {
-      final response = await http.delete(uri, headers: authHeaders);
+      final client = await _getClient();
+      final response = await client.delete(uri, headers: headers);
 
-      // If 401 Unauthorized, try refreshing token and retry
       if (response.statusCode == 401 && maxRetries > 0) {
-        debugPrint('Got 401, refreshing token and retrying...');
-
-        // Force refresh the token
-        accessToken = await _authService.getAccessToken(forceRefresh: true);
-
-        if (accessToken == null) {
-          throw Exception('Token refresh failed. Please sign in again.');
-        }
-
-        // Retry with new token
-        final retryHeaders = {
-          'Authorization': 'Bearer $accessToken',
-          ...?headers,
-        };
-
-        return await http.delete(uri, headers: retryHeaders);
+        debugPrint('Got 401, retrying with fresh client...');
+        final freshClient = await _getClient();
+        return await freshClient.delete(uri, headers: headers);
       }
 
       return response;
