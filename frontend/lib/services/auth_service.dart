@@ -334,11 +334,18 @@ class AuthService extends ChangeNotifier {
   User _createUserFromCredentials(GoogleSignInCredentials credentials) {
     final userInfo = _decodeIdToken(credentials.idToken);
 
+    // Use the actual expiresIn from credentials (v2.0.0 feature)
+    // Fall back to ID token exp claim, then default to 1 hour
     DateTime tokenExpiry;
-    if (userInfo.containsKey('exp') && userInfo['exp'] is int) {
+    if (credentials.expiresIn != null) {
+      tokenExpiry = credentials.expiresIn!;
+      debugPrint('Using credentials.expiresIn: $tokenExpiry');
+    } else if (userInfo.containsKey('exp') && userInfo['exp'] is int) {
       tokenExpiry = DateTime.fromMillisecondsSinceEpoch(userInfo['exp'] * 1000);
+      debugPrint('Using ID token exp: $tokenExpiry');
     } else {
       tokenExpiry = DateTime.now().add(const Duration(hours: 1));
+      debugPrint('Using default 1 hour expiry: $tokenExpiry');
     }
 
     return User.fromGoogleSignIn(
