@@ -63,6 +63,8 @@ class AuthService extends ChangeNotifier {
       debugPrint('Initializing GoogleSignIn');
       debugPrint('Platform: ${defaultTargetPlatform.name}, isWeb: $kIsWeb');
 
+      // Token persistence callbacks for session restoration across app restarts
+      // These are especially important on mobile where google_sign_in doesn't persist
       _googleSignIn = GoogleSignIn(
         params: GoogleSignInParams(
           clientId: clientId,
@@ -70,6 +72,10 @@ class AuthService extends ChangeNotifier {
           scopes: _scopes,
           redirectPort: 3000,
           timeout: const Duration(minutes: 2),
+          // Token persistence callbacks - enable session restoration
+          saveAccessToken: _saveAccessToken,
+          retrieveAccessToken: _retrieveAccessToken,
+          deleteAccessToken: _deleteAccessToken,
         ),
       );
 
@@ -91,6 +97,47 @@ class AuthService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Failed to initialize AuthService: $e');
       rethrow;
+    }
+  }
+
+  /// Save access token to persistent storage (for mobile platforms)
+  /// The package passes the token as a JSON string
+  Future<void> _saveAccessToken(String tokenJson) async {
+    debugPrint('Saving access token to persistent storage');
+    try {
+      await StorageService.setString('google_access_token', tokenJson);
+      debugPrint('Access token saved successfully');
+    } catch (e) {
+      debugPrint('Failed to save access token: $e');
+    }
+  }
+
+  /// Retrieve access token from persistent storage (for mobile platforms)
+  /// Returns the token as a JSON string
+  Future<String?> _retrieveAccessToken() async {
+    debugPrint('Retrieving access token from persistent storage');
+    try {
+      final tokenJson = await StorageService.getString('google_access_token');
+      if (tokenJson == null) {
+        debugPrint('No stored access token found');
+        return null;
+      }
+      debugPrint('Retrieved stored access token');
+      return tokenJson;
+    } catch (e) {
+      debugPrint('Failed to retrieve access token: $e');
+      return null;
+    }
+  }
+
+  /// Delete access token from persistent storage (for mobile platforms)
+  Future<void> _deleteAccessToken() async {
+    debugPrint('Deleting access token from persistent storage');
+    try {
+      await StorageService.remove('google_access_token');
+      debugPrint('Access token deleted successfully');
+    } catch (e) {
+      debugPrint('Failed to delete access token: $e');
     }
   }
 
@@ -171,7 +218,13 @@ class AuthService extends ChangeNotifier {
     try {
       debugPrint('Attempting silent sign-in...');
 
-      // Try silent sign-in first (uses stored credentials from platform secure storage)
+      // Check if we have a stored user with valid session
+      final storedUser = await StorageService.getStoredUser();
+      if (storedUser != null && await StorageService.isSessionValid()) {
+        debugPrint('Found stored user session: ${storedUser.email}');
+      }
+
+      // Try silent sign-in first (uses stored credentials via our callbacks)
       var credentials = await _googleSignIn!.silentSignIn();
 
       // If silent fails, try lightweight (official recommendation)
