@@ -11,8 +11,9 @@ class StorageService {
   static const String _tokenExpiryKey = 'token_expiry';
   static const String _lastAuthKey = 'last_auth_time';
 
-  // Google access tokens expire in ~1 hour, but we'll refresh at 50 minutes to be safe
-  static const Duration _tokenValidityDuration = Duration(minutes: 50);
+  // Default token validity if actual expiry is not available
+  // Google access tokens typically expire in ~1 hour
+  static const Duration _defaultTokenValidityDuration = Duration(hours: 1);
 
   // Session validity (keep user logged in for 30 days even if tokens need refresh)
   static const Duration _sessionValidityDuration = Duration(days: 30);
@@ -33,9 +34,10 @@ class StorageService {
 
     if (user.accessToken != null) {
       await _prefs!.setString(_accessTokenKey, user.accessToken!);
-      
-      // Use the token expiry from the user object if available, otherwise use default duration
-      final expiryTime = user.tokenExpiry ?? DateTime.now().add(_tokenValidityDuration);
+
+      // Use the actual token expiry from credentials, fallback to default
+      final expiryTime =
+          user.tokenExpiry ?? DateTime.now().add(_defaultTokenValidityDuration);
       await _prefs!.setInt(_tokenExpiryKey, expiryTime.millisecondsSinceEpoch);
     }
 
@@ -65,7 +67,7 @@ class StorageService {
       final accessToken = _prefs!.getString(_accessTokenKey);
       final refreshToken = _prefs!.getString(_refreshTokenKey);
       final idToken = _prefs!.getString(_idTokenKey);
-      
+
       // Get token expiry
       final expiryTimestamp = _prefs!.getInt(_tokenExpiryKey);
       final tokenExpiry = expiryTimestamp != null
@@ -91,8 +93,8 @@ class StorageService {
     await initialize();
     await _prefs!.setString(_accessTokenKey, accessToken);
 
-    // Update token expiry to 30 days from now
-    final expiryTime = DateTime.now().add(_tokenValidityDuration);
+    // Update token expiry (default 1 hour from now)
+    final expiryTime = DateTime.now().add(_defaultTokenValidityDuration);
     await _prefs!.setInt(_tokenExpiryKey, expiryTime.millisecondsSinceEpoch);
 
     // Also update the user object if it exists

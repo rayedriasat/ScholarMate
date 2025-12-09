@@ -1,8 +1,11 @@
-"""Authentication endpoints"""
+"""Authentication endpoints
+
+Note: Token management is handled entirely on the frontend by google_sign_in_all_platforms.
+The backend only stores user metadata for features like tags, indexing, and AI chat.
+"""
 import logging
 from fastapi import APIRouter, HTTPException, status
-from ..models.auth import StoreTokensRequest, StoreTokensResponse, RefreshTokenResponse
-from ..services.encryption_service import get_encryption_service
+from pydantic import BaseModel
 from ..services.supabase_service import get_supabase_service
 
 logger = logging.getLogger(__name__)
@@ -10,24 +13,33 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 
-@router.post("/store-tokens", response_model=StoreTokensResponse)
-async def store_tokens(request: StoreTokensRequest):
+class UserInfoRequest(BaseModel):
+    """Request to store/update user info"""
+    user_id: str  # Google sub claim
+    email: str
+    name: str | None = None
+    picture_url: str | None = None
+
+
+class UserInfoResponse(BaseModel):
+    """Response with user info"""
+    success: bool
+    message: str
+    db_user_id: str | None = None
+
+
+@router.post("/user-info", response_model=UserInfoResponse)
+async def store_user_info(request: UserInfoRequest):
     """
-    Store encrypted OAuth tokens for a user
+    Store or update user information in the database.
     
-    This endpoint:
-    1. Creates or updates the user record in the database
-    2. Encrypts the OAuth tokens
-    3. Stores the encrypted tokens in the database
+    This is called when a user signs in to ensure their profile exists
+    in the database for features like tags, file metadata, etc.
     
-    Args:
-        request: Token storage request with user info and tokens
-        
-    Returns:
-        Success response with database user ID
+    Note: This does NOT store OAuth tokens - those are managed by
+    google_sign_in_all_platforms on the frontend.
     """
     try:
-        encryption_service = get_encryption_service()
         supabase_service = get_supabase_service()
         
         # Get or create user
@@ -38,83 +50,29 @@ async def store_tokens(request: StoreTokensRequest):
             picture_url=request.picture_url
         )
         
-        db_user_id = user["id"]
-        
-        # Validate and encrypt access token
-        if not request.access_token or request.access_token.strip() == "":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Access token is required and cannot be empty"
-            )
-        
-        encrypted_access_token = encryption_service.encrypt(request.access_token)
-        await supabase_service.store_encrypted_token(
-            user_id=db_user_id,
-            token_type="access_token",
-            encrypted_token=encrypted_access_token
-        )
-        
-        # Encrypt and store refresh token if provided
-        # Note: google_sign_in v7+ doesn't expose refresh tokens directly
-        # They're managed internally by the plugin
-        if request.refresh_token and request.refresh_token.strip() != "":
-            encrypted_refresh_token = encryption_service.encrypt(request.refresh_token)
-            await supabase_service.store_encrypted_token(
-                user_id=db_user_id,
-                token_type="refresh_token",
-                encrypted_token=encrypted_refresh_token
-            )
-        else:
-            # Store a placeholder to indicate token refresh is handled client-side
-            logger.info(f"No refresh token provided for user {db_user_id} - using client-side refresh")
-            await supabase_service.store_encrypted_token(
-                user_id=db_user_id,
-                token_type="refresh_token",
-                encrypted_token="CLIENT_MANAGED"
-            )
-        
-        # Encrypt and store ID token if provided
-        if request.id_token and request.id_token.strip() != "":
-            encrypted_id_token = encryption_service.encrypt(request.id_token)
-            await supabase_service.store_encrypted_token(
-                user_id=db_user_id,
-                token_type="id_token",
-                encrypted_token=encrypted_id_token
-            )
-        
-        return StoreTokensResponse(
+        return UserInfoResponse(
             success=True,
-            message="Tokens stored successfully",
-            user_id=db_user_id
+            message="User info stored successfully",
+            db_user_id=user["id"]
         )
         
     except Exception as e:
+        logger.error(f"Failed to store user info: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to store tokens: {str(e)}"
+            detail=f"Failed to store user info: {str(e)}"
         )
 
 
-@router.get("/refresh-token", response_model=RefreshTokenResponse)
-async def refresh_token(user_id: str):
+@router.get("/user/{google_sub}")
+async def get_user(google_sub: str):
     """
-    Get decrypted access token for a user
-    
-    Note: In a production system, you would implement actual token refresh logic
-    with Google OAuth. For now, this returns the stored access token.
-    
-    Args:
-        user_id: Google sub claim (user ID)
-        
-    Returns:
-        Decrypted access token
+    Get user information by Google sub claim.
     """
     try:
-        encryption_service = get_encryption_service()
         supabase_service = get_supabase_service()
         
-        # Get user from database
-        response = supabase_service.client.table("users").select("id").eq("google_sub", user_id).execute()
+        response = supabase_service.client.table("users").select("*").eq("google_sub", google_sub).execute()
         
         if not response.data or len(response.data) == 0:
             raise HTTPException(
@@ -122,71 +80,77 @@ async def refresh_token(user_id: str):
                 detail="User not found"
             )
         
-        db_user_id = response.data[0]["id"]
-        
-        # Get encrypted access token
-        encrypted_token = await supabase_service.get_encrypted_token(
-            user_id=db_user_id,
-            token_type="access_token"
-        )
-        
-        if not encrypted_token:
-            return RefreshTokenResponse(
-                access_token=None,
-                message="No access token found for user"
-            )
-        
-        # Decrypt token
-        access_token = encryption_service.decrypt(encrypted_token)
-        
-        return RefreshTokenResponse(
-            access_token=access_token,
-            message="Token retrieved successfully"
-        )
+        user = response.data[0]
+        return {
+            "id": user["id"],
+            "google_sub": user["google_sub"],
+            "email": user["email"],
+            "name": user.get("name"),
+            "picture_url": user.get("picture_url"),
+            "created_at": user.get("created_at"),
+            "updated_at": user.get("updated_at")
+        }
         
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Failed to get user: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to refresh token: {str(e)}"
+            detail=f"Failed to get user: {str(e)}"
         )
+
+
+# Legacy endpoints for backward compatibility
+# These can be removed in a future version
+
+@router.post("/store-tokens")
+async def store_tokens_legacy(request: dict):
+    """
+    Legacy endpoint - tokens are now managed on frontend.
+    This just stores user info for backward compatibility.
+    """
+    try:
+        supabase_service = get_supabase_service()
+        
+        user = await supabase_service.get_or_create_user(
+            google_sub=request.get("user_id", ""),
+            email=request.get("email", ""),
+            name=request.get("name"),
+            picture_url=request.get("picture_url")
+        )
+        
+        return {
+            "success": True,
+            "message": "User info stored (tokens managed on frontend)",
+            "user_id": user["id"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Legacy store-tokens failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/refresh-token")
+async def refresh_token_legacy(user_id: str):
+    """
+    Legacy endpoint - token refresh is now handled on frontend.
+    """
+    return {
+        "access_token": None,
+        "message": "Token refresh is now handled on frontend by google_sign_in_all_platforms"
+    }
 
 
 @router.delete("/tokens")
-async def delete_tokens(user_id: str):
+async def delete_tokens_legacy(user_id: str):
     """
-    Delete all tokens for a user (sign out)
-    
-    Args:
-        user_id: Google sub claim (user ID)
-        
-    Returns:
-        Success message
+    Legacy endpoint - sign out is now handled on frontend.
     """
-    try:
-        supabase_service = get_supabase_service()
-        
-        # Get user from database
-        response = supabase_service.client.table("users").select("id").eq("google_sub", user_id).execute()
-        
-        if not response.data or len(response.data) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        
-        db_user_id = response.data[0]["id"]
-        
-        # Delete all tokens
-        await supabase_service.delete_user_tokens(db_user_id)
-        
-        return {"success": True, "message": "Tokens deleted successfully"}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete tokens: {str(e)}"
-        )
+    return {
+        "success": True,
+        "message": "Sign out is now handled on frontend"
+    }

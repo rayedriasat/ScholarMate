@@ -18,6 +18,10 @@ class ApiException implements Exception {
 }
 
 /// Service for making API calls to the backend
+///
+/// Note: Authentication is handled entirely by google_sign_in_all_platforms
+/// on the frontend. The backend only stores user metadata for features like
+/// tags, indexing, and AI chat - NOT for token management.
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
@@ -28,94 +32,12 @@ class ApiService {
 
   String get _baseUrl => _config.apiBaseUrl;
 
-  /// Store OAuth tokens in the backend
-  Future<void> storeTokens({
-    required String userId,
-    required String email,
-    String? name,
-    String? pictureUrl,
-    required String accessToken,
-    String? refreshToken,
-    String? idToken,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/api/auth/store-tokens'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'user_id': userId,
-          'email': email,
-          'name': name,
-          'picture_url': pictureUrl,
-          'access_token': accessToken,
-          'refresh_token': refreshToken,
-          'id_token': idToken,
-        }),
-      );
-
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw ApiException(
-          'Failed to store tokens: ${response.body}',
-          response.statusCode,
-        );
-      }
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('Failed to store tokens: $e');
-    }
-  }
-
-  /// Refresh access token from the backend
-  Future<String?> refreshToken({required String userId}) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/api/auth/refresh-token?user_id=$userId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['access_token'] as String?;
-      } else {
-        throw ApiException(
-          'Failed to refresh token: ${response.body}',
-          response.statusCode,
-        );
-      }
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      debugPrint('Failed to refresh token: $e');
-      return null;
-    }
-  }
-
-  /// Delete user tokens from the backend (sign out)
-  Future<void> deleteTokens({required String userId}) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$_baseUrl/api/auth/tokens?user_id=$userId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode != 200) {
-        throw ApiException(
-          'Failed to delete tokens: ${response.body}',
-          response.statusCode,
-        );
-      }
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('Failed to delete tokens: $e');
-    }
-  }
-
   /// Check backend health
   Future<bool> checkHealth() async {
     try {
       final response = await http
           .get(Uri.parse('$_baseUrl/api/health'))
           .timeout(const Duration(seconds: 5));
-
       return response.statusCode == 200;
     } catch (e) {
       debugPrint('Health check failed: $e');
@@ -128,13 +50,11 @@ class ApiService {
   /// Get all tags for a user
   Future<List<Tag>> getTags({String? userId}) async {
     try {
-      // user_id is required by the backend
       if (userId == null) {
         throw ApiException('user_id is required to get tags');
       }
 
       final uri = Uri.parse('$_baseUrl/api/tags?user_id=$userId');
-
       final response = await http.get(
         uri,
         headers: {'Content-Type': 'application/json'},
@@ -343,6 +263,21 @@ class ApiService {
 
   // ==================== RAG Indexing ====================
 
+  /// Get access token for backend API calls that need Drive access
+  Future<String> _getAccessToken() async {
+    final client = await _authService.getAuthenticatedClient();
+    if (client == null) {
+      throw ApiException('Not authenticated', 401);
+    }
+    // The authenticated client has the token, but we need to extract it
+    // For now, we'll use the current user's token from storage
+    final user = _authService.currentUser;
+    if (user?.accessToken == null) {
+      throw ApiException('No access token available', 401);
+    }
+    return user!.accessToken!;
+  }
+
   /// Start indexing a file for RAG
   Future<String> startIndexing({
     required String userId,
@@ -350,11 +285,7 @@ class ApiService {
     String? fileName,
   }) async {
     try {
-      // Get fresh access token
-      final accessToken = await _authService.getAccessToken();
-      if (accessToken == null) {
-        throw ApiException('Not authenticated', 401);
-      }
+      final accessToken = await _getAccessToken();
 
       final response = await http.post(
         Uri.parse('$_baseUrl/api/ingest/start'),
@@ -370,26 +301,6 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['job_id'] as String;
-      } else if (response.statusCode == 401) {
-        // Token expired, retry once with fresh token
-        final newToken = await _authService.getAccessToken();
-        if (newToken != null) {
-          final retryResponse = await http.post(
-            Uri.parse('$_baseUrl/api/ingest/start'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'user_id': userId,
-              'file_id': fileId,
-              'file_name': fileName,
-              'access_token': newToken,
-            }),
-          );
-          if (retryResponse.statusCode == 200) {
-            final data = jsonDecode(retryResponse.body);
-            return data['job_id'] as String;
-          }
-        }
-        throw ApiException('Authentication failed', 401);
       } else {
         throw ApiException(
           'Failed to start indexing: ${response.body}',
@@ -449,18 +360,14 @@ class ApiService {
     }
   }
 
-  /// Reindex a file (delete old embeddings and create new ones)
+  /// Reindex a file
   Future<String> reindexFile({
     required String userId,
     required String fileId,
     String? fileName,
   }) async {
     try {
-      // Get fresh access token
-      final accessToken = await _authService.getAccessToken();
-      if (accessToken == null) {
-        throw ApiException('Not authenticated', 401);
-      }
+      final accessToken = await _getAccessToken();
 
       final response = await http.post(
         Uri.parse('$_baseUrl/api/ingest/reindex/$fileId'),
@@ -475,25 +382,6 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['job_id'] as String;
-      } else if (response.statusCode == 401) {
-        // Token expired, retry once
-        final newToken = await _authService.getAccessToken();
-        if (newToken != null) {
-          final retryResponse = await http.post(
-            Uri.parse('$_baseUrl/api/ingest/reindex/$fileId'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'user_id': userId,
-              'file_name': fileName,
-              'access_token': newToken,
-            }),
-          );
-          if (retryResponse.statusCode == 200) {
-            final data = jsonDecode(retryResponse.body);
-            return data['job_id'] as String;
-          }
-        }
-        throw ApiException('Authentication failed', 401);
       } else {
         throw ApiException(
           'Failed to reindex file: ${response.body}',
@@ -508,7 +396,7 @@ class ApiService {
 
   // ==================== AI Chat ====================
 
-  /// Send a chat message with RAG and source filtering
+  /// Send a chat message with RAG
   Future<Map<String, dynamic>> sendChatMessage({
     required String question,
     required String userId,
@@ -656,8 +544,7 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data as Map<String, dynamic>;
+        return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
         throw ApiException(
           'Failed to generate audio review: ${response.body}',
@@ -670,8 +557,3 @@ class ApiService {
     }
   }
 }
-
-
-  // ==================== Notebook AI Studio ====================
-
-  /// Generate quiz questions from files

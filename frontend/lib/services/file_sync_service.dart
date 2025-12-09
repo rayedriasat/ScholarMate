@@ -37,6 +37,11 @@ class FileSyncService extends ChangeNotifier {
        _cacheService = cacheService,
        _connectivityService = connectivityService;
 
+  /// Get authenticated HTTP client
+  Future<http.Client?> _getClient() async {
+    return await _authService.getAuthenticatedClient();
+  }
+
   /// Start watching a file for changes
   void watchFile(String fileId) {
     if (!_watchedFiles.contains(fileId)) {
@@ -160,21 +165,18 @@ class FileSyncService extends ChangeNotifier {
   /// Get file metadata from Google Drive
   Future<DriveFile?> _getFileMetadata(String fileId) async {
     try {
-      final accessToken = await _authService.getAccessToken();
-      if (accessToken == null) {
-        throw Exception('No access token available');
+      final client = await _getClient();
+      if (client == null) {
+        throw Exception('No authenticated client available');
       }
 
       final fields =
           'id,name,mimeType,size,parents,modifiedTime,createdTime,thumbnailLink,shared';
       final url = '$_baseUrl/files/$fileId?fields=$fields';
 
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
@@ -203,16 +205,15 @@ class FileSyncService extends ChangeNotifier {
 
       // If it's a PDF, refresh the PDF bytes
       if (updatedMetadata.isPdf) {
-        final accessToken = await _authService.getAccessToken();
-        if (accessToken == null) {
-          throw Exception('No access token available');
+        final client = await _getClient();
+        if (client == null) {
+          throw Exception('No authenticated client available');
         }
 
         debugPrint('Downloading updated PDF: $fileId');
 
-        final response = await http.get(
+        final response = await client.get(
           Uri.parse('$_baseUrl/files/$fileId?alt=media'),
-          headers: {'Authorization': 'Bearer $accessToken'},
         );
 
         if (response.statusCode == 200) {
