@@ -1069,6 +1069,22 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
   @override
   Widget build(BuildContext context) {
     final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Calculate right offset for floating widgets to avoid overlapping with chat panel
+    double chatPanelRightOffset = 16.0;
+    if (_showChatPanel && screenWidth >= 900) {
+      if (_chatPanelFullscreen) {
+        chatPanelRightOffset = screenWidth + 16.0;
+      } else {
+        final maxWidth = screenWidth * _maxChatWidthPercent;
+        final effectiveChatWidth = _chatPanelWidth.clamp(
+          _minChatWidth,
+          maxWidth,
+        );
+        chatPanelRightOffset = effectiveChatWidth + 16.0;
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -2139,8 +2155,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
             ],
           ),
           // File Chat & Notes - Floating Chat Head
-          Positioned(
-            right: 16,
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            right: chatPanelRightOffset,
             bottom: 80,
             child: Material(
               type: MaterialType.transparency,
