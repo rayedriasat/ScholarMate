@@ -59,7 +59,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   bool _showConversationList = false;
   Set<String> _selectedFileIds = {};
   List<DriveFile> _availableFiles = [];
-  bool _isLoadingFiles = false;
+
   double _conversationSidebarWidth = 280;
   bool _isResizingConversationSidebar = false;
 
@@ -165,10 +165,6 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Future<void> _loadAvailableFiles() async {
-    setState(() {
-      _isLoadingFiles = true;
-    });
-
     try {
       final driveService = context.read<DriveService>();
       final files = await driveService.listAllFiles();
@@ -177,13 +173,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
         _availableFiles = files
             .where((f) => f.mimeType == 'application/pdf')
             .toList();
-        _isLoadingFiles = false;
       });
     } catch (e) {
       debugPrint('Failed to load files: $e');
-      setState(() {
-        _isLoadingFiles = false;
-      });
     }
   }
 
@@ -588,14 +580,6 @@ class _AIChatScreenState extends State<AIChatScreen> {
     _updateConversationSources();
   }
 
-  void _selectAllSources() {
-    setState(() {
-      _selectedFileIds = _availableFiles.map((f) => f.id).toSet();
-    });
-    _saveSourcePreferences();
-    _updateConversationSources();
-  }
-
   Future<void> _updateConversationSources() async {
     if (_currentConversationId != null && _historyService != null) {
       try {
@@ -707,13 +691,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           ),
                         ),
                         child: SourceSelectionPanel(
-                          availableFiles: _availableFiles,
                           selectedFileIds: _selectedFileIds,
-                          isLoading: _isLoadingFiles,
                           onToggleFile: _toggleSourceSelection,
                           onClearAll: _clearAllSources,
-                          onSelectAll: _selectAllSources,
-                          onRefresh: _loadAvailableFiles,
                         ),
                       );
                     },
@@ -1070,25 +1050,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
               ),
               Expanded(
                 child: SourceSelectionPanel(
-                  availableFiles: _availableFiles,
                   selectedFileIds: _selectedFileIds,
-                  isLoading: _isLoadingFiles,
-                  onToggleFile: (fileId) {
-                    setState(() {
-                      _toggleSourceSelection(fileId);
-                    });
-                  },
-                  onClearAll: () {
-                    setState(() {
-                      _clearAllSources();
-                    });
-                  },
-                  onSelectAll: () {
-                    setState(() {
-                      _selectAllSources();
-                    });
-                  },
-                  onRefresh: _loadAvailableFiles,
+                  onToggleFile: _toggleSourceSelection,
+                  onClearAll: _clearAllSources,
                 ),
               ),
             ],
