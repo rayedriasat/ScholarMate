@@ -1364,10 +1364,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                         value: 'rename',
                         child: Text('Rename'),
                       ),
-                      const PopupMenuItem(
-                        value: 'share',
-                        child: Text('Share'),
-                      ),
+                      const PopupMenuItem(value: 'share', child: Text('Share')),
                       if (file.isPdf)
                         const PopupMenuItem(
                           value: 'reindex',
@@ -1728,14 +1725,39 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             onTap: _showScanDocument,
           ),
           const SizedBox(height: 16),
-          _buildFABItem(
-            icon: Icons.chat,
-            label: 'Chat with Folder',
-            onTap: _chatWithFolder,
-          ),
-          const SizedBox(height: 16),
         ],
+        Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3F51B5), Color(0xFF2196F3)], // Indigo to Blue
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3F51B5).withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: FloatingActionButton(
+            heroTag: 'chat_folder_fab',
+            onPressed: _chatWithFolder,
+            tooltip: 'Chat with Folder',
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: const Icon(
+              Icons.chat_bubble_outline,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         FloatingActionButton(
+          heroTag: 'main_fab',
           onPressed: () {
             setState(() {
               _showFABMenu = !_showFABMenu;
