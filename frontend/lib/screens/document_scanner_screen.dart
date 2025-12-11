@@ -19,6 +19,7 @@ import 'extracted_document_detail_screen.dart';
 import 'package:universal_html/html.dart' as html;
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
+import '../widgets/ui/animated_background.dart';
 import '../theme/app_colors.dart';
 
 class DocumentScannerScreen extends StatefulWidget {
@@ -856,194 +857,213 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Scan Document',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          if (_capturedImages.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ModernButton(
-                onPressed: _isProcessing ? () {} : _processAndSave,
-                icon: Icons.check,
-                label: 'Done (${_capturedImages.length})',
-                backgroundColor: Colors.green,
-                width: 120,
-                height: 36,
-              ),
+    return Stack(
+      children: [
+        const Positioned.fill(child: AnimatedBackground()),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(
+              'Scan Document',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
-        ],
-      ),
-      body: kIsWeb
-          ? _buildWebUI()
-          : _errorMessage != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: Colors.white),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: IconThemeData(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            actions: [
+              if (_capturedImages.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ModernButton(
+                    onPressed: _isProcessing ? () {} : _processAndSave,
+                    icon: Icons.check,
+                    label: 'Done (${_capturedImages.length})',
+                    backgroundColor: Colors.green,
+                    width: 120,
+                    height: 36,
                   ),
-                  const SizedBox(height: 16),
-                  ModernButton(
-                    onPressed: _pickFromGallery,
-                    icon: Icons.photo_library,
-                    label: 'Pick from Gallery',
-                  ),
-                ],
-              ),
-            )
-          : !_isCameraInitialized
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
-          : Column(
-              children: [
-                // Camera preview
-                Expanded(
-                  flex: 3,
-                  child: _cameraController != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: CameraPreview(_cameraController!),
-                        )
-                      : const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                        ),
                 ),
-                // Captured images preview
-                if (_capturedImages.isNotEmpty)
-                  Container(
-                    height: 120,
-                    color: Colors.black,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _capturedImages.length,
-                      itemBuilder: (context, index) {
-                        return Stack(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: FutureBuilder<Uint8List>(
-                                future: _capturedImages[index].readAsBytes(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.hasData) {
-                                    return ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.memory(
-                                        snapshot.data!,
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    );
-                                  }
-                                  return const SizedBox(
-                                    width: 100,
-                                    height: 100,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                onPressed: () => _removeImage(index),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  padding: const EdgeInsets.all(4),
-                                  minimumSize: const Size(24, 24),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                // Controls
-                GlassContainer(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  color: AppColors.surface,
-                  padding: const EdgeInsets.all(24),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            ],
+          ),
+          body: kIsWeb
+              ? _buildWebUI()
+              : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      IconButton(
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(height: 16),
+                      ModernButton(
                         onPressed: _pickFromGallery,
-                        icon: const Icon(
-                          Icons.photo_library,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                      FloatingActionButton(
-                        onPressed: _isProcessing ? null : _captureImage,
-                        backgroundColor: AppColors.primary,
-                        child: const Icon(
-                          Icons.camera,
-                          size: 32,
-                          color: Colors.white,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: _capturedImages.isEmpty ? null : _retakeLast,
-                        icon: const Icon(
-                          Icons.undo,
-                          color: Colors.white,
-                          size: 32,
-                        ),
+                        icon: Icons.photo_library,
+                        label: 'Pick from Gallery',
                       ),
                     ],
                   ),
+                )
+              : !_isCameraInitialized
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
+              : Column(
+                  children: [
+                    // Camera preview
+                    Expanded(
+                      flex: 3,
+                      child: _cameraController != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: CameraPreview(_cameraController!),
+                            )
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                            ),
+                    ),
+                    // Captured images preview
+                    if (_capturedImages.isNotEmpty)
+                      Container(
+                        height: 120,
+                        color: Colors.black,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _capturedImages.length,
+                          itemBuilder: (context, index) {
+                            return Stack(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: FutureBuilder<Uint8List>(
+                                    future: _capturedImages[index]
+                                        .readAsBytes(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.hasData) {
+                                        return ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: Image.memory(
+                                            snapshot.data!,
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        );
+                                      }
+                                      return const SizedBox(
+                                        width: 100,
+                                        height: 100,
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    onPressed: () => _removeImage(index),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      padding: const EdgeInsets.all(4),
+                                      minimumSize: const Size(24, 24),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    // Controls
+                    GlassContainer(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      color: AppColors.surface,
+                      padding: const EdgeInsets.all(24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                            onPressed: _pickFromGallery,
+                            icon: const Icon(
+                              Icons.photo_library,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
+                          FloatingActionButton(
+                            onPressed: _isProcessing ? null : _captureImage,
+                            backgroundColor: AppColors.primary,
+                            child: const Icon(
+                              Icons.camera,
+                              size: 32,
+                              color: Colors.white,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _capturedImages.isEmpty
+                                ? null
+                                : _retakeLast,
+                            icon: const Icon(
+                              Icons.undo,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+        ),
+      ],
     );
   }
 
   Widget _buildWebUI() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         // Header with instructions
         GlassContainer(
           borderRadius: BorderRadius.circular(16),
-          color: AppColors.primary.withValues(alpha: 0.1),
+          color: colorScheme.primary.withValues(alpha: 0.1),
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, color: AppColors.primary),
+              Icon(Icons.info_outline, color: colorScheme.primary),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Select images from your computer to extract text using OCR',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.9),
+                  ),
                 ),
               ),
             ],
@@ -1060,14 +1080,14 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                       Icon(
                         Icons.image_outlined,
                         size: 100,
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: colorScheme.onSurface.withValues(alpha: 0.2),
                       ),
                       const SizedBox(height: 24),
                       Text(
                         'No images selected',
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -1075,7 +1095,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                         'Click the button below to select images',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: colorScheme.onSurface.withValues(alpha: 0.3),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -1103,7 +1123,9 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                         Container(
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.2,
+                              ),
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -1156,7 +1178,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
         if (_capturedImages.isNotEmpty)
           GlassContainer(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            color: AppColors.surface,
+            color: colorScheme.surface,
             padding: const EdgeInsets.all(24),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1166,7 +1188,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
                   icon: Icons.add_photo_alternate,
                   label: 'Add More',
                   backgroundColor: Colors.transparent,
-                  textColor: Colors.white,
+                  textColor: colorScheme.onSurface,
                 ),
                 const SizedBox(width: 16),
                 ModernButton(
