@@ -30,8 +30,6 @@ import 'ai_chat_screen.dart';
 import 'analytics_screen.dart';
 import 'advanced_search_screen.dart';
 import '../widgets/tag_selection_dialog.dart';
-import 'enhanced_drawing_canvas_screen.dart';
-import 'markdown_editor_screen.dart';
 
 /// File explorer screen for browsing Google Drive files
 class FileExplorerScreen extends StatefulWidget {
@@ -1671,24 +1669,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  void _showCreateMarkdownNote() {
-    setState(() => _showFABMenu = false);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const MarkdownEditorScreen()),
-    ).then((_) => _loadFiles());
-  }
-
-  void _showCreateDrawingNote() {
-    setState(() => _showFABMenu = false);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const EnhancedDrawingCanvasScreen(),
-      ),
-    ).then((_) => _loadFiles());
-  }
-
   Widget _buildFAB() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1700,18 +1680,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             label: 'New Folder',
             onTap: _showCreateFolderDialog,
           ),
-          const SizedBox(height: 16),
-          _buildFABItem(
-            icon: Icons.edit_note,
-            label: 'New Markdown Note',
-            onTap: _showCreateMarkdownNote,
-          ),
-          const SizedBox(height: 16),
-          _buildFABItem(
-            icon: Icons.brush,
-            label: 'New Drawing Note',
-            onTap: _showCreateDrawingNote,
-          ),
+
           const SizedBox(height: 16),
           _buildFABItem(
             icon: Icons.upload_file,
