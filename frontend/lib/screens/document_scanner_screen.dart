@@ -24,8 +24,13 @@ import '../theme/app_colors.dart';
 
 class DocumentScannerScreen extends StatefulWidget {
   final String? parentFolderId;
+  final bool isExtractionMode;
 
-  const DocumentScannerScreen({super.key, this.parentFolderId});
+  const DocumentScannerScreen({
+    super.key,
+    this.parentFolderId,
+    this.isExtractionMode = false,
+  });
 
   @override
   State<DocumentScannerScreen> createState() => _DocumentScannerScreenState();
@@ -535,20 +540,24 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
             onPressed: () => Navigator.pop(context, 'cancel'),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'markdown'),
-            child: const Text('Markdown'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'extract'),
-            child: const Text('Extract Data'),
-          ),
-          ModernButton(
-            onPressed: () => Navigator.pop(context, 'pdf'),
-            label: 'Save as PDF',
-            width: 120,
-            height: 36,
-          ),
+          if (!widget.isExtractionMode) ...[
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'markdown'),
+              child: const Text('Markdown'),
+            ),
+            ModernButton(
+              onPressed: () => Navigator.pop(context, 'pdf'),
+              label: 'Save as PDF',
+              width: 120,
+              height: 36,
+            ),
+          ] else
+            ModernButton(
+              onPressed: () => Navigator.pop(context, 'extract'),
+              label: 'Extract Data',
+              width: 120,
+              height: 36,
+            ),
         ],
       ),
     );
@@ -864,7 +873,7 @@ class _DocumentScannerScreenState extends State<DocumentScannerScreen> {
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             title: Text(
-              'Scan Document',
+              widget.isExtractionMode ? 'Scan & Extract' : 'Scan Document',
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
             backgroundColor: Colors.transparent,

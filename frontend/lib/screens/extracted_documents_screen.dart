@@ -5,6 +5,7 @@ import '../services/document_extraction_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/ui/glass_container.dart';
 import 'extracted_document_detail_screen.dart';
+import 'document_scanner_screen.dart';
 
 /// Screen to display all extracted documents
 class ExtractedDocumentsScreen extends StatefulWidget {
@@ -234,6 +235,22 @@ class _ExtractedDocumentsScreenState extends State<ExtractedDocumentsScreen> {
                   ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  const DocumentScannerScreen(isExtractionMode: true),
+            ),
+          );
+          _loadDocuments();
+        },
+        label: const Text('Scan & Extract'),
+        icon: const Icon(Icons.document_scanner),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
       ),
     );
   }
