@@ -446,14 +446,18 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
               Icon(
                 Icons.picture_as_pdf,
                 size: 64,
-                color: Theme.of(context).iconTheme.color?.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).iconTheme.color?.withValues(alpha: 0.2),
               ),
               const SizedBox(height: 16),
               Text(
                 isLeftPane ? 'No PDF loaded' : 'No second PDF loaded',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
                 ),
               ),
               if (onLoadPdf != null) ...[
@@ -530,15 +534,15 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
                     end: Alignment.bottomCenter,
                   )
                 : (_rightPdfBytes != null
-                    ? LinearGradient(
-                        colors: [
-                          Colors.blue.withValues(alpha: 0.4),
-                          Colors.purple.withValues(alpha: 0.4),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      )
-                    : null),
+                      ? LinearGradient(
+                          colors: [
+                            Colors.blue.withValues(alpha: 0.4),
+                            Colors.purple.withValues(alpha: 0.4),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        )
+                      : null),
             color: _rightPdfBytes == null
                 ? Theme.of(context).scaffoldBackgroundColor
                 : null,
@@ -549,10 +553,7 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
               decoration: BoxDecoration(
                 gradient: _rightPdfBytes != null
                     ? const LinearGradient(
-                        colors: [
-                          Colors.blue,
-                          Colors.purple,
-                        ],
+                        colors: [Colors.blue, Colors.purple],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       )
@@ -600,7 +601,7 @@ class _SplitPdfViewerScreenState extends State<SplitPdfViewerScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Split PDF Viewer',
