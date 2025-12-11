@@ -72,7 +72,7 @@ class _NotebookFolderWebScreenState extends State<NotebookFolderWebScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Column(
         children: [
           _buildHeader(),
@@ -191,7 +191,10 @@ class _NotebookFolderWebScreenState extends State<NotebookFolderWebScreen> {
                 if (widget.folder.description != null)
                   Text(
                     widget.folder.description!,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -240,7 +243,7 @@ class _NotebookFolderWebScreenState extends State<NotebookFolderWebScreen> {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: Theme.of(context).colorScheme.surface,
         border: Border.all(
           color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
         ),
@@ -402,7 +405,10 @@ class _NotebookFolderWebScreenState extends State<NotebookFolderWebScreen> {
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

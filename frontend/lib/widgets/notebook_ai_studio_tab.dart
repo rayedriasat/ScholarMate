@@ -465,8 +465,10 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
         final isSelected = _selectedTool == tool.id;
 
         return Card(
-          elevation: isSelected ? 4 : 1,
-          color: isSelected ? tool.color.withValues(alpha: 0.1) : null,
+          elevation: isSelected ? 4 : 2,
+          color: isSelected
+              ? tool.color.withValues(alpha: 0.1)
+              : Theme.of(context).colorScheme.surfaceContainer,
           child: InkWell(
             onTap: () => _selectTool(tool.id),
             onLongPress: () => _generateContent(tool.id),
@@ -492,7 +494,7 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
                     child: Text(
                       tool.description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 11,
                       ),
                       textAlign: TextAlign.center,
@@ -514,13 +516,19 @@ class _NotebookAiStudioTabState extends State<NotebookAiStudioTab> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.auto_awesome, size: 64, color: Colors.grey[400]),
+          Icon(
+            Icons.auto_awesome,
+            size: 64,
+            color: Theme.of(context).colorScheme.outline,
+          ),
           const SizedBox(height: 16),
           const Text('No AI outputs yet'),
           const SizedBox(height: 8),
           Text(
             'Long press a tool to generate content',
-            style: TextStyle(color: Colors.grey[600]),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

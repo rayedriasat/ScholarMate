@@ -152,6 +152,7 @@ class _NotebookFolderScreenState extends State<NotebookFolderScreen>
 
     // Use tab-based layout on mobile
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
