@@ -42,7 +42,7 @@ class BackendDriveService:
         Raises:
             ValueError: If file cannot be fetched
         """
-        download_url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
+        download_url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media&supportsAllDrives=true"
         headers = {
             "Authorization": f"Bearer {access_token}"
         }
@@ -59,6 +59,9 @@ class BackendDriveService:
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to fetch file {file_id}: {str(e)}")
             if hasattr(e, 'response') and e.response is not None:
+                error_body = e.response.text
+                logger.error(f"Google Drive API Error Response: {error_body}")
+                
                 if e.response.status_code == 401:
                     logger.warning(f"401 Unauthorized for file {file_id} - token may be expired")
                     raise ValueError("TOKEN_EXPIRED")
@@ -66,10 +69,9 @@ class BackendDriveService:
                     raise ValueError(f"File {file_id} not found in Google Drive")
                 elif e.response.status_code == 403:
                     # Check if it's a scope issue
-                    error_body = e.response.text
                     if 'insufficient' in error_body.lower() or 'scope' in error_body.lower():
                         raise ValueError("INSUFFICIENT_SCOPE")
-                    raise ValueError(f"Access denied to file {file_id}. Check permissions.")
+                    raise ValueError(f"Access denied to file {file_id}. Check permissions. Error: {error_body}")
             raise ValueError(f"Failed to fetch file from Drive: {str(e)}")
     
     def get_file_metadata(
@@ -92,7 +94,8 @@ class BackendDriveService:
         """
         metadata_url = f"https://www.googleapis.com/drive/v3/files/{file_id}"
         params = {
-            "fields": "id,name,mimeType,size,createdTime,modifiedTime"
+            "fields": "id,name,mimeType,size,createdTime,modifiedTime",
+            "supportsAllDrives": "true"
         }
         headers = {
             "Authorization": f"Bearer {access_token}"

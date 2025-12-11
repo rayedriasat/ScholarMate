@@ -4,7 +4,7 @@ import '../models/pdf_metadata.dart';
 
 class MetadataService {
   final String baseUrl;
-  final String Function() getToken;
+  final Future<String?> Function() getToken;
   final String Function() getUserId;
 
   MetadataService({
@@ -20,10 +20,10 @@ class MetadataService {
     bool extractFromContent = true,
   }) async {
     try {
-      final token = getToken();
+      final token = await getToken();
       final userId = getUserId();
 
-      if (token.isEmpty) {
+      if (token == null || token.isEmpty) {
         print('ERROR: No authentication token available');
         throw Exception('Not authenticated');
       }
@@ -87,7 +87,7 @@ class MetadataService {
     required String identifierValue,
   }) async {
     try {
-      final token = getToken();
+      final token = await getToken();
       final userId = getUserId();
       final response = await http.post(
         Uri.parse('$baseUrl/api/metadata/citation/generate?user_id=$userId'),
@@ -119,7 +119,7 @@ class MetadataService {
   /// Generate citations from existing metadata
   Future<Citation?> generateCitationFromMetadata(PDFMetadata metadata) async {
     try {
-      final token = getToken();
+      final token = await getToken();
       final userId = getUserId();
       final response = await http.post(
         Uri.parse(

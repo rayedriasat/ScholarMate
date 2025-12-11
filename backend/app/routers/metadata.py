@@ -49,12 +49,23 @@ async def extract_metadata(
             error_msg = str(e)
             print(f"Failed to fetch file: {error_msg}")
             
-            if "refresh token" in error_msg.lower() or "not found" in error_msg.lower():
+            if "TOKEN_EXPIRED" in error_msg or "401" in error_msg:
                 raise HTTPException(
                     status_code=401,
-                    detail="Authentication token not found. Please sign in again."
+                    detail="Authentication token expired or invalid. Please sign in again."
                 )
-            raise HTTPException(status_code=404, detail=f"Failed to fetch file: {error_msg}")
+            elif "not found" in error_msg.lower() or "404" in error_msg:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"File not found in Google Drive (" + error_msg + ")"
+                )
+            elif "INSUFFICIENT_SCOPE" in error_msg:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Insufficient permissions to access this file."
+                )
+            
+            raise HTTPException(status_code=500, detail=f"Failed to fetch file: {error_msg}")
         
         if not file_bytes:
             print(f"File not found: {request.file_id}")

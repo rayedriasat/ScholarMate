@@ -229,15 +229,14 @@ class ScholarMateApp extends StatelessWidget {
         ProxyProvider<AuthService, MetadataService>(
           create: (context) => MetadataService(
             baseUrl: configService.apiBaseUrl,
-            getToken: () =>
-                context.read<AuthService>().currentUser?.idToken ?? '',
+            getToken: () => context.read<AuthService>().getAccessToken(),
             getUserId: () => context.read<AuthService>().currentUser?.id ?? '',
           ),
           update: (context, auth, previous) =>
               previous ??
               MetadataService(
                 baseUrl: configService.apiBaseUrl,
-                getToken: () => auth.currentUser?.idToken ?? '',
+                getToken: () => auth.getAccessToken(),
                 getUserId: () => auth.currentUser?.id ?? '',
               ),
         ),
