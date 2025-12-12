@@ -9,7 +9,7 @@ import 'ui/modern_button.dart';
 /// Panel for selecting source files for AI chat with folder navigation
 class SourceSelectionPanel extends StatefulWidget {
   final Set<String> selectedFileIds;
-  final Function(String) onToggleFile;
+  final Function(DriveFile) onToggleFile;
   final VoidCallback onClearAll;
 
   const SourceSelectionPanel({
@@ -407,7 +407,7 @@ class _SourceSelectionPanelState extends State<SourceSelectionPanel> {
             if (file.isFolder) {
               _navigateToFolder(file);
             } else {
-              widget.onToggleFile(file.id);
+              widget.onToggleFile(file);
             }
           },
           borderRadius: BorderRadius.circular(8),
@@ -424,7 +424,7 @@ class _SourceSelectionPanelState extends State<SourceSelectionPanel> {
                     width: 24,
                     child: Checkbox(
                       value: isSelected,
-                      onChanged: (_) => widget.onToggleFile(file.id),
+                      onChanged: (_) => widget.onToggleFile(file),
                       activeColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),

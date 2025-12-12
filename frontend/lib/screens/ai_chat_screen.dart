@@ -560,12 +560,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
     }
   }
 
-  void _toggleSourceSelection(String fileId) {
+  void _toggleSourceSelection(DriveFile file) {
     setState(() {
-      if (_selectedFileIds.contains(fileId)) {
-        _selectedFileIds.remove(fileId);
+      if (_selectedFileIds.contains(file.id)) {
+        _selectedFileIds.remove(file.id);
       } else {
-        _selectedFileIds.add(fileId);
+        _selectedFileIds.add(file.id);
       }
     });
     _saveSourcePreferences();
@@ -1238,8 +1238,20 @@ class _AIChatScreenState extends State<AIChatScreen> {
                               context,
                             ).colorScheme.onPrimaryContainer,
                           ),
-                          onDeleted: () =>
-                              _toggleSourceSelection(widget.preselectedFileId!),
+                          onDeleted: () {
+                            if (widget.preselectedFileId != null) {
+                              final file = _availableFiles.firstWhere(
+                                (f) => f.id == widget.preselectedFileId!,
+                                orElse: () => DriveFile(
+                                  id: widget.preselectedFileId!,
+                                  name: widget.preselectedFileName ?? 'PDF',
+                                  createdTime: DateTime.now(),
+                                  modifiedTime: DateTime.now(),
+                                ),
+                              );
+                              _toggleSourceSelection(file);
+                            }
+                          },
                         ),
                       ),
                     if (_selectedFileIds.length > 1 ||

@@ -685,6 +685,11 @@ class DriveService extends ChangeNotifier {
     }
   }
 
+  /// Get file metadata by ID
+  Future<DriveFile?> getFile(String fileId) async {
+    return _getFileMetadata(fileId);
+  }
+
   /// Get cached file name by ID (for UI display)
   /// Returns null if file not found in cache
   /// This is async but can be called from build methods using FutureBuilder
