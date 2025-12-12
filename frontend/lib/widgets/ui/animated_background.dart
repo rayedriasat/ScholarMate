@@ -66,12 +66,6 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           },
         ),
 
-        // Blur overlay to smooth out the orbs
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-          child: Container(color: Colors.transparent),
-        ),
-
         // Content
         if (widget.child != null) widget.child!,
       ],
@@ -96,7 +90,11 @@ class BackgroundPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
+    // Use MaskFilter for blur effect instead of expensive BackdropFilter
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 60);
+
     final alphaMultiplier = isDark
         ? 1.0
         : 0.8; // More visible colors for light mode

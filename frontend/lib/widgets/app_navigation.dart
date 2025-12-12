@@ -234,11 +234,13 @@ class _AppNavigationState extends State<AppNavigation> {
 
     return Row(
       children: [
-        SizedBox(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
           width: effectiveWidth,
           child: GlassContainer(
-            width: effectiveWidth,
             height: double.infinity,
+            blur: 0, // Optimize performance during resize
             borderRadius: BorderRadius.zero,
             border: Border(
               right: BorderSide(
