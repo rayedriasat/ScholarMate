@@ -293,13 +293,14 @@ class _AIChatScreenState extends State<AIChatScreen> {
       _currentConversationId = null;
       _messages.clear();
       // Preserve context if embedded with a preselected file or folder
-      _selectedFileIds.clear();
+      final newSet = <String>{};
       if (widget.preselectedFileId != null) {
-        _selectedFileIds.add(widget.preselectedFileId!);
+        newSet.add(widget.preselectedFileId!);
       }
       if (widget.preselectedFileIds != null) {
-        _selectedFileIds.addAll(widget.preselectedFileIds!);
+        newSet.addAll(widget.preselectedFileIds!);
       }
+      _selectedFileIds = newSet;
     });
 
     // Only load preferences if we don't have preselected files
@@ -562,11 +563,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   void _toggleSourceSelection(DriveFile file) {
     setState(() {
-      if (_selectedFileIds.contains(file.id)) {
-        _selectedFileIds.remove(file.id);
+      final newSet = Set<String>.from(_selectedFileIds);
+      if (newSet.contains(file.id)) {
+        newSet.remove(file.id);
       } else {
-        _selectedFileIds.add(file.id);
+        newSet.add(file.id);
       }
+      _selectedFileIds = newSet;
     });
     _saveSourcePreferences();
     _updateConversationSources();
@@ -574,7 +577,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   void _clearAllSources() {
     setState(() {
-      _selectedFileIds.clear();
+      _selectedFileIds = {};
     });
     _saveSourcePreferences();
     _updateConversationSources();
@@ -962,36 +965,48 @@ class _AIChatScreenState extends State<AIChatScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) => GlassContainer(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          opacity: 0.9,
-          color: AppColors.background,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (context, scrollController) => GlassContainer(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
               ),
-              Expanded(
-                child: SourceSelectionPanel(
-                  selectedFileIds: _selectedFileIds,
-                  onToggleFile: _toggleSourceSelection,
-                  onClearAll: _clearAllSources,
-                ),
+              opacity: 0.9,
+              color: AppColors.background,
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Expanded(
+                    child: SourceSelectionPanel(
+                      selectedFileIds: _selectedFileIds,
+                      onToggleFile: (file) {
+                        _toggleSourceSelection(file);
+                        setSheetState(() {});
+                      },
+                      onClearAll: () {
+                        _clearAllSources();
+                        setSheetState(() {});
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
