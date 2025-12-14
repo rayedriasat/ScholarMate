@@ -2159,7 +2159,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOutCubic,
             right: chatPanelRightOffset,
-            bottom: 80,
+            bottom: _showChatPanel
+                ? 80
+                : 140, // Position higher when FAB is visible
             child: Material(
               type: MaterialType.transparency,
               child: Builder(
