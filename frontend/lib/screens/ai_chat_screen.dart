@@ -861,163 +861,97 @@ class _AIChatScreenState extends State<AIChatScreen> {
       borderRadius: BorderRadius.zero,
       border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
       color: Theme.of(context).cardColor,
-      child: Stack(
+      child: Row(
         children: [
-          // Centered Title
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _currentConversationId != null
-                      ? _conversations
-                            .firstWhere(
-                              (c) => c.id == _currentConversationId,
-                              orElse: () => ChatConversation(
-                                id: '',
-                                userId: '',
-                                title: 'AI Chat',
-                                createdAt: DateTime.now(),
-                                updatedAt: DateTime.now(),
-                                selectedSourceIds: '[]',
-                              ),
-                            )
-                            .title
-                      : 'AI Chat',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (widget.preselectedFileId != null &&
-                    widget.preselectedFileName != null)
-                  Text(
-                    'Chatting with ${widget.preselectedFileName}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.normal,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-          ),
-
           // Left Actions
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.preselectedFileId != null ||
-                    widget.folderName != null)
-                  IconButton(
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: Theme.of(context).iconTheme.color,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-              ],
+          if (widget.preselectedFileId != null || widget.folderName != null)
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: Theme.of(context).iconTheme.color,
+              ),
+              onPressed: () => Navigator.pop(context),
             ),
-          ),
+
+          // Spacer to push right actions to the end
+          const Spacer(),
 
           // Right Actions
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_currentConversationId != null)
-                  IconButton(
-                    icon: Icon(
-                      Icons.add,
-                      color: Theme.of(context).iconTheme.color,
-                    ),
-                    onPressed: _startNewConversation,
-                    tooltip: 'New Chat',
-                  ),
-                IconButton(
-                  icon: Icon(
-                    _showSourcePanel ? Icons.close : Icons.filter_list,
-                    color: Theme.of(context).iconTheme.color,
-                  ),
-                  onPressed: () {
-                    if (isWideScreen) {
-                      setState(() {
-                        _showSourcePanel = !_showSourcePanel;
-                      });
-                    } else {
-                      _showSourceSelectionBottomSheet();
-                    }
-                  },
-                  tooltip: 'Source Selection',
+          if (_currentConversationId != null)
+            IconButton(
+              icon: Icon(Icons.add, color: Theme.of(context).iconTheme.color),
+              onPressed: _startNewConversation,
+              tooltip: 'New Chat',
+            ),
+          IconButton(
+            icon: Icon(
+              _showSourcePanel ? Icons.close : Icons.filter_list,
+              color: Theme.of(context).iconTheme.color,
+            ),
+            onPressed: () {
+              if (isWideScreen) {
+                setState(() {
+                  _showSourcePanel = !_showSourcePanel;
+                });
+              } else {
+                _showSourceSelectionBottomSheet();
+              }
+            },
+            tooltip: 'Source Selection',
+          ),
+          // Conversation history button
+          if (isWideScreen)
+            IconButton(
+              icon: Icon(
+                _showConversationList ? Icons.close : Icons.history,
+                color: Theme.of(context).iconTheme.color,
+              ),
+              onPressed: () {
+                setState(() {
+                  _showConversationList = !_showConversationList;
+                });
+              },
+              tooltip: 'Conversation History',
+            )
+          else
+            Builder(
+              builder: (context) => IconButton(
+                icon: Icon(
+                  Icons.history,
+                  color: Theme.of(context).iconTheme.color,
                 ),
-                // Conversation history button
-                if (isWideScreen)
-                  IconButton(
-                    icon: Icon(
-                      _showConversationList ? Icons.close : Icons.history,
-                      color: Theme.of(context).iconTheme.color,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _showConversationList = !_showConversationList;
-                      });
-                    },
-                    tooltip: 'Conversation History',
-                  )
-                else
-                  Builder(
-                    builder: (context) => IconButton(
-                      icon: Icon(
-                        Icons.history,
-                        color: Theme.of(context).iconTheme.color,
-                      ),
-                      onPressed: () => Scaffold.of(context).openEndDrawer(),
-                      tooltip: 'Conversation History',
-                    ),
-                  ),
-                if (_conversations.isNotEmpty)
-                  PopupMenuButton<String>(
-                    icon: Icon(
-                      Icons.more_vert,
-                      color: Theme.of(context).iconTheme.color,
-                    ),
-                    color: Theme.of(context).cardColor,
-                    onSelected: (value) {
-                      if (value == 'clear_all') {
-                        _clearAllConversations();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'clear_all',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_sweep, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text(
-                              'Clear All Conversations',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
+                onPressed: () => Scaffold.of(context).openEndDrawer(),
+                tooltip: 'Conversation History',
+              ),
+            ),
+          if (_conversations.isNotEmpty)
+            PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert,
+                color: Theme.of(context).iconTheme.color,
+              ),
+              color: Theme.of(context).cardColor,
+              onSelected: (value) {
+                if (value == 'clear_all') {
+                  _clearAllConversations();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'clear_all',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_sweep, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text(
+                        'Clear All Conversations',
+                        style: TextStyle(color: Colors.red),
                       ),
                     ],
                   ),
+                ),
               ],
             ),
-          ),
         ],
       ),
     );
