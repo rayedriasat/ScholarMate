@@ -2,6 +2,113 @@
 
 An offline-first, Google-Drive-backed AI research workspace for managing PDFs and Markdown files with annotation, scanning/OCR, read-aloud, semantic search (RAG), sharing, and realtime collaboration.
 
+# PreBuilt
+This google drive folder has apk and windows version already built:
+https://drive.google.com/drive/u/5/folders/1KdOQt7_gGBRBcxs2OPsXatOpzClblLIM
+
+and Live hosted web version: https://scholar-mate-nine.vercel.app/
+
+## 🚀 Quick Setup & Installation
+
+### Prerequisites
+
+- **Flutter SDK** (3.0+): [Install Flutter](https://docs.flutter.dev/get-started/install)
+- **Python** (3.10+): [Install Python](https://www.python.org/downloads/)
+- **uv** package manager: [Install uv](https://docs.astral.sh/uv/)
+- **Google Cloud Console** account for OAuth credentials
+- **Supabase** account (free tier)
+- **Java JDK** (for Android): Use Android Studio JDK (not JDK 25)
+
+### 1. Backend Setup
+
+```bash
+cd backend
+
+# (Optional) Copy environment template if .env doesn't exist
+# cp ../backend.env.template .env
+
+# Edit .env with your credentials:
+# - Supabase URL and keys
+# - Google OAuth credentials
+# - AI provider API keys
+# - Generate encryption key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+# Install dependencies and run
+uv sync
+uv run run.py
+```
+
+Backend will be available at `http://localhost:8000`
+
+### 2. Frontend Setup
+
+```bash
+cd frontend
+
+# (Optional) Copy dart-defines template if dart_defines.json doesn't exist
+# cp dart_defines.json.template dart_defines.json
+
+# Edit dart_defines.json with your credentials:
+# - Google OAuth credentials
+# - Backend API URL (http://localhost:8000 for local development)
+# - Supabase URL and anon key
+
+# Install dependencies
+flutter pub get
+
+# Generate code (if needed)
+dart run build_runner build --delete-conflicting-outputs
+```
+
+### 3. Run the App
+
+**Web (Chrome):**
+```bash
+flutter run -d chrome --web-port=8080 --dart-define-from-file=dart_defines.json
+```
+
+**Web (Edge):**
+```bash
+flutter run -d edge --web-port=8080 --dart-define-from-file=dart_defines.json
+```
+
+**Android (with backend connection):**
+```bash
+# First, reverse the port to connect to localhost backend
+adb reverse tcp:8000 tcp:8000
+
+# Then run the app
+flutter run --dart-define-from-file=dart_defines.json
+```
+
+**Windows/Desktop:**
+```bash
+flutter run --dart-define-from-file=dart_defines.json
+```
+
+### 4. Build for Production
+
+**Web:**
+```bash
+flutter build web --dart-define-from-file=dart_defines_defang.json
+```
+
+**Android APK:**
+```bash
+flutter build apk --release --dart-define-from-file=dart_defines_defang.json
+```
+
+### 5. Get Android SHA1 Key (for Google OAuth)
+
+```bash
+# Set JAVA_HOME to Android Studio JDK (not JDK 25)
+# Windows: Set environment variable
+# JAVA_HOME = C:\Program Files\Android\Android Studio\jbr
+
+cd frontend/android
+./gradlew signingReport
+```
+
 ## 🎯 Vision
 
 ScholarMate empowers researchers to:
@@ -51,76 +158,7 @@ ScholarMate (Monorepo)
 - File storage: Google Drive (user-owned)
 - Realtime: Supabase Realtime (free tier)
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Flutter SDK** (3.0+): [Install Flutter](https://docs.flutter.dev/get-started/install)
-- **Python** (3.10+): [Install Python](https://www.python.org/downloads/)
-- **uv** package manager: [Install uv](https://docs.astral.sh/uv/)
-- **Google Cloud Console** account for OAuth credentials
-- **Supabase** account (free tier)
-
-### Setup Instructions
-
-#### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd scholarmate
-```
-
-#### 2. Backend Setup
-
-```bash
-cd backend
-
-# Copy environment template
-cp ../backend.env.template .env
-
-# Edit .env with your credentials
-# - Supabase URL and keys
-# - Google OAuth credentials
-# - AI provider API keys
-# - Generate encryption key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-
-# Install dependencies (uv will create virtual environment automatically)
-uv sync
-
-# Run the backend
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-The backend will be available at `http://localhost:8000`
-- API docs: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/api/health`
-
-#### 3. Frontend Setup
-
-```bash
-cd frontend
-
-# Copy environment template
-cp ../frontend.env.template .env
-
-# Edit .env with your credentials
-# - Google OAuth credentials
-# - Backend API URL
-# - Supabase URL and anon key
-
-# Install dependencies
-flutter pub get
-
-# Run on your preferred platform
-flutter run -d chrome --web-port=8080 # Chrome
-flutter run -d edge --web-port=8080   # Edge 
-flutter run -d windows                # Windows
-flutter run -d macos                  # macOS
-flutter run -d linux                  # Linux
-flutter run                           # Mobile (connected device/emulator)
-```
-
-#### 4. Deploy to Vercel (Web Only)
+## 🌐 Deploy to Vercel (Web Only)
 
 Deploy the prebuilt Flutter web app to Vercel:
 
@@ -152,6 +190,8 @@ vercel --prod
 
 The app automatically detects Vercel and fetches config from the serverless function
 ```
+
+## 📝 Configuration Details
 
 ### Google OAuth Setup
 
