@@ -787,27 +787,22 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
                     // File List
                     Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          bottom: isAndroid ? padding.bottom + 80 : 0,
-                        ),
-                        child: _isLoading
-                            ? const Center(
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primary,
-                                ),
-                              )
-                            : _error != null
-                            ? Center(
-                                child: Text(
-                                  _error!,
-                                  style: const TextStyle(color: Colors.red),
-                                ),
-                              )
-                            : _files.isEmpty
-                            ? _buildEmptyState()
-                            : _buildFileListView(),
-                      ),
+                      child: _isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : _error != null
+                          ? Center(
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            )
+                          : _files.isEmpty
+                          ? _buildEmptyState()
+                          : _buildFileListView(),
                     ),
                   ],
                 ),
@@ -1130,8 +1125,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   Widget _buildAndroidCardList() {
+    final padding = MediaQuery.of(context).padding;
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        padding.bottom + 160,
+      ), // Extra padding for FAB and nav bar
       itemCount: _files.length,
       itemBuilder: (context, index) {
         final file = _files[index];
