@@ -1,0 +1,8 @@
+{
+    "GOOGLE_CLIENT_ID":  "325415234543-menqofjbigrju70tbi7oab4p5ath82lc.apps.googleusercontent.com",
+    "GOOGLE_CLIENT_SECRET":  "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",
+    "GOOGLE_REDIRECT_URI":  "https://scholar-mate-nine.vercel.app/auth/callback",
+    "API_BASE_URL":  "http://152.53.140.23:8000",
+    "SUPABASE_URL":  "https://rqyzgfgdsedvohxyyqho.supabase.co",
+    "SUPABASE_ANON_KEY":  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxeXpnZmdkc2Vkdm9oeHl5cWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTM5NzQsImV4cCI6MjA3NjYyOTk3NH0.mynXFTLHdzKg7Em2mfKXwNcRMPIsM9yv-7I9aWBkijE"
+}

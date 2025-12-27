@@ -148454,7 +148454,7 @@ return A.k($async$fo,r)},
 el(a,b){switch(a){case"GOOGLE_CLIENT_ID":return"325415234543-menqofjbigrju70tbi7oab4p5ath82lc.apps.googleusercontent.com"
 case"GOOGLE_CLIENT_SECRET":return"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"
 case"GOOGLE_REDIRECT_URI":return"https://scholar-mate-nine.vercel.app/auth/callback"
-case"API_BASE_URL":return"https://t5x3lhgha07h3-backend.prod2.defang.dev"
+case"API_BASE_URL":return"http://152.53.140.23:8000"
 case"SUPABASE_URL":return"https://rqyzgfgdsedvohxyyqho.supabase.co"
 case"SUPABASE_ANON_KEY":return"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxeXpnZmdkc2Vkdm9oeHl5cWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTM5NzQsImV4cCI6MjA3NjYyOTk3NH0.mynXFTLHdzKg7Em2mfKXwNcRMPIsM9yv-7I9aWBkijE"
 default:return b}},
