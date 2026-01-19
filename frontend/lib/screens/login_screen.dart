@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -51,13 +50,6 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleSignIn() async {
-    if (kIsWeb) {
-      debugPrint(
-        'Warning: Direct signIn() called on web, should use signInButton()',
-      );
-      return;
-    }
-
     setState(() {
       _errorMessage = null;
     });
@@ -81,44 +73,6 @@ class _LoginScreenState extends State<LoginScreen>
         }
       });
     }
-  }
-
-  Widget _buildWebSignInButton(AuthService authService) {
-    if (authService.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      );
-    }
-
-    final signInButton = authService.getWebSignInButton();
-
-    if (signInButton == null) {
-      return Container(
-        width: double.infinity,
-        height: 48,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.2),
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'Web sign-in not available',
-          style: TextStyle(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.7),
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(width: double.infinity, height: 48, child: signInButton);
   }
 
   @override
@@ -303,16 +257,13 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (kIsWeb)
-          _buildWebSignInButton(authService)
-        else
-          ModernButton(
-            label: 'Sign in with Google',
-            icon: Icons.login, // Placeholder, ideally use SVG
-            isLoading: authService.isLoading,
-            onPressed: _handleSignIn,
-            variant: ModernButtonVariant.primary,
-          ),
+        ModernButton(
+          label: 'Sign in with Google',
+          icon: Icons.login, // Placeholder, ideally use SVG
+          isLoading: authService.isLoading,
+          onPressed: _handleSignIn,
+          variant: ModernButtonVariant.primary,
+        ),
 
         if (_errorMessage != null) ...[
           const SizedBox(height: 24),

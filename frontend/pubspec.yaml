@@ -78,6 +78,8 @@ dependencies:
   google_fonts: ^6.3.2
   cached_network_image: ^3.4.1
   pdfx: ^2.9.2
+  url_launcher: ^6.3.2
+  app_links: ^6.4.1
 
 dev_dependencies:
   flutter_test:
