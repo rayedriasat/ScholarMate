@@ -26,7 +26,7 @@ uv run run.py
 
 ```bash
 cd frontend
-flutter run -d chrome --web-port=8080 --dart-define-from-file=dart_defines.json
+flutter run -d chrome --web-port=8001 --dart-define-from-file=dart_defines.json
 ```
 
 ## What's New

@@ -125,11 +125,11 @@ REM Run Flutter with dart-define-from-file
 if "%PLATFORM%"=="1" (
     flutter run -d android --dart-define-from-file=dart_defines.json
 ) else if "%PLATFORM%"=="2" (
-    flutter run -d edge --web-port=8080 --dart-define-from-file=dart_defines.json
+    flutter run -d edge --web-port=8001 --dart-define-from-file=dart_defines.json
 ) else if "%PLATFORM%"=="3" (
     flutter run -d windows --dart-define-from-file=dart_defines.json
 ) else (
-    flutter run -d edge --web-port=8080 --dart-define-from-file=dart_defines.json
+    flutter run -d edge --web-port=8001 --dart-define-from-file=dart_defines.json
 )
 
 cd ..

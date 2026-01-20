@@ -2,8 +2,8 @@ In frontend/ folder
 
 flutter run --dart-define-from-file=dart_defines.json
 adb reverse tcp:8000 tcp:8000
-flutter run -d chrome --web-port=8080 --dart-define-from-file=dart_defines.json
-flutter run -d edge --web-port=8080 --dart-define-from-file=dart_defines.json
+flutter run -d chrome --web-port=8001 --dart-define-from-file=dart_defines.json
+flutter run -d edge --web-port=8001 --dart-define-from-file=dart_defines.json
 
 
 flutter build web --dart-define-from-file=dart_defines_defang.json

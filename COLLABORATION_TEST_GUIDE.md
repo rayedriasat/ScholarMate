@@ -4,7 +4,7 @@
 
 ### Setup (One Time)
 1. Make sure backend is running: `cd backend && uv run run.py`
-2. Make sure frontend is running: `cd frontend && flutter run -d chrome --web-port=8080 --dart-define-from-file=dart_defines.json`
+2. Make sure frontend is running: `cd frontend && flutter run -d chrome --web-port=8001 --dart-define-from-file=dart_defines.json`
 
 ### Test Steps
 

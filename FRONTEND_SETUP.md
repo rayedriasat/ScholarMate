@@ -145,7 +145,7 @@ See [ADB_PORT_FORWARDING.md](frontend/ADB_PORT_FORWARDING.md)
 
 **Run:**
 ```bash
-flutter run -d edge --web-port=8080 --dart-define-from-file=dart_defines.json
+flutter run -d edge --web-port=8001 --dart-define-from-file=dart_defines.json
 ```
 
 ### Windows Desktop
