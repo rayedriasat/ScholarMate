@@ -24,6 +24,7 @@ services:
       # Google OAuth - REQUIRED: Set these as secrets
       - GOOGLE_CLIENT_ID
       - GOOGLE_CLIENT_SECRET
+      - JWT_SECRET
       
       # Pinecone Vector Database - REQUIRED: Set these as secrets
       - HUGGINGFACEHUB_API_TOKEN
@@ -38,12 +39,16 @@ services:
       
       # Memory Optimization for Free Tier (CRITICAL)
       # These are tuned for ~512MB-1GB memory limit
-      - EMBEDDING_BATCH_SIZE=3
-      - PDF_PAGE_BATCH_SIZE=2
-      - PINECONE_BATCH_SIZE=25
+      - EMBEDDING_BATCH_SIZE=80
+      - PDF_PAGE_BATCH_SIZE=20
+      - PINECONE_BATCH_SIZE=150
       
       # AI Providers - OPTIONAL: Set if using
       - OPENROUTER_API_KEY
+      - OPENAI_API_KEY
+      - ANTHROPIC_API_KEY
+      - GOOGLE_API_KEY
+      - XAI_API_KEY
       - DEFAULT_EMBEDDING_MODEL=text-embedding-3-small
       - DEFAULT_CHAT_MODEL=moonshotai/kimi-k2:free
       
