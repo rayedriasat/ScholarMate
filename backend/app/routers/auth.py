@@ -26,15 +26,16 @@ REDIRECT_URI = f"{BACKEND_URL}/api/auth/google/callback"
 # Frontend URLs
 FRONTEND_WEB_URL = os.getenv("FRONTEND_WEB_URL", "http://localhost:8080")
 ANDROID_SCHEME = "myapp://auth-success"
+WINDOWS_LOOPBACK_URL = "http://localhost:3000"
 
 
 @router.get("/google")
-async def google_login(platform: str = Query(..., regex="^(android|web)$")):
+async def google_login(platform: str = Query(..., regex="^(android|web|windows)$")):
     """
     Initiate Google OAuth2 flow
     
     Args:
-        platform: 'android' or 'web' to determine redirect behavior
+        platform: 'android', 'web', or 'windows' to determine redirect behavior
     """
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=500, detail="Google Client ID not configured")
@@ -157,6 +158,9 @@ async def google_callback(code: str, state: str, error: Optional[str] = None):
         platform = state
         if platform == "android":
             redirect_url = f"{ANDROID_SCHEME}?code={encrypted_session}"
+        elif platform == "windows":
+            # Redirect to local loopback server running on Windows client
+            redirect_url = f"{WINDOWS_LOOPBACK_URL}?code={encrypted_session}"
         else: # web
             redirect_url = f"{FRONTEND_WEB_URL}/auth-callback?code={encrypted_session}"
             

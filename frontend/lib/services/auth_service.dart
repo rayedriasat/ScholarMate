@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in_all_platforms/google_sign_in_all_platforms.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
@@ -11,23 +10,20 @@ import '../models/user.dart';
 import 'storage_service.dart';
 import 'api_service.dart';
 import 'config_service.dart';
+import 'windows_auth_server.dart';
 
 /// Authentication service handling Google OAuth
-/// Windows: Uses google_sign_in_all_platforms (Client-side flow)
-/// Android/Web: Uses Backend Oauth flow (Server-side flow)
+/// All platforms (Windows, Web, Android) now use FastAPI Backend OAuth flow
 class AuthService extends ChangeNotifier {
   // Singleton instance
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  // Google Sign-In instance (Windows only)
-  GoogleSignIn? _googleSignIn;
-  StreamSubscription<GoogleSignInCredentials?>? _authStateSub;
-
-  // Deep linking (Android/Web)
+  // Deep linking (Android/Web) and Windows loopback server
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
+  WindowsAuthServer? _windowsAuthServer;
 
   // Current user
   User? _currentUser;
@@ -48,14 +44,6 @@ class AuthService extends ChangeNotifier {
   // Token refresh tracking to prevent loops
   bool _isRefreshing = false;
 
-  // Scopes required by the app (Google Drive access)
-  static const List<String> _scopes = <String>[
-    'openid',
-    'profile',
-    'email',
-    'https://www.googleapis.com/auth/drive.file',
-  ];
-
   /// Initialize the Authentication Service
   Future<void> initialize({
     required String clientId,
@@ -70,15 +58,11 @@ class AuthService extends ChangeNotifier {
       // Initialize storage service
       await StorageService.initialize();
 
-      // Try to restore user from local storage
+      // Restore user from storage (all platforms)
       await _restoreUserFromStorage();
 
-      // Platform-specific initialization
-      if (_isWindows()) {
-        await _initializeWindows(clientId);
-      } else {
-        await _initializeBackendAuth();
-      }
+      // Initialize backend auth with deep links
+      await _initializeBackendAuth();
 
       _isInitialized = true;
       notifyListeners();
@@ -94,40 +78,14 @@ class AuthService extends ChangeNotifier {
     return !kIsWeb && Platform.isWindows;
   }
 
-  /// Initialize Windows-specific auth (Client-side SDK)
-  Future<void> _initializeWindows(String clientId) async {
-    debugPrint('Initializing Windows Auth (google_sign_in_all_platforms)');
-    final configService = ConfigService();
-    final clientSecret = configService.googleClientSecret;
-
-    _googleSignIn = GoogleSignIn(
-      params: GoogleSignInParams(
-        clientId: clientId,
-        clientSecret: clientSecret,
-        scopes: _scopes,
-        redirectPort: 3000,
-        timeout: const Duration(minutes: 2),
-      ),
-    );
-
-    _authStateSub = _googleSignIn!.authenticationState.listen(
-      _handleAuthStateChange,
-      onError: (error) => debugPrint('Auth error: $error'),
-    );
-
-    // Silent sign-in for Windows
-    if (_currentUser != null) {
-      debugPrint('Attempting silent sign-in (Windows)...');
-      await silentSignIn();
-    }
-  }
-
-  /// Initialize Backend Auth (Android/Web)
+  /// Initialize Backend Auth (All platforms now use deep links / loopback)
   Future<void> _initializeBackendAuth() async {
-    debugPrint('Initializing Backend Auth (Deep Links)');
+    debugPrint('Initializing Backend Auth');
     _appLinks = AppLinks();
 
     // Handle incoming links (Deep links / Redirects)
+    // Note: On Windows with loopback server, this won't be triggered
+    // but we keep it for Android/Web compatibility
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
       _handleDeepLink(uri);
     });
@@ -144,14 +102,18 @@ class AuthService extends ChangeNotifier {
 
     // Check token validity if user is restored
     if (_currentUser != null) {
+      debugPrint('User restored from storage: ${_currentUser!.email}');
       // Validate expiry and ownership
       if (await StorageService.isSessionValid()) {
+        debugPrint('Session is valid, checking token...');
         // Optionally verify with backend or refresh if needed
         await getAccessToken();
       } else {
         debugPrint('Session expired, clearing user');
         await _clearUserData();
       }
+    } else {
+      debugPrint('No user found in storage');
     }
   }
 
@@ -193,6 +155,8 @@ class AuthService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
+        final oldUserId = _currentUser?.id;
+        
         // Parse User from response
         final user = User(
           id: data['user_id'],
@@ -203,6 +167,14 @@ class AuthService extends ChangeNotifier {
           refreshToken: null, // Refresh token is stored in backend
           tokenExpiry: DateTime.parse(data['token_expiry']),
         );
+
+        // Check if this is a different user and clear cached data
+        if (oldUserId != null && oldUserId != user.id) {
+          debugPrint('Different user detected (old: $oldUserId, new: ${user.id}), clearing cache...');
+          await _clearUserData();
+          // Add flag to indicate cache should be cleared
+          await StorageService.setBool('_cache_clear_needed', true);
+        }
 
         _currentUser = user;
         await StorageService.storeUser(user);
@@ -225,34 +197,69 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Sign In - Platform Aware
+  /// Sign In - Now unified across all platforms
   Future<void> signInWithGoogle() async {
-    if (!_isInitialized) throw Exception('AuthService not initialized');
+    if (!_isInitialized) {
+      throw Exception('AuthService not initialized');
+    }
 
-    if (_isWindows()) {
-      await _windowsSignIn();
-    } else {
-      await _backendOAuthSignIn();
+    _setLoading(true);
+    try {
+      if (_isWindows()) {
+        await _windowsBackendOAuthSignIn();
+      } else {
+        await _backendOAuthSignIn();
+      }
+    } catch (e) {
+      _setLoading(false);
+      rethrow;
     }
   }
 
-  /// Windows Client-Side Sign In
-  Future<void> _windowsSignIn() async {
-    _setLoading(true);
+  /// Windows Backend OAuth Sign In (using loopback server)
+  Future<void> _windowsBackendOAuthSignIn() async {
     try {
-      if (_currentUser != null) await _clearUserData();
-      final credentials = await _googleSignIn!.signIn();
-      if (credentials == null) throw Exception('Sign-in cancelled');
+      final configService = ConfigService();
+      final baseUrl = configService.apiBaseUrl.endsWith('/')
+          ? configService.apiBaseUrl.substring(
+              0,
+              configService.apiBaseUrl.length - 1,
+            )
+          : configService.apiBaseUrl;
 
-      final user = await _createUserFromCredentials(credentials);
-      _currentUser = user;
-      await StorageService.storeUser(user);
-      await _storeUserInBackend(user); // Calls old store-tokens logic
+      // Start local server to receive callback
+      _windowsAuthServer = WindowsAuthServer(port: 3000);
+      
+      // Start server and get auth code future
+      final authCodeFuture = _windowsAuthServer!.waitForAuthCode();
 
-      _authStateController.add(user);
-      notifyListeners();
+      // Open browser for auth
+      final authUrl = '$baseUrl/api/auth/google?platform=windows';
+      final uri = Uri.parse(authUrl);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        await _windowsAuthServer?.stop();
+        throw Exception('Could not launch auth URL');
+      }
+
+      // Wait for auth code from callback
+      debugPrint('[Auth] Waiting for auth code from loopback server...');
+      final encryptedCode = await authCodeFuture;
+      debugPrint('[Auth] Received encrypted session code');
+
+      // Exchange code for session
+      await _exchangeCodeForSession(encryptedCode);
+    } catch (e) {
+      debugPrint('Error in Windows backend auth: $e');
+      await _windowsAuthServer?.stop();
+      rethrow;
     } finally {
-      _setLoading(false);
+      await _windowsAuthServer?.stop();
     }
   }
 
@@ -290,38 +297,20 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Get Access Token - Platform Aware
+  /// Get Access Token - Now unified via backend for all platforms
   Future<String?> getAccessToken({bool forceRefresh = false}) async {
-    if (_currentUser?.accessToken == null) return null;
-
-    if (_isWindows()) {
-      return _windowsGetAccessToken(forceRefresh: forceRefresh);
-    } else {
-      return _backendGetAccessToken(forceRefresh: forceRefresh);
+    if (_currentUser?.accessToken == null) {
+      return null;
     }
+
+    debugPrint(
+      '[Auth] getAccessToken called. forceRefresh: $forceRefresh',
+    );
+
+    return _backendGetAccessToken(forceRefresh: forceRefresh);
   }
 
-  /// Windows: Get/Refresh Token
-  Future<String?> _windowsGetAccessToken({bool forceRefresh = false}) async {
-    final now = DateTime.now();
-    final expiryThreshold = now.add(const Duration(minutes: 5));
-    final needsRefresh =
-        _currentUser!.tokenExpiry != null &&
-        expiryThreshold.isAfter(_currentUser!.tokenExpiry!);
-
-    if (forceRefresh || needsRefresh) {
-      if (_isRefreshing) return _waitForRefresh();
-      _isRefreshing = true;
-      try {
-        return await _refreshAccessToken(); // Uses google_sign_in internal refresh
-      } finally {
-        _isRefreshing = false;
-      }
-    }
-    return _currentUser!.accessToken;
-  }
-
-  /// Backend: Get/Refresh Token
+  /// Backend: Get/Refresh Token (All platforms)
   Future<String?> _backendGetAccessToken({bool forceRefresh = false}) async {
     final now = DateTime.now();
     final expiryThreshold = now.add(const Duration(minutes: 5));
@@ -330,7 +319,9 @@ class AuthService extends ChangeNotifier {
         expiryThreshold.isAfter(_currentUser!.tokenExpiry!);
 
     if (forceRefresh || needsRefresh) {
-      if (_isRefreshing) return _waitForRefresh();
+      if (_isRefreshing) {
+        return _waitForRefresh();
+      }
       _isRefreshing = true;
       try {
         // Call backend to refresh access token
@@ -388,22 +379,22 @@ class AuthService extends ChangeNotifier {
     return _currentUser?.accessToken;
   }
 
-  /// Sign Out - Platform Aware
+  /// Sign Out - Unified for all platforms
   Future<void> signOut() async {
     _setLoading(true);
     try {
-      if (_isWindows()) {
-        await _googleSignIn?.signOut();
-      } else {
-        // Backend logout - call delete tokens
-        if (_currentUser != null) {
-          try {
-            await ApiService().deleteTokens(userId: _currentUser!.id);
-          } catch (e) {
-            debugPrint('Backend logout api failed (ignoring): $e');
-          }
+      // Set flag to clear cache (will be handled by app-level listener)
+      await StorageService.setBool('_cache_clear_needed', true);
+      
+      // Backend logout - call delete tokens
+      if (_currentUser != null) {
+        try {
+          await ApiService().deleteTokens(userId: _currentUser!.id);
+        } catch (e) {
+          debugPrint('Backend logout api failed (ignoring): $e');
         }
       }
+      
       await _handleSignOut();
     } finally {
       _setLoading(false);
@@ -411,129 +402,8 @@ class AuthService extends ChangeNotifier {
   }
 
   // ------------------------------------------------------------------------
-  // Existing Windows Helper Methods (Kept for compatibility)
-  // ------------------------------------------------------------------------
-
-  void _handleAuthStateChange(GoogleSignInCredentials? credentials) async {
-    if (credentials == null) {
-      await _handleSignOut();
-      return;
-    }
-    try {
-      final user = await _createUserFromCredentials(credentials);
-      if (_currentUser != null && _currentUser!.id != user.id) {
-        await _clearUserData();
-      }
-      _currentUser = user;
-      await StorageService.storeUser(user);
-      await _storeUserInBackend(user);
-      _authStateController.add(user);
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error handling auth state change: $e');
-    }
-  }
-
-  Future<User?> silentSignIn() async {
-    if (!_isInitialized) return null;
-
-    if (_isWindows()) {
-      try {
-        var credentials = await _googleSignIn!.silentSignIn();
-        if (credentials == null) {
-          credentials = await _googleSignIn!.lightweightSignIn();
-        }
-        if (credentials != null) {
-          final user = await _createUserFromCredentials(credentials);
-          // Update state
-          if (_currentUser != null && _currentUser!.id != user.id) {
-            await _clearUserData();
-          }
-          _currentUser = user;
-          await StorageService.storeUser(user);
-          await _storeUserInBackend(user);
-          _authStateController.add(user);
-          notifyListeners();
-          return user;
-        }
-      } catch (e) {
-        debugPrint('Silent sign in failed: $e');
-      }
-    } else {
-      // For Backend Auth, silent sign-in is managed by persistence restoration
-      // We check if the current user is valid
-      if (_currentUser != null) {
-        return _currentUser;
-      }
-
-      // Try to restore again?
-      await _restoreUserFromStorage();
-      return _currentUser;
-    }
-    return null;
-  }
-
-  Future<String?> _refreshAccessToken() async {
-    // Windows logic for refreshing map
-    try {
-      var credentials = await _googleSignIn!.silentSignIn();
-      if (credentials == null)
-        credentials = await _googleSignIn!.lightweightSignIn();
-
-      if (credentials != null) {
-        final user = await _createUserFromCredentials(credentials);
-        _currentUser = user;
-        await StorageService.storeUser(user);
-        return user.accessToken;
-      }
-    } catch (e) {
-      debugPrint('Windows refresh failed: $e');
-    }
-    return null;
-  }
-
-  // ------------------------------------------------------------------------
   // Shared Helpers
   // ------------------------------------------------------------------------
-
-  Future<User> _createUserFromCredentials(
-    GoogleSignInCredentials credentials,
-  ) async {
-    final userInfo = _decodeIdToken(credentials.idToken);
-    DateTime tokenExpiry;
-    if (userInfo.containsKey('exp') && userInfo['exp'] is int) {
-      tokenExpiry = DateTime.fromMillisecondsSinceEpoch(
-        (userInfo['exp'] as int) * 1000,
-      );
-    } else {
-      tokenExpiry = DateTime.now().add(const Duration(hours: 1));
-    }
-    return User.fromGoogleSignIn(
-      id: userInfo['sub'] ?? '',
-      email: userInfo['email'] ?? '',
-      displayName: userInfo['name'],
-      photoUrl: userInfo['picture'],
-      accessToken: credentials.accessToken,
-      refreshToken: credentials.refreshToken,
-      idToken: credentials.idToken,
-      tokenExpiry: tokenExpiry,
-    );
-  }
-
-  Map<String, dynamic> _decodeIdToken(String? idToken) {
-    if (idToken == null || idToken.isEmpty) return {};
-    try {
-      final parts = idToken.split('.');
-      if (parts.length != 3) return {};
-      final payload = parts[1];
-      var normalized = payload.replaceAll('-', '+').replaceAll('_', '/');
-      while (normalized.length % 4 != 0) normalized += '=';
-      final decoded = utf8.decode(base64.decode(normalized));
-      return json.decode(decoded) as Map<String, dynamic>;
-    } catch (e) {
-      return {};
-    }
-  }
 
   Future<void> _handleSignOut() async {
     await _clearUserData();
@@ -543,35 +413,23 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _clearUserData() async {
+    debugPrint('Clearing user data and cache...');
     await StorageService.clearUser();
+    // Note: Cache clearing is handled by the app-level services
+    // to avoid circular dependencies
   }
 
   Future<void> _restoreUserFromStorage() async {
     try {
       final storedUser = await StorageService.getStoredUser();
       if (storedUser != null) {
+        debugPrint('Restored user from storage: ${storedUser.email}');
         _currentUser = storedUser;
         _authStateController.add(storedUser);
       }
     } catch (e) {
+      debugPrint('Error restoring user from storage: $e');
       await StorageService.clearUser();
-    }
-  }
-
-  Future<void> _storeUserInBackend(User user) async {
-    try {
-      if (user.accessToken == null || user.accessToken!.isEmpty) return;
-      await ApiService().storeTokens(
-        userId: user.id,
-        email: user.email,
-        name: user.displayName,
-        pictureUrl: user.photoUrl,
-        accessToken: user.accessToken!,
-        refreshToken: user.refreshToken,
-        idToken: user.idToken,
-      );
-    } catch (e) {
-      debugPrint('Failed to store user in backend: $e');
     }
   }
 
@@ -586,6 +444,9 @@ class AuthService extends ChangeNotifier {
     _setLoading(true);
 
     try {
+      // Set flag to clear cache (will be handled by app-level listener)
+      await StorageService.setBool('_cache_clear_needed', true);
+      
       // Clear user data first
       await _clearUserData();
 
@@ -602,6 +463,7 @@ class AuthService extends ChangeNotifier {
       // Even if there's an error, clear local state
       _currentUser = null;
       await StorageService.clearUser();
+      await StorageService.setBool('_cache_clear_needed', true);
       _authStateController.add(null);
       notifyListeners();
     } finally {
@@ -609,16 +471,10 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // No longer needed for Web specifically, but keeping empty compatible signature if needed
-  Widget? getWebSignInButton() => null;
-
-  // Support custom last resort refresh if ever needed manually
-  Future<String?> refreshAccessTokenWithRefreshToken() async => null;
-
   @override
   void dispose() {
-    _authStateSub?.cancel();
     _linkSubscription?.cancel();
+    _windowsAuthServer?.stop();
     _authStateController.close();
     super.dispose();
   }
