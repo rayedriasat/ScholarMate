@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../widgets/ui/animated_background.dart';
 import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
+import '../widgets/landing/landing_sections.dart';
 
 /// Login screen with modern glassmorphism UI
 class LoginScreen extends StatefulWidget {
@@ -128,10 +129,26 @@ class _LoginScreenState extends State<LoginScreen>
 
     return Scaffold(
       body: AnimatedBackground(
-        child: Center(
-          child: isWideScreen
-              ? _buildSplitLayout(context)
-              : _buildSingleLayout(context),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Main login section
+              SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: Center(
+                  child: isWideScreen
+                      ? _buildSplitLayout(context)
+                      : _buildSingleLayout(context),
+                ),
+              ),
+              // Landing sections
+              LandingSections(
+                isWeb: isWideScreen,
+                onGetStarted: null, // Will use scroll controller instead
+                scrollController: null, // No scroll controller for login screen
+              ),
+            ],
+          ),
         ),
       ),
     );

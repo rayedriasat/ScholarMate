@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 
 enum ModernButtonVariant { primary, secondary, ghost, outline }
 
+enum ModernButtonSize { small, medium, large }
+
 class ModernButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
   final ModernButtonVariant variant;
+  final ModernButtonSize size;
   final bool isLoading;
   final double? width;
   final double? height;
@@ -19,6 +22,7 @@ class ModernButton extends StatefulWidget {
     this.onPressed,
     this.icon,
     this.variant = ModernButtonVariant.primary,
+    this.size = ModernButtonSize.medium,
     this.isLoading = false,
     this.width,
     this.height,
@@ -53,6 +57,54 @@ class _ModernButtonState extends State<ModernButton>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  double _getButtonHeight() {
+    if (widget.height != null) return widget.height!;
+
+    switch (widget.size) {
+      case ModernButtonSize.small:
+        return 36;
+      case ModernButtonSize.medium:
+        return 48;
+      case ModernButtonSize.large:
+        return 56;
+    }
+  }
+
+  double _getFontSize() {
+    switch (widget.size) {
+      case ModernButtonSize.small:
+        return 13;
+      case ModernButtonSize.medium:
+        return 15;
+      case ModernButtonSize.large:
+        return 17;
+    }
+  }
+
+  double _getIconSize() {
+    switch (widget.size) {
+      case ModernButtonSize.small:
+        return 16;
+      case ModernButtonSize.medium:
+        return 20;
+      case ModernButtonSize.large:
+        return 24;
+    }
+  }
+
+  EdgeInsets _getPadding() {
+    if (widget.label.isEmpty) return EdgeInsets.zero;
+
+    switch (widget.size) {
+      case ModernButtonSize.small:
+        return const EdgeInsets.symmetric(horizontal: 16);
+      case ModernButtonSize.medium:
+        return const EdgeInsets.symmetric(horizontal: 24);
+      case ModernButtonSize.large:
+        return const EdgeInsets.symmetric(horizontal: 32);
+    }
   }
 
   Color _getBackgroundColor() {
@@ -148,11 +200,8 @@ class _ModernButtonState extends State<ModernButton>
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: widget.width,
-            height: widget.height ?? 48,
-            padding: widget.label.isEmpty
-                ? EdgeInsets
-                      .zero // No padding for icon-only buttons
-                : const EdgeInsets.symmetric(horizontal: 24),
+            height: _getButtonHeight(),
+            padding: _getPadding(),
             decoration: BoxDecoration(
               color: _getBackgroundColor(),
               borderRadius: BorderRadius.circular(12),
@@ -178,8 +227,8 @@ class _ModernButtonState extends State<ModernButton>
               children: [
                 if (widget.isLoading) ...[
                   SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: _getIconSize(),
+                    height: _getIconSize(),
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(
@@ -189,7 +238,11 @@ class _ModernButtonState extends State<ModernButton>
                   ),
                   if (widget.label.isNotEmpty) const SizedBox(width: 12),
                 ] else if (widget.icon != null) ...[
-                  Icon(widget.icon, color: _getTextColor(), size: 20),
+                  Icon(
+                    widget.icon,
+                    color: _getTextColor(),
+                    size: _getIconSize(),
+                  ),
                   if (widget.label.isNotEmpty) const SizedBox(width: 8),
                 ],
                 if (widget.label.isNotEmpty)
@@ -199,7 +252,7 @@ class _ModernButtonState extends State<ModernButton>
                       style: TextStyle(
                         color: _getTextColor(),
                         fontWeight: FontWeight.w600,
-                        fontSize: 15,
+                        fontSize: _getFontSize(),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

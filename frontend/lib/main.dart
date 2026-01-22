@@ -29,6 +29,7 @@ import 'services/file_chat_service.dart';
 import 'services/subscription_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/landing_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/advanced_search_screen.dart';
 
@@ -433,7 +434,11 @@ class _AppInitializerState extends State<AppInitializer> {
         if (authService.currentUser != null) {
           return const HomeScreen();
         } else {
-          return const LoginScreen();
+          // Use dedicated landing screen for mobile, enhanced login for web
+          final size = MediaQuery.of(context).size;
+          final isMobile = size.width < 900;
+
+          return isMobile ? const LandingScreen() : const LoginScreen();
         }
       },
     );
