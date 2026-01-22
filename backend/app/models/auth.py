@@ -25,3 +25,14 @@ class RefreshTokenResponse(BaseModel):
     """Response model for token refresh"""
     access_token: Optional[str] = None
     message: str
+
+
+class SessionResponse(BaseModel):
+    """Response model for session retrieval"""
+    access_token: str
+    token_expiry: str  # ISO 8601 string
+    user_id: str
+    email: str
+    name: Optional[str] = None
+    picture_url: Optional[str] = None
+

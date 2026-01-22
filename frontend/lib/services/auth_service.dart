@@ -1,24 +1,29 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in_all_platforms/google_sign_in_all_platforms.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:app_links/app_links.dart';
 import '../models/user.dart';
 import 'storage_service.dart';
 import 'api_service.dart';
 import 'config_service.dart';
+import 'windows_auth_server.dart';
 
-/// Authentication service handling Google OAuth using google_sign_in_all_platforms
-/// Supports all platforms including Windows and Linux
+/// Authentication service handling Google OAuth
+/// All platforms (Windows, Web, Android) now use FastAPI Backend OAuth flow
 class AuthService extends ChangeNotifier {
   // Singleton instance
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  // Google Sign-In instance
-  GoogleSignIn? _googleSignIn;
+  // Deep linking (Android/Web) and Windows loopback server
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+  WindowsAuthServer? _windowsAuthServer;
 
   // Current user
   User? _currentUser;
@@ -39,18 +44,7 @@ class AuthService extends ChangeNotifier {
   // Token refresh tracking to prevent loops
   bool _isRefreshing = false;
 
-  // Scopes required by the app (Google Drive access)
-  static const List<String> _scopes = <String>[
-    'openid',
-    'profile',
-    'email',
-    'https://www.googleapis.com/auth/drive.file',
-  ];
-
-  StreamSubscription<GoogleSignInCredentials?>? _authStateSub;
-
-  /// Initialize the Google Sign-In instance
-  /// Must be called exactly once before any other methods
+  /// Initialize the Authentication Service
   Future<void> initialize({
     required String clientId,
     String? serverClientId,
@@ -64,41 +58,13 @@ class AuthService extends ChangeNotifier {
       // Initialize storage service
       await StorageService.initialize();
 
-      // Try to restore user from local storage
+      // Restore user from storage (all platforms)
       await _restoreUserFromStorage();
 
-      // Get client secret from config (required for desktop platforms)
-      final configService = ConfigService();
-      final clientSecret = configService.googleClientSecret;
-
-      debugPrint('Initializing Google Sign-In All Platforms');
-      debugPrint('Platform: ${defaultTargetPlatform.name}');
-      debugPrint('Is Web: $kIsWeb');
-
-      // Initialize Google Sign-In with platform-appropriate configuration
-      _googleSignIn = GoogleSignIn(
-        params: GoogleSignInParams(
-          clientId: clientId,
-          clientSecret: clientSecret,
-          scopes: _scopes,
-          redirectPort: 3000,
-          timeout: const Duration(minutes: 2),
-        ),
-      );
-      // Subscribe to authentication state changes
-      _authStateSub = _googleSignIn!.authenticationState.listen(
-        _handleAuthStateChange,
-        onError: _handleAuthError,
-      );
+      // Initialize backend auth with deep links
+      await _initializeBackendAuth();
 
       _isInitialized = true;
-
-      // Attempt silent sign-in to restore previous session
-      if (_currentUser != null) {
-        debugPrint('User restored from storage, attempting silent sign-in...');
-        await silentSignIn();
-      }
-
       notifyListeners();
       debugPrint('AuthService initialized successfully');
     } catch (e) {
@@ -107,302 +73,246 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Handle authentication state changes from the stream
-  void _handleAuthStateChange(GoogleSignInCredentials? credentials) async {
-    debugPrint(
-      'Auth state changed: ${credentials != null ? "signed in" : "signed out"}',
-    );
+  /// Check if running on Windows
+  bool _isWindows() {
+    return !kIsWeb && Platform.isWindows;
+  }
 
-    if (credentials == null) {
-      // User signed out
-      await _handleSignOut();
-      return;
+  /// Initialize Backend Auth (All platforms now use deep links / loopback)
+  Future<void> _initializeBackendAuth() async {
+    debugPrint('Initializing Backend Auth');
+    _appLinks = AppLinks();
+
+    // Handle incoming links (Deep links / Redirects)
+    // Note: On Windows with loopback server, this won't be triggered
+    // but we keep it for Android/Web compatibility
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    });
+
+    // Handle initial link if app was launched via link
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        _handleDeepLink(initialUri);
+      }
+    } catch (e) {
+      debugPrint('Error getting initial link: $e');
     }
 
-    try {
-      // Create user from credentials
-      final user = await _createUserFromCredentials(credentials);
-
-      // Check if this is a different user
-      if (_currentUser != null && _currentUser!.id != user.id) {
-        debugPrint('Different user signing in, clearing old data');
+    // Check token validity if user is restored
+    if (_currentUser != null) {
+      debugPrint('User restored from storage: ${_currentUser!.email}');
+      // Validate expiry and ownership
+      if (await StorageService.isSessionValid()) {
+        debugPrint('Session is valid, checking token...');
+        // Optionally verify with backend or refresh if needed
+        await getAccessToken();
+      } else {
+        debugPrint('Session expired, clearing user');
         await _clearUserData();
       }
-
-      _currentUser = user;
-
-      // Store user data locally
-      await StorageService.storeUser(user);
-
-      // Store user and tokens in backend
-      await _storeUserInBackend(user);
-
-      _authStateController.add(user);
-      notifyListeners();
-
-      debugPrint('User authenticated: ${user.email}');
-    } catch (e) {
-      debugPrint('Error handling auth state change: $e');
+    } else {
+      debugPrint('No user found in storage');
     }
   }
 
-  /// Handle authentication errors
-  void _handleAuthError(Object error) {
-    debugPrint('Authentication error: $error');
+  /// Handle deep links for Auth Callback
+  void _handleDeepLink(Uri uri) async {
+    debugPrint('Received valid deep link: $uri');
+
+    // Check for auth success code
+    // Patterns:
+    // Android: myapp://auth-success?code=XYZ
+    // Web: http://.../auth-callback?code=XYZ
+
+    // We check for 'code' parameter regardless of path/scheme for robustness
+    final code = uri.queryParameters['code'];
+
+    if (code != null && code.isNotEmpty) {
+      debugPrint('Auth code found in link, exchanging for session...');
+      await _exchangeCodeForSession(code);
+    }
   }
 
-  /// Sign in with Google (explicit user-initiated authentication)
-  /// This is the primary sign-in method that should be called when user clicks sign-in button
-  Future<User> signInWithGoogle() async {
+  /// Exchange temporary code for session data
+  Future<void> _exchangeCodeForSession(String code) async {
+    _setLoading(true);
+    try {
+      final configService = ConfigService();
+      // Ensure backendUrl doesn't have trailing slash for clean path building
+      final baseUrl = configService.apiBaseUrl.endsWith('/')
+          ? configService.apiBaseUrl.substring(
+              0,
+              configService.apiBaseUrl.length - 1,
+            )
+          : configService.apiBaseUrl;
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/auth/session?code=$code'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        final oldUserId = _currentUser?.id;
+        
+        // Parse User from response
+        final user = User(
+          id: data['user_id'],
+          email: data['email'],
+          displayName: data['name'],
+          photoUrl: data['picture_url'],
+          accessToken: data['access_token'],
+          refreshToken: null, // Refresh token is stored in backend
+          tokenExpiry: DateTime.parse(data['token_expiry']),
+        );
+
+        // Check if this is a different user and clear cached data
+        if (oldUserId != null && oldUserId != user.id) {
+          debugPrint('Different user detected (old: $oldUserId, new: ${user.id}), clearing cache...');
+          await _clearUserData();
+          // Add flag to indicate cache should be cleared
+          await StorageService.setBool('_cache_clear_needed', true);
+        }
+
+        _currentUser = user;
+        await StorageService.storeUser(user);
+
+        _authStateController.add(user);
+        notifyListeners();
+        debugPrint('Backend auth successful: ${user.email}');
+      } else {
+        debugPrint(
+          'Failed to exchange code: ${response.statusCode} - ${response.body}',
+        );
+        // Show error?
+      }
+    } catch (e) {
+      debugPrint('Error exchanging code: $e');
+    } finally {
+      // Clear query params from URL on web to avoid re-triggering?
+      // Not easily possible without navigation.
+      _setLoading(false);
+    }
+  }
+
+  /// Sign In - Now unified across all platforms
+  Future<void> signInWithGoogle() async {
     if (!_isInitialized) {
       throw Exception('AuthService not initialized');
     }
 
     _setLoading(true);
-
     try {
-      debugPrint('Starting Google sign-in...');
-
-      // Clear any existing user data first
-      if (_currentUser != null) {
-        debugPrint('Clearing existing user data before new sign-in');
-        await _clearUserData();
+      if (_isWindows()) {
+        await _windowsBackendOAuthSignIn();
+      } else {
+        await _backendOAuthSignIn();
       }
-
-      // Perform sign-in (will try lightweight first, then online if needed)
-      final credentials = await _googleSignIn!.signIn();
-
-      if (credentials == null) {
-        throw Exception('Sign-in was cancelled or failed');
-      }
-
-      // Create user from credentials
-      final user = await _createUserFromCredentials(credentials);
-
-      _currentUser = user;
-
-      // Store user data locally
-      await StorageService.storeUser(user);
-
-      // Store user and tokens in backend
-      await _storeUserInBackend(user);
-
-      _authStateController.add(user);
-      notifyListeners();
-
-      debugPrint('Sign-in completed successfully for user: ${user.email}');
-      return user;
     } catch (e) {
-      debugPrint('Sign-in failed: $e');
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  /// Windows Backend OAuth Sign In (using loopback server)
+  Future<void> _windowsBackendOAuthSignIn() async {
+    try {
+      final configService = ConfigService();
+      final baseUrl = configService.apiBaseUrl.endsWith('/')
+          ? configService.apiBaseUrl.substring(
+              0,
+              configService.apiBaseUrl.length - 1,
+            )
+          : configService.apiBaseUrl;
+
+      // Start local server to receive callback
+      _windowsAuthServer = WindowsAuthServer(port: 3000);
+      
+      // Start server and get auth code future
+      final authCodeFuture = _windowsAuthServer!.waitForAuthCode();
+
+      // Open browser for auth
+      final authUrl = '$baseUrl/api/auth/google?platform=windows';
+      final uri = Uri.parse(authUrl);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        await _windowsAuthServer?.stop();
+        throw Exception('Could not launch auth URL');
+      }
+
+      // Wait for auth code from callback
+      debugPrint('[Auth] Waiting for auth code from loopback server...');
+      final encryptedCode = await authCodeFuture;
+      debugPrint('[Auth] Received encrypted session code');
+
+      // Exchange code for session
+      await _exchangeCodeForSession(encryptedCode);
+    } catch (e) {
+      debugPrint('Error in Windows backend auth: $e');
+      await _windowsAuthServer?.stop();
       rethrow;
     } finally {
-      _setLoading(false);
+      await _windowsAuthServer?.stop();
     }
   }
 
-  /// Silent sign-in (restores previous session without user interaction)
-  /// Recommended to call on app startup
-  /// Follows official recommendation: silentSignIn() ?? lightweightSignIn()
-  Future<User?> silentSignIn() async {
-    if (!_isInitialized) {
-      debugPrint('AuthService not initialized');
-      return null;
-    }
-
+  /// Backend OAuth Sign In (Android/Web)
+  Future<void> _backendOAuthSignIn() async {
     try {
-      debugPrint('Attempting silent sign-in...');
+      final configService = ConfigService();
+      final baseUrl = configService.apiBaseUrl.endsWith('/')
+          ? configService.apiBaseUrl.substring(
+              0,
+              configService.apiBaseUrl.length - 1,
+            )
+          : configService.apiBaseUrl;
 
-      // Try silent sign-in first (uses stored credentials)
-      var credentials = await _googleSignIn!.silentSignIn();
+      final platform = kIsWeb ? 'web' : 'android';
+      final authUrl = '$baseUrl/api/auth/google?platform=$platform';
 
-      // If silent sign-in fails, try lightweight sign-in (official recommendation)
-      if (credentials == null) {
-        debugPrint(
-          'Silent sign-in returned no credentials, trying lightweight sign-in...',
+      final uri = Uri.parse(authUrl);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: kIsWeb
+              ? LaunchMode
+                    .platformDefault // Same tab for web (default)
+              : LaunchMode.externalApplication, // Browser for Android
+          webOnlyWindowName: '_self',
         );
-        credentials = await _googleSignIn!.lightweightSignIn();
+      } else {
+        throw Exception('Could not launch auth URL');
       }
-
-      if (credentials == null) {
-        debugPrint(
-          'Both silent and lightweight sign-in returned no credentials',
-        );
-        return null;
-      }
-
-      // Validate credentials have necessary tokens
-      if (credentials.accessToken.isEmpty) {
-        debugPrint('ERROR: Sign-in returned credentials without access token!');
-        debugPrint(
-          'This usually means the OAuth session has expired or been revoked.',
-        );
-        debugPrint('User needs to sign out and sign in again.');
-        return null;
-      }
-
-      // Create user from credentials
-      final user = await _createUserFromCredentials(credentials);
-
-      _currentUser = user;
-
-      // Store user data locally
-      await StorageService.storeUser(user);
-
-      // Store user and tokens in backend
-      await _storeUserInBackend(user);
-
-      _authStateController.add(user);
-      notifyListeners();
-
-      debugPrint('Sign-in successful for user: ${user.email}');
-      return user;
     } catch (e) {
-      debugPrint('Sign-in failed: $e');
-      debugPrint('Stack trace: ${StackTrace.current}');
-      return null;
-    }
-  }
-
-  /// Sign out the current user
-  Future<void> signOut() async {
-    if (!_isInitialized) {
-      debugPrint('AuthService not initialized');
-      return;
-    }
-
-    _setLoading(true);
-    try {
-      debugPrint('Signing out user: ${_currentUser?.email}');
-      await _googleSignIn!.signOut();
-      // State change will be handled by the stream listener
-    } catch (e) {
-      debugPrint('Sign-out failed: $e');
+      debugPrint('Error launching backend auth: $e');
       rethrow;
-    } finally {
-      _setLoading(false);
     }
   }
 
-  /// Get the web sign-in button widget (for web platform only)
-  /// Returns null on non-web platforms
-  Widget? getWebSignInButton() {
-    if (!kIsWeb || !_isInitialized || _googleSignIn == null) {
-      return null;
-    }
-
-    try {
-      // Get the sign-in button from the GoogleSignIn instance
-      return _googleSignIn!.signInButton();
-    } catch (e) {
-      debugPrint('Error getting web sign-in button: $e');
-      return null;
-    }
-  }
-
-  /// Handle sign out event
-  Future<void> _handleSignOut() async {
-    debugPrint('Handling sign out for user: ${_currentUser?.email}');
-
-    // Clear user data
-    await _clearUserData();
-
-    _currentUser = null;
-
-    _authStateController.add(null);
-    notifyListeners();
-  }
-
-  /// Clear all user data (local and backend)
-  Future<void> _clearUserData() async {
-    try {
-      // Delete tokens from backend if user exists
-      if (_currentUser != null) {
-        debugPrint('Deleting backend tokens for user: ${_currentUser!.email}');
-        try {
-          await ApiService().deleteTokens(userId: _currentUser!.id);
-        } catch (e) {
-          debugPrint('Failed to delete backend tokens: $e');
-          // Continue with local cleanup even if backend fails
-        }
-      }
-
-      // Clear local storage
-      await StorageService.clearUser();
-
-      debugPrint('User data cleared successfully');
-    } catch (e) {
-      debugPrint('Error clearing user data: $e');
-    }
-  }
-
-  /// Refresh access token using multiple strategies
-  /// 1. Try silentSignIn (recommended by google_sign_in_all_platforms)
-  /// 2. Try lightweightSignIn (official fallback)
-  /// 3. Fall back to manual refresh token if available
-  Future<String?> _refreshAccessToken() async {
-    // Strategy 1: Use silentSignIn (recommended approach)
-    // The package handles refresh tokens internally via platform secure storage
-    try {
-      debugPrint('Refreshing access token via silentSignIn...');
-
-      var credentials = await _googleSignIn!.silentSignIn();
-
-      // Strategy 2: Try lightweightSignIn if silentSignIn fails (official recommendation)
-      if (credentials == null || credentials.accessToken.isEmpty) {
-        debugPrint('Silent sign-in failed, trying lightweight sign-in...');
-        credentials = await _googleSignIn!.lightweightSignIn();
-      }
-
-      if (credentials == null || credentials.accessToken.isEmpty) {
-        debugPrint('Both silent and lightweight sign-in failed');
-
-        // Strategy 3: Try manual refresh token as last resort
-        if (_currentUser?.refreshToken != null) {
-          debugPrint('Trying manual refresh token...');
-          final newToken = await refreshAccessTokenWithRefreshToken();
-          if (newToken != null) {
-            return newToken;
-          }
-        }
-
-        return null;
-      }
-
-      // Update current user with new token
-      if (_currentUser != null) {
-        final user = await _createUserFromCredentials(credentials);
-        _currentUser = user;
-        await StorageService.storeUser(user);
-        await _storeUserInBackend(user);
-        notifyListeners();
-
-        debugPrint('Access token refreshed successfully');
-        return user.accessToken;
-      }
-
-      return credentials.accessToken;
-    } catch (e) {
-      debugPrint('Token refresh failed: $e');
-
-      // Last resort: try manual refresh token
-      if (_currentUser?.refreshToken != null) {
-        debugPrint('Trying manual refresh token as last resort...');
-        return await refreshAccessTokenWithRefreshToken();
-      }
-
-      return null;
-    }
-  }
-
-  /// Get current access token
-  /// Returns null if user is not authenticated or token is not available
-  /// Automatically refreshes expired tokens using refresh token
-  /// [forceRefresh] - if true, ignores expiry time and forces a refresh
+  /// Get Access Token - Now unified via backend for all platforms
   Future<String?> getAccessToken({bool forceRefresh = false}) async {
-    if (_currentUser?.accessToken == null) return null;
+    if (_currentUser?.accessToken == null) {
+      return null;
+    }
 
+    debugPrint(
+      '[Auth] getAccessToken called. forceRefresh: $forceRefresh',
+    );
+
+    return _backendGetAccessToken(forceRefresh: forceRefresh);
+  }
+
+  /// Backend: Get/Refresh Token (All platforms)
+  Future<String?> _backendGetAccessToken({bool forceRefresh = false}) async {
     final now = DateTime.now();
-    // Check if expired or expires in next 5 mins
     final expiryThreshold = now.add(const Duration(minutes: 5));
     final needsRefresh =
         _currentUser!.tokenExpiry != null &&
@@ -410,233 +320,119 @@ class AuthService extends ChangeNotifier {
 
     if (forceRefresh || needsRefresh) {
       if (_isRefreshing) {
-        // Wait for ongoing refresh to complete
-        int attempts = 0;
-        while (_isRefreshing && attempts < 50) {
-          await Future.delayed(const Duration(milliseconds: 100));
-          attempts++;
-        }
-        return _currentUser?.accessToken;
+        return _waitForRefresh();
       }
-
       _isRefreshing = true;
       try {
-        debugPrint(
-          'Token ${forceRefresh ? "force refresh" : "expiring"}, attempting refresh...',
+        // Call backend to refresh access token
+        final configService = ConfigService();
+        final baseUrl = configService.apiBaseUrl.endsWith('/')
+            ? configService.apiBaseUrl.substring(
+                0,
+                configService.apiBaseUrl.length - 1,
+              )
+            : configService.apiBaseUrl;
+
+        final response = await http.get(
+          Uri.parse(
+            '$baseUrl/api/drive/access-token?user_id=${_currentUser!.id}',
+          ),
         );
-        final newToken = await _refreshAccessToken();
 
-        if (newToken != null) {
-          return newToken;
-        }
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final newAccessToken = data['access_token'];
 
-        debugPrint('Token refresh failed - user may need to sign in again');
-        // If force refresh failed, we might still return the old token if it's not strictly expired
-        // But usually if refresh fails, the session is bad.
-        // However, to avoid breaking UI if offline, we return current token if not strictly expired
-        if (!forceRefresh &&
-            _currentUser!.tokenExpiry != null &&
-            now.isBefore(_currentUser!.tokenExpiry!)) {
-          return _currentUser!.accessToken;
+          // Update local user
+          final updatedUser = _currentUser!.copyWith(
+            accessToken: newAccessToken,
+            tokenExpiry: DateTime.now().add(
+              const Duration(hours: 1),
+            ), // Assume 1h if not provided
+          );
+
+          _currentUser = updatedUser;
+          await StorageService.storeUser(updatedUser);
+          notifyListeners();
+          return newAccessToken;
+        } else {
+          debugPrint('Backend token refresh failed: ${response.statusCode}');
+          // If failed, return current token or null?
+          return null;
         }
+      } catch (e) {
+        debugPrint('Error refreshing token via backend: $e');
         return null;
       } finally {
         _isRefreshing = false;
       }
     }
-
     return _currentUser!.accessToken;
   }
 
-  /// Refresh access token using Google OAuth2 refresh token
-  /// This is the proper way to maintain persistent login
-  Future<String?> refreshAccessTokenWithRefreshToken() async {
-    if (_currentUser?.refreshToken == null) {
-      debugPrint('No refresh token available');
-      return null;
+  Future<String?> _waitForRefresh() async {
+    int attempts = 0;
+    while (_isRefreshing && attempts < 50) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
     }
+    return _currentUser?.accessToken;
+  }
 
+  /// Sign Out - Unified for all platforms
+  Future<void> signOut() async {
+    _setLoading(true);
     try {
-      debugPrint('Refreshing access token using refresh token...');
-
-      final configService = ConfigService();
-      final clientId = configService.googleClientId;
-      final clientSecret = configService.googleClientSecret;
-
-      // Make direct OAuth2 token refresh request
-      final response = await http.post(
-        Uri.parse('https://oauth2.googleapis.com/token'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'client_id': clientId,
-          'client_secret': clientSecret ?? '',
-          'refresh_token': _currentUser!.refreshToken!,
-          'grant_type': 'refresh_token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        final newAccessToken = data['access_token'] as String;
-        final expiresIn = data['expires_in'] as int;
-
-        // Update user with new token
-        final updatedUser = _currentUser!.copyWith(
-          accessToken: newAccessToken,
-          tokenExpiry: DateTime.now().add(Duration(seconds: expiresIn)),
-        );
-
-        _currentUser = updatedUser;
-        await StorageService.storeUser(updatedUser);
-        await _storeUserInBackend(updatedUser);
-        notifyListeners();
-
-        debugPrint('Access token refreshed successfully using refresh token');
-        return newAccessToken;
-      } else {
-        debugPrint(
-          'Token refresh failed: ${response.statusCode} - ${response.body}',
-        );
-        return null;
+      // Set flag to clear cache (will be handled by app-level listener)
+      await StorageService.setBool('_cache_clear_needed', true);
+      
+      // Backend logout - call delete tokens
+      if (_currentUser != null) {
+        try {
+          await ApiService().deleteTokens(userId: _currentUser!.id);
+        } catch (e) {
+          debugPrint('Backend logout api failed (ignoring): $e');
+        }
       }
-    } catch (e) {
-      debugPrint('Error refreshing token with refresh token: $e');
-      return null;
+      
+      await _handleSignOut();
+    } finally {
+      _setLoading(false);
     }
   }
 
-  /// Create User object from GoogleSignInCredentials
-  Future<User> _createUserFromCredentials(
-    GoogleSignInCredentials credentials,
-  ) async {
-    // Decode ID token to extract user information
-    final userInfo = _decodeIdToken(credentials.idToken);
+  // ------------------------------------------------------------------------
+  // Shared Helpers
+  // ------------------------------------------------------------------------
 
-    // Calculate token expiry
-    // Prefer 'exp' claim from ID token if available
-    DateTime tokenExpiry;
-    if (userInfo.containsKey('exp') && userInfo['exp'] is int) {
-      final exp = userInfo['exp'] as int;
-      tokenExpiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
-      debugPrint('Token expiry set from ID token: $tokenExpiry');
-    } else {
-      // Fallback to 1 hour from now (Google's default)
-      tokenExpiry = DateTime.now().add(const Duration(hours: 1));
-      debugPrint('Token expiry set to default (1h): $tokenExpiry');
-    }
-
-    // Note: google_sign_in_all_platforms stores refresh tokens internally
-    // in platform-specific secure storage. The refreshToken field may be null
-    // but the package handles token refresh automatically via silentSignIn().
-    String? effectiveRefreshToken = credentials.refreshToken;
-
-    if ((effectiveRefreshToken == null || effectiveRefreshToken.isEmpty) &&
-        _currentUser != null &&
-        _currentUser!.refreshToken != null) {
-      effectiveRefreshToken = _currentUser!.refreshToken;
-      debugPrint('Preserved existing refresh token from storage');
-    }
-
-    return User.fromGoogleSignIn(
-      id: userInfo['sub'] ?? '',
-      email: userInfo['email'] ?? '',
-      displayName: userInfo['name'],
-      photoUrl: userInfo['picture'],
-      accessToken: credentials.accessToken,
-      refreshToken: effectiveRefreshToken,
-      idToken: credentials.idToken,
-      tokenExpiry: tokenExpiry,
-    );
+  Future<void> _handleSignOut() async {
+    await _clearUserData();
+    _currentUser = null;
+    _authStateController.add(null);
+    notifyListeners();
   }
 
-  /// Decode JWT ID token to extract user claims
-  /// Returns a map with user information (sub, email, name, picture, etc.)
-  Map<String, dynamic> _decodeIdToken(String? idToken) {
-    if (idToken == null || idToken.isEmpty) {
-      return {};
-    }
-
-    try {
-      // JWT format: header.payload.signature
-      final parts = idToken.split('.');
-      if (parts.length != 3) {
-        debugPrint('Invalid ID token format');
-        return {};
-      }
-
-      // Decode the payload (second part)
-      final payload = parts[1];
-
-      // Add padding if needed (JWT base64 doesn't use padding)
-      var normalized = payload.replaceAll('-', '+').replaceAll('_', '/');
-      while (normalized.length % 4 != 0) {
-        normalized += '=';
-      }
-
-      // Decode base64
-      final decoded = utf8.decode(base64.decode(normalized));
-      final jsonData = json.decode(decoded) as Map<String, dynamic>;
-
-      return jsonData;
-    } catch (e) {
-      debugPrint('Failed to decode ID token: $e');
-      return {};
-    }
+  Future<void> _clearUserData() async {
+    debugPrint('Clearing user data and cache...');
+    await StorageService.clearUser();
+    // Note: Cache clearing is handled by the app-level services
+    // to avoid circular dependencies
   }
 
-  /// Restore user from local storage
   Future<void> _restoreUserFromStorage() async {
     try {
       final storedUser = await StorageService.getStoredUser();
       if (storedUser != null) {
-        // Check if session is still valid
-        if (await StorageService.isSessionValid()) {
-          _currentUser = storedUser;
-          _authStateController.add(storedUser);
-          debugPrint('Restored user from storage: ${storedUser.email}');
-        } else {
-          debugPrint('Stored session expired for user: ${storedUser.email}');
-          await StorageService.clearUser();
-        }
-      } else {
-        debugPrint('No stored user found');
+        debugPrint('Restored user from storage: ${storedUser.email}');
+        _currentUser = storedUser;
+        _authStateController.add(storedUser);
       }
     } catch (e) {
-      debugPrint('Failed to restore user from storage: $e');
-      // Clear corrupted data
+      debugPrint('Error restoring user from storage: $e');
       await StorageService.clearUser();
     }
   }
 
-  /// Store user and tokens in backend database
-  Future<void> _storeUserInBackend(User user) async {
-    try {
-      // Skip if no access token
-      if (user.accessToken == null || user.accessToken!.isEmpty) {
-        debugPrint('No access token available, skipping backend storage');
-        return;
-      }
-
-      await ApiService().storeTokens(
-        userId: user.id,
-        email: user.email,
-        name: user.displayName,
-        pictureUrl: user.photoUrl,
-        accessToken: user.accessToken!,
-        refreshToken: user.refreshToken,
-        idToken: user.idToken,
-      );
-
-      debugPrint(
-        'Successfully stored user and tokens in backend: ${user.email}',
-      );
-    } catch (e) {
-      debugPrint('Failed to store user in backend: $e');
-      // Don't throw - this shouldn't prevent local authentication
-    }
-  }
-
-  /// Set loading state
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
@@ -648,13 +444,14 @@ class AuthService extends ChangeNotifier {
     _setLoading(true);
 
     try {
+      // Set flag to clear cache (will be handled by app-level listener)
+      await StorageService.setBool('_cache_clear_needed', true);
+      
       // Clear user data first
       await _clearUserData();
 
-      // Sign out from Google
-      if (_googleSignIn != null) {
-        await _googleSignIn!.signOut();
-      }
+      // Sign out from platform specific providers
+      await signOut();
 
       _currentUser = null;
       _authStateController.add(null);
@@ -666,6 +463,7 @@ class AuthService extends ChangeNotifier {
       // Even if there's an error, clear local state
       _currentUser = null;
       await StorageService.clearUser();
+      await StorageService.setBool('_cache_clear_needed', true);
       _authStateController.add(null);
       notifyListeners();
     } finally {
@@ -675,7 +473,8 @@ class AuthService extends ChangeNotifier {
 
   @override
   void dispose() {
-    _authStateSub?.cancel();
+    _linkSubscription?.cancel();
+    _windowsAuthServer?.stop();
     _authStateController.close();
     super.dispose();
   }

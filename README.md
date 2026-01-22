@@ -6,7 +6,7 @@ An offline-first, Google-Drive-backed AI research workspace for managing PDFs an
 This google drive folder has apk and windows version already built:
 https://drive.google.com/drive/u/5/folders/1KdOQt7_gGBRBcxs2OPsXatOpzClblLIM
 
-and Live hosted web version: https://scholar-mate-nine.vercel.app/
+and Live hosted web version: https://scholarmate.northsouth.app
 
 ## 🚀 Quick Setup & Installation
 
@@ -64,12 +64,12 @@ dart run build_runner build --delete-conflicting-outputs
 
 **Web (Chrome):**
 ```bash
-flutter run -d chrome --web-port=8080 --dart-define-from-file=dart_defines.json
+flutter run -d chrome --web-port=8001 --dart-define-from-file=dart_defines.json
 ```
 
 **Web (Edge):**
 ```bash
-flutter run -d edge --web-port=8080 --dart-define-from-file=dart_defines.json
+flutter run -d edge --web-port=8001 --dart-define-from-file=dart_defines.json
 ```
 
 **Android (with backend connection):**
@@ -273,17 +273,15 @@ uv run pytest
 ```bash
 cd frontend
 flutter test
-```
 
 ## 🚀 Deployment
 
 ### Production Setup
-- **Frontend**: Vercel (https://scholar-mate-nine.vercel.app)
-- **Backend**: Render.com (https://scholarmate-backend.onrender.com)
+## VPS
+- **Frontend**: https://scholarmate.northsouth.app
+- **Backend**: https://api-scholarmate.northsouth.app
 
 ### Quick Deploy
-```bash
-# Deploy backend to Render
 # See DEPLOY_TO_RENDER.md for step-by-step guide
 git push origin main
 # Then follow Render Blueprint setup
@@ -304,7 +302,7 @@ git push origin main
 - **Tasks**: `.kiro/specs/scholarmate/tasks.md`
 - **API Docs**: 
   - Local: `http://localhost:8000/docs`
-  - Production: `https://scholarmate-backend.onrender.com/docs`
+  - Production: `https://api-scholarmate.northsouth.app/docs`
 
 ## 🔒 Security
 

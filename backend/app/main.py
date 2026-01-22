@@ -5,7 +5,11 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 from dotenv import load_dotenv
-from .routers import auth, annotations, ocr, ai, tags, sharing, ingestion, api_keys, metadata, embeddings, notebook_ai, collaboration, analytics, search, extraction, file_chat, payments
+
+# Load environment variables before importing any local modules
+load_dotenv()
+
+from .routers import auth, drive, annotations, ocr, ai, tags, sharing, ingestion, api_keys, metadata, embeddings, notebook_ai, collaboration, analytics, search, extraction, file_chat, payments
 from .middleware import RequestLoggingMiddleware
 from .utils.logging_config import setup_logging, get_logger
 from .utils.exception_handlers import (
@@ -13,9 +17,6 @@ from .utils.exception_handlers import (
     validation_exception_handler,
     general_exception_handler,
 )
-
-# Load environment variables
-load_dotenv()
 
 # Setup logging
 log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -68,6 +69,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(drive.router)
 app.include_router(annotations.router)
 app.include_router(ocr.router)
 app.include_router(ai.router)

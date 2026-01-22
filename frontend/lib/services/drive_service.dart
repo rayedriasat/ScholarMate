@@ -44,19 +44,21 @@ class DriveService extends ChangeNotifier {
 
     if (accessToken == null) {
       debugPrint(
-        'No access token available from AuthService, attempting silent sign-in...',
+        'No access token available, checking if user is authenticated...',
       );
 
-      // Try silent sign-in to restore session
-      final user = await _authService.silentSignIn();
-      accessToken = user?.accessToken;
+      // Check if user is authenticated and try to get/refresh token via backend
+      if (_authService.currentUser != null) {
+        debugPrint('User is authenticated, attempting to refresh token via backend...');
+        accessToken = await _authService.getAccessToken(forceRefresh: true);
+      }
 
       if (accessToken == null) {
-        debugPrint('Silent sign-in also failed to provide access token');
+        debugPrint('Failed to obtain access token from backend');
         throw Exception('No access token available. Please sign in again.');
       }
 
-      debugPrint('Access token obtained from silent sign-in');
+      debugPrint('Access token obtained from backend refresh');
     }
 
     return accessToken;

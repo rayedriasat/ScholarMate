@@ -7,6 +7,7 @@ import 'services/auth_service.dart';
 import 'services/config_service.dart';
 import 'services/api_service.dart';
 import 'services/cache_service.dart';
+import 'services/storage_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/drive_service.dart';
 import 'services/sync_manager.dart';
@@ -367,9 +368,23 @@ class _AppInitializerState extends State<AppInitializer> {
       );
 
       // Listen to auth state changes
-      authService.authStateChanges.listen((user) {
+      authService.authStateChanges.listen((user) async {
         if (mounted) {
           debugPrint('Auth state changed: ${user?.email ?? 'signed out'}');
+          
+          // Check if we need to clear cache
+          final needsCacheClear = await StorageService.getBool('_cache_clear_needed') ?? false;
+          
+          if (needsCacheClear || user == null) {
+            // Clear cache on logout or when switching users
+            debugPrint('Clearing cache (user ${user == null ? "logged out" : "switched"})...');
+            final cacheService = context.read<CacheService>();
+            final driveService = context.read<DriveService>();
+            await cacheService.clearAllCache();
+            driveService.clearAppFolderCache();
+            await StorageService.remove('_cache_clear_needed');
+            debugPrint('Cache cleared successfully');
+          }
         }
       });
 
