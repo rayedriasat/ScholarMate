@@ -45,7 +45,7 @@ async def google_login(platform: str = Query(..., regex="^(android|web|windows)$
         "openid",
         "email",
         "profile",
-        "https://www.googleapis.com/auth/drive.file"
+        "https://www.googleapis.com/auth/drive"
     ]
     
     # State parameter to pass platform info through the OAuth flow
