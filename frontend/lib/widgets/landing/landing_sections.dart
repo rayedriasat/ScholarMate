@@ -24,8 +24,8 @@ class LandingSections extends StatelessWidget {
         _buildWhyUsSection(context),
         const SizedBox(height: 80),
         _buildFeaturesSection(context),
-        const SizedBox(height: 80),
-        _buildBuiltBySection(context),
+        // const SizedBox(height: 80),
+        // _buildBuiltBySection(context),
         const SizedBox(height: 40),
       ],
     );

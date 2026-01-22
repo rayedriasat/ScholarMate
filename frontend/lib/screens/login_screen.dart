@@ -86,13 +86,17 @@ class _LoginScreenState extends State<LoginScreen>
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Main login section
-              SizedBox(
-                height: MediaQuery.of(context).size.height,
-                child: Center(
-                  child: isWideScreen
-                      ? _buildSplitLayout(context)
-                      : _buildSingleLayout(context),
+              // Main login section - responsive height
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height,
+                ),
+                child: IntrinsicHeight(
+                  child: Center(
+                    child: isWideScreen
+                        ? _buildSplitLayout(context)
+                        : _buildSingleLayout(context),
+                  ),
                 ),
               ),
               // Landing sections
@@ -109,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildSingleLayout(BuildContext context) {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(24),
       child: FadeTransition(
         opacity: _fadeAnimation,
