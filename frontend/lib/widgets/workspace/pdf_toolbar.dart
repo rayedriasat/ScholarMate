@@ -35,11 +35,16 @@ class PdfToolbar extends StatefulWidget {
 
 class _PdfToolbarState extends State<PdfToolbar> {
   final TextEditingController _pageController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   bool _isEditingPage = false;
+  bool _isSearching = false;
 
   @override
   void dispose() {
     _pageController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -66,262 +71,482 @@ class _PdfToolbarState extends State<PdfToolbar> {
     }
   }
 
+  void _performSearch() {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+
+    final searchResult = widget.tab.controller.searchText(query);
+    setState(() {
+      widget.tab.searchResult = searchResult;
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    widget.tab.controller.clearSelection();
+    setState(() {
+      widget.tab.searchResult = null;
+      _isSearching = false;
+    });
+  }
+
+  void _nextSearchResult() {
+    widget.tab.searchResult?.nextInstance();
+  }
+
+  void _previousSearchResult() {
+    widget.tab.searchResult?.previousInstance();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Sidebar toggle button (compact)
-          IconButton(
-            icon: Icon(
-              Icons.menu,
-              size: 20,
-              color: widget.showOutlinePanel ? AppColors.primary : Colors.white,
+    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Main toolbar
+        Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            border: Border(
+              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
             ),
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            onPressed: widget.onToggleOutline,
-            tooltip: 'Outline',
           ),
-          Container(
-            height: 24,
-            width: 1,
-            color: Colors.white.withValues(alpha: 0.1),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-          ),
-          // Navigation (compact)
-          IconButton(
-            icon: const Icon(Icons.chevron_left, size: 20, color: Colors.white),
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            onPressed: widget.tab.currentPage > 1
-                ? () => widget.tab.controller.previousPage()
-                : null,
-            tooltip: 'Previous',
-          ),
-          // Editable page number field
-          InkWell(
-            onTap: () {
-              setState(() {
-                _isEditingPage = true;
-                _pageController.text = widget.tab.currentPage.toString();
-              });
-              Future.delayed(const Duration(milliseconds: 100), () {
-                _pageController.selection = TextSelection(
-                  baseOffset: 0,
-                  extentOffset: _pageController.text.length,
-                );
-              });
-            },
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 60, maxWidth: 80),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              decoration: BoxDecoration(
-                color: _isEditingPage
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: _isEditingPage
+          child: Row(
+            children: [
+              // Sidebar toggle button (compact)
+              IconButton(
+                icon: Icon(
+                  Icons.menu,
+                  size: 20,
+                  color: widget.showOutlinePanel
                       ? AppColors.primary
-                      : Colors.transparent,
+                      : Colors.white,
+                ),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                onPressed: widget.onToggleOutline,
+                tooltip: 'Outline',
+              ),
+              Container(
+                height: 24,
+                width: 1,
+                color: Colors.white.withValues(alpha: 0.1),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+              // Navigation (compact)
+              IconButton(
+                icon: const Icon(
+                  Icons.chevron_left,
+                  size: 20,
+                  color: Colors.white,
+                ),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                onPressed: widget.tab.currentPage > 1
+                    ? () => widget.tab.controller.previousPage()
+                    : null,
+                tooltip: 'Previous',
+              ),
+              // Editable page number field
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isEditingPage = true;
+                    _pageController.text = widget.tab.currentPage.toString();
+                  });
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    _pageController.selection = TextSelection(
+                      baseOffset: 0,
+                      extentOffset: _pageController.text.length,
+                    );
+                  });
+                },
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 60, maxWidth: 80),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _isEditingPage
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: _isEditingPage
+                          ? AppColors.primary
+                          : Colors.transparent,
+                    ),
+                  ),
+                  child: _isEditingPage
+                      ? TextField(
+                          controller: _pageController,
+                          autofocus: true,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            border: InputBorder.none,
+                          ),
+                          onSubmitted: (_) => _jumpToPage(),
+                          onTapOutside: (_) {
+                            setState(() {
+                              _isEditingPage = false;
+                            });
+                          },
+                        )
+                      : Text(
+                          '${widget.tab.currentPage}/${widget.tab.totalPages}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 ),
               ),
-              child: _isEditingPage
-                  ? TextField(
-                      controller: _pageController,
-                      autofocus: true,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                        border: InputBorder.none,
-                      ),
-                      onSubmitted: (_) => _jumpToPage(),
-                      onTapOutside: (_) {
-                        setState(() {
-                          _isEditingPage = false;
-                        });
-                      },
-                    )
-                  : Text(
-                      '${widget.tab.currentPage}/${widget.tab.totalPages}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+              IconButton(
+                icon: const Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: Colors.white,
+                ),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                onPressed: widget.tab.currentPage < widget.tab.totalPages
+                    ? () => widget.tab.controller.nextPage()
+                    : null,
+                tooltip: 'Next',
+              ),
+              if (!isSmallScreen) ...[
+                Container(
+                  height: 24,
+                  width: 1,
+                  color: Colors.white.withValues(alpha: 0.1),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                ),
+                // Zoom controls (compact)
+                IconButton(
+                  icon: const Icon(Icons.remove, size: 18, color: Colors.white),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: () {
+                    widget.tab.controller.zoomLevel =
+                        (widget.tab.controller.zoomLevel - 0.25).clamp(
+                          0.5,
+                          3.0,
+                        );
+                  },
+                  tooltip: 'Zoom Out',
+                ),
+                Container(
+                  constraints: const BoxConstraints(minWidth: 40),
+                  child: Text(
+                    '${(widget.tab.zoomLevel * 100).toInt()}%',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: () {
+                    widget.tab.controller.zoomLevel =
+                        (widget.tab.controller.zoomLevel + 0.25).clamp(
+                          0.5,
+                          3.0,
+                        );
+                  },
+                  tooltip: 'Zoom In',
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.fit_screen,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: () {
+                    widget.tab.controller.zoomLevel = 1.0;
+                  },
+                  tooltip: 'Fit',
+                ),
+              ],
+              Container(
+                height: 24,
+                width: 1,
+                color: Colors.white.withValues(alpha: 0.1),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+              // Split view toggle (compact)
+              if (!isSmallScreen)
+                IconButton(
+                  icon: Icon(
+                    Icons.view_column,
+                    size: 20,
+                    color: widget.isSplitView
+                        ? AppColors.primary
+                        : Colors.white,
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  onPressed: widget.onToggleSplitView,
+                  tooltip: 'Split',
+                ),
+              if (!isSmallScreen)
+                Container(
+                  height: 24,
+                  width: 1,
+                  color: Colors.white.withValues(alpha: 0.1),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                ),
+              // Annotation tools (compact)
+              PopupMenuButton<PdfAnnotationMode>(
+                icon: Icon(
+                  Icons.edit,
+                  size: 20,
+                  color: widget.annotationMode != PdfAnnotationMode.none
+                      ? AppColors.primary
+                      : Colors.white,
+                ),
+                padding: const EdgeInsets.all(8),
+                tooltip: 'Annotate',
+                color: AppColors.surface,
+                onSelected: widget.onAnnotationModeChanged,
+                itemBuilder: (context) => [
+                  _buildAnnotationMenuItem(
+                    PdfAnnotationMode.none,
+                    Icons.close,
+                    'None',
+                  ),
+                  _buildAnnotationMenuItem(
+                    PdfAnnotationMode.highlight,
+                    Icons.highlight,
+                    'Highlight',
+                  ),
+                  _buildAnnotationMenuItem(
+                    PdfAnnotationMode.underline,
+                    Icons.format_underlined,
+                    'Underline',
+                  ),
+                  _buildAnnotationMenuItem(
+                    PdfAnnotationMode.strikethrough,
+                    Icons.format_strikethrough,
+                    'Strikethrough',
+                  ),
+                  _buildAnnotationMenuItem(
+                    PdfAnnotationMode.squiggly,
+                    Icons.waves,
+                    'Squiggly',
+                  ),
+                ],
+              ),
+              // Color picker (compact)
+              if (widget.annotationMode != PdfAnnotationMode.none)
+                PopupMenuButton<Color>(
+                  icon: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: widget.annotationColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: Colors.white,
-            ),
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            onPressed: widget.tab.currentPage < widget.tab.totalPages
-                ? () => widget.tab.controller.nextPage()
-                : null,
-            tooltip: 'Next',
-          ),
-          Container(
-            height: 24,
-            width: 1,
-            color: Colors.white.withValues(alpha: 0.1),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-          ),
-          // Zoom controls (compact)
-          IconButton(
-            icon: const Icon(Icons.remove, size: 18, color: Colors.white),
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {
-              widget.tab.controller.zoomLevel =
-                  (widget.tab.controller.zoomLevel - 0.25).clamp(0.5, 3.0);
-            },
-            tooltip: 'Zoom Out',
-          ),
-          Container(
-            constraints: const BoxConstraints(minWidth: 40),
-            child: Text(
-              '${(widget.tab.zoomLevel * 100).toInt()}%',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 11),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add, size: 18, color: Colors.white),
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {
-              widget.tab.controller.zoomLevel =
-                  (widget.tab.controller.zoomLevel + 0.25).clamp(0.5, 3.0);
-            },
-            tooltip: 'Zoom In',
-          ),
-          IconButton(
-            icon: const Icon(Icons.fit_screen, size: 18, color: Colors.white),
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {
-              widget.tab.controller.zoomLevel = 1.0;
-            },
-            tooltip: 'Fit',
-          ),
-          Container(
-            height: 24,
-            width: 1,
-            color: Colors.white.withValues(alpha: 0.1),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-          ),
-          // Split view toggle (compact)
-          IconButton(
-            icon: Icon(
-              Icons.view_column,
-              size: 20,
-              color: widget.isSplitView ? AppColors.primary : Colors.white,
-            ),
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            onPressed: widget.onToggleSplitView,
-            tooltip: 'Split',
-          ),
-          Container(
-            height: 24,
-            width: 1,
-            color: Colors.white.withValues(alpha: 0.1),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-          ),
-          // Annotation tools (compact)
-          PopupMenuButton<PdfAnnotationMode>(
-            icon: Icon(
-              Icons.edit,
-              size: 20,
-              color: widget.annotationMode != PdfAnnotationMode.none
-                  ? AppColors.primary
-                  : Colors.white,
-            ),
-            padding: const EdgeInsets.all(8),
-            tooltip: 'Annotate',
-            color: AppColors.surface,
-            onSelected: widget.onAnnotationModeChanged,
-            itemBuilder: (context) => [
-              _buildAnnotationMenuItem(
-                PdfAnnotationMode.none,
-                Icons.close,
-                'None',
-              ),
-              _buildAnnotationMenuItem(
-                PdfAnnotationMode.highlight,
-                Icons.highlight,
-                'Highlight',
-              ),
-              _buildAnnotationMenuItem(
-                PdfAnnotationMode.underline,
-                Icons.format_underlined,
-                'Underline',
-              ),
-              _buildAnnotationMenuItem(
-                PdfAnnotationMode.strikethrough,
-                Icons.format_strikethrough,
-                'Strikethrough',
-              ),
-              _buildAnnotationMenuItem(
-                PdfAnnotationMode.squiggly,
-                Icons.waves,
-                'Squiggly',
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  tooltip: 'Color',
+                  color: AppColors.surface,
+                  onSelected: widget.onAnnotationColorChanged,
+                  itemBuilder: (context) => _buildColorMenuItems(),
+                ),
+              const Spacer(),
+              // Search (compact)
+              IconButton(
+                icon: Icon(
+                  Icons.search,
+                  size: 20,
+                  color: _isSearching ? AppColors.primary : Colors.white,
+                ),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = !_isSearching;
+                    if (!_isSearching) {
+                      _clearSearch();
+                    } else {
+                      Future.delayed(const Duration(milliseconds: 100), () {
+                        _searchFocusNode.requestFocus();
+                      });
+                    }
+                  });
+                },
+                tooltip: 'Search',
               ),
             ],
           ),
-          // Color picker (compact)
-          if (widget.annotationMode != PdfAnnotationMode.none)
-            PopupMenuButton<Color>(
-              icon: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: widget.annotationColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
+        ),
+        // Search bar (expandable)
+        if (_isSearching)
+          Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.surface.withValues(alpha: 0.95),
+              border: Border(
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
               ),
-              padding: const EdgeInsets.all(8),
-              tooltip: 'Color',
-              color: AppColors.surface,
-              onSelected: widget.onAnnotationColorChanged,
-              itemBuilder: (context) => _buildColorMenuItems(),
             ),
-          const Spacer(),
-          // Search (compact)
-          IconButton(
-            icon: const Icon(Icons.search, size: 20, color: Colors.white),
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            onPressed: () {
-              // TODO: Implement search
-            },
-            tooltip: 'Search',
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Search in PDF...',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 14,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.1),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(4),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _clearSearch();
+                              },
+                            )
+                          : null,
+                    ),
+                    onSubmitted: (_) => _performSearch(),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Search button
+                IconButton(
+                  icon: const Icon(Icons.search, size: 20, color: Colors.white),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  onPressed: _performSearch,
+                  tooltip: 'Search',
+                ),
+                // Previous result
+                IconButton(
+                  icon: const Icon(
+                    Icons.keyboard_arrow_up,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  onPressed: widget.tab.searchResult != null
+                      ? _previousSearchResult
+                      : null,
+                  tooltip: 'Previous',
+                ),
+                // Next result
+                IconButton(
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  onPressed: widget.tab.searchResult != null
+                      ? _nextSearchResult
+                      : null,
+                  tooltip: 'Next',
+                ),
+                // Result count
+                if (widget.tab.searchResult != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: ListenableBuilder(
+                      listenable: widget.tab.searchResult!,
+                      builder: (context, _) {
+                        final result = widget.tab.searchResult!;
+                        final currentIndex = result.currentInstanceIndex;
+                        final totalCount = result.totalInstanceCount;
+
+                        // Handle case where search is complete but no results
+                        if (totalCount == 0) {
+                          return const Text(
+                            '0/0',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          );
+                        }
+
+                        // currentInstanceIndex is 1-based
+                        final displayIndex = totalCount > 0 ? currentIndex : 0;
+
+                        return Text(
+                          '$displayIndex/$totalCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ],
-      ),
+      ],
     );
   }
 

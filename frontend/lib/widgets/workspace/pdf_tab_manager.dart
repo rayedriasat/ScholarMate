@@ -35,7 +35,7 @@ class PdfTabManager extends ChangeNotifier {
       return;
     }
 
-    // Create new tab
+    // Create new tab with loading state
     final tab = PdfTab(
       file: file,
       initialPage: initialPage,
@@ -43,13 +43,22 @@ class PdfTabManager extends ChangeNotifier {
       highlightText: highlightText,
     );
 
-    // Load PDF
+    // Add tab immediately to show loading state
+    _tabs.add(tab);
+    _activeTabIndex = _tabs.length - 1;
+    notifyListeners();
+
+    // Load PDF in background
     final pdfManager = context.read<PdfViewerManager>();
     await pdfManager.loadPdf(file);
 
     if (pdfManager.currentPdfBytes != null) {
       tab.pdfBytes = pdfManager.currentPdfBytes;
-      _tabs.add(tab);
+      tab.isLoading = false;
+      notifyListeners();
+    } else {
+      // Remove tab if loading failed
+      _tabs.remove(tab);
       _activeTabIndex = _tabs.length - 1;
       notifyListeners();
     }
@@ -103,7 +112,9 @@ class PdfTab {
   int totalPages = 0;
   double zoomLevel = 1.0;
   bool showOutline = false;
+  bool isLoading = true;
   dynamic bookmarks; // PdfBookmarkBase from syncfusion_flutter_pdfviewer
+  PdfTextSearchResult? searchResult;
 
   PdfTab({
     required this.file,

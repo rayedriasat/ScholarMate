@@ -218,9 +218,26 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
   }
 
   Widget _buildPdfViewer(PdfTab tab) {
-    if (tab.pdfBytes == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+    // Show loading state
+    if (tab.isLoading || tab.pdfBytes == null) {
+      return Container(
+        color: const Color(0xFF2A2A2A),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(color: AppColors.primary),
+              const SizedBox(height: 16),
+              Text(
+                'Loading ${tab.file.name}...',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
