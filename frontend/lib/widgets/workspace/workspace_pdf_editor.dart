@@ -135,8 +135,6 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
                 ),
                 child: PdfSidebarPanel(
                   tab: activeTab,
-                  showOutline: true,
-                  showThumbnails: false,
                   onPageSelected: (page) {
                     activeTab.controller.jumpToPage(page);
                   },
@@ -151,12 +149,10 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
                   PdfToolbar(
                     tab: activeTab,
                     showOutlinePanel: _showSidebar,
-                    showThumbnailPanel: false,
                     annotationMode: _annotationMode,
                     annotationColor: _annotationColor,
                     isSplitView: _isSplitView,
                     onToggleOutline: _toggleSidebar,
-                    onToggleThumbnails: () {},
                     onToggleSplitView: _toggleSplitView,
                     onAnnotationModeChanged: (mode) {
                       setState(() {

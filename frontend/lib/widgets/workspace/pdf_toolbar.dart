@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'pdf_tab_manager.dart';
 import '../../theme/app_colors.dart';
 
 /// Toolbar for PDF viewer controls
-class PdfToolbar extends StatelessWidget {
+class PdfToolbar extends StatefulWidget {
   final PdfTab tab;
   final bool showOutlinePanel;
-  final bool showThumbnailPanel;
   final PdfAnnotationMode annotationMode;
   final Color annotationColor;
   final bool isSplitView;
   final VoidCallback onToggleOutline;
-  final VoidCallback onToggleThumbnails;
   final VoidCallback onToggleSplitView;
   final ValueChanged<PdfAnnotationMode> onAnnotationModeChanged;
   final ValueChanged<Color> onAnnotationColorChanged;
@@ -21,21 +20,56 @@ class PdfToolbar extends StatelessWidget {
     super.key,
     required this.tab,
     required this.showOutlinePanel,
-    required this.showThumbnailPanel,
     required this.annotationMode,
     required this.annotationColor,
     required this.isSplitView,
     required this.onToggleOutline,
-    required this.onToggleThumbnails,
     required this.onToggleSplitView,
     required this.onAnnotationModeChanged,
     required this.onAnnotationColorChanged,
   });
 
   @override
+  State<PdfToolbar> createState() => _PdfToolbarState();
+}
+
+class _PdfToolbarState extends State<PdfToolbar> {
+  final TextEditingController _pageController = TextEditingController();
+  bool _isEditingPage = false;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _jumpToPage() {
+    final pageNumber = int.tryParse(_pageController.text);
+    if (pageNumber != null &&
+        pageNumber > 0 &&
+        pageNumber <= widget.tab.totalPages) {
+      widget.tab.controller.jumpToPage(pageNumber);
+      setState(() {
+        _isEditingPage = false;
+      });
+      FocusScope.of(context).unfocus();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Enter a valid page number (1-${widget.tab.totalPages})',
+          ),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
+      height: 44,
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(
@@ -44,86 +78,191 @@ class PdfToolbar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Sidebar toggle button
+          // Sidebar toggle button (compact)
           IconButton(
             icon: Icon(
-              Icons.view_sidebar,
-              color: showOutlinePanel ? AppColors.primary : Colors.white,
+              Icons.menu,
+              size: 20,
+              color: widget.showOutlinePanel ? AppColors.primary : Colors.white,
             ),
-            onPressed: onToggleOutline,
-            tooltip: 'Toggle Sidebar',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            onPressed: widget.onToggleOutline,
+            tooltip: 'Outline',
           ),
-          const VerticalDivider(),
-          // Navigation
+          Container(
+            height: 24,
+            width: 1,
+            color: Colors.white.withValues(alpha: 0.1),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+          ),
+          // Navigation (compact)
           IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.white),
-            onPressed: tab.currentPage > 1
-                ? () => tab.controller.previousPage()
+            icon: const Icon(Icons.chevron_left, size: 20, color: Colors.white),
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            onPressed: widget.tab.currentPage > 1
+                ? () => widget.tab.controller.previousPage()
                 : null,
-            tooltip: 'Previous Page',
+            tooltip: 'Previous',
           ),
-          Text(
-            '${tab.currentPage} / ${tab.totalPages}',
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+          // Editable page number field
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isEditingPage = true;
+                _pageController.text = widget.tab.currentPage.toString();
+              });
+              Future.delayed(const Duration(milliseconds: 100), () {
+                _pageController.selection = TextSelection(
+                  baseOffset: 0,
+                  extentOffset: _pageController.text.length,
+                );
+              });
+            },
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 60, maxWidth: 80),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: _isEditingPage
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: _isEditingPage
+                      ? AppColors.primary
+                      : Colors.transparent,
+                ),
+              ),
+              child: _isEditingPage
+                  ? TextField(
+                      controller: _pageController,
+                      autofocus: true,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        border: InputBorder.none,
+                      ),
+                      onSubmitted: (_) => _jumpToPage(),
+                      onTapOutside: (_) {
+                        setState(() {
+                          _isEditingPage = false;
+                        });
+                      },
+                    )
+                  : Text(
+                      '${widget.tab.currentPage}/${widget.tab.totalPages}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.white),
-            onPressed: tab.currentPage < tab.totalPages
-                ? () => tab.controller.nextPage()
+            icon: const Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: Colors.white,
+            ),
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            onPressed: widget.tab.currentPage < widget.tab.totalPages
+                ? () => widget.tab.controller.nextPage()
                 : null,
-            tooltip: 'Next Page',
+            tooltip: 'Next',
           ),
-          const VerticalDivider(),
-          // Zoom controls
+          Container(
+            height: 24,
+            width: 1,
+            color: Colors.white.withValues(alpha: 0.1),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+          ),
+          // Zoom controls (compact)
           IconButton(
-            icon: const Icon(Icons.zoom_out, color: Colors.white),
+            icon: const Icon(Icons.remove, size: 18, color: Colors.white),
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () {
-              tab.controller.zoomLevel = (tab.controller.zoomLevel - 0.25)
-                  .clamp(0.5, 3.0);
+              widget.tab.controller.zoomLevel =
+                  (widget.tab.controller.zoomLevel - 0.25).clamp(0.5, 3.0);
             },
             tooltip: 'Zoom Out',
           ),
-          Text(
-            '${(tab.zoomLevel * 100).toInt()}%',
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+          Container(
+            constraints: const BoxConstraints(minWidth: 40),
+            child: Text(
+              '${(widget.tab.zoomLevel * 100).toInt()}%',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.zoom_in, color: Colors.white),
+            icon: const Icon(Icons.add, size: 18, color: Colors.white),
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () {
-              tab.controller.zoomLevel = (tab.controller.zoomLevel + 0.25)
-                  .clamp(0.5, 3.0);
+              widget.tab.controller.zoomLevel =
+                  (widget.tab.controller.zoomLevel + 0.25).clamp(0.5, 3.0);
             },
             tooltip: 'Zoom In',
           ),
           IconButton(
-            icon: const Icon(Icons.fit_screen, color: Colors.white),
+            icon: const Icon(Icons.fit_screen, size: 18, color: Colors.white),
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () {
-              tab.controller.zoomLevel = 1.0;
+              widget.tab.controller.zoomLevel = 1.0;
             },
-            tooltip: 'Fit to Width',
+            tooltip: 'Fit',
           ),
-          const VerticalDivider(),
-          // Split view toggle
+          Container(
+            height: 24,
+            width: 1,
+            color: Colors.white.withValues(alpha: 0.1),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+          ),
+          // Split view toggle (compact)
           IconButton(
             icon: Icon(
               Icons.view_column,
-              color: isSplitView ? AppColors.primary : Colors.white,
+              size: 20,
+              color: widget.isSplitView ? AppColors.primary : Colors.white,
             ),
-            onPressed: onToggleSplitView,
-            tooltip: 'Split View',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            onPressed: widget.onToggleSplitView,
+            tooltip: 'Split',
           ),
-          const VerticalDivider(),
-          // Annotation tools
+          Container(
+            height: 24,
+            width: 1,
+            color: Colors.white.withValues(alpha: 0.1),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+          ),
+          // Annotation tools (compact)
           PopupMenuButton<PdfAnnotationMode>(
             icon: Icon(
               Icons.edit,
-              color: annotationMode != PdfAnnotationMode.none
+              size: 20,
+              color: widget.annotationMode != PdfAnnotationMode.none
                   ? AppColors.primary
                   : Colors.white,
             ),
-            tooltip: 'Annotations',
+            padding: const EdgeInsets.all(8),
+            tooltip: 'Annotate',
             color: AppColors.surface,
-            onSelected: onAnnotationModeChanged,
+            onSelected: widget.onAnnotationModeChanged,
             itemBuilder: (context) => [
               _buildAnnotationMenuItem(
                 PdfAnnotationMode.none,
@@ -152,27 +291,30 @@ class PdfToolbar extends StatelessWidget {
               ),
             ],
           ),
-          // Color picker
-          if (annotationMode != PdfAnnotationMode.none)
+          // Color picker (compact)
+          if (widget.annotationMode != PdfAnnotationMode.none)
             PopupMenuButton<Color>(
               icon: Container(
-                width: 24,
-                height: 24,
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
-                  color: annotationColor,
+                  color: widget.annotationColor,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
               ),
-              tooltip: 'Annotation Color',
+              padding: const EdgeInsets.all(8),
+              tooltip: 'Color',
               color: AppColors.surface,
-              onSelected: onAnnotationColorChanged,
+              onSelected: widget.onAnnotationColorChanged,
               itemBuilder: (context) => _buildColorMenuItems(),
             ),
           const Spacer(),
-          // Search
+          // Search (compact)
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search, size: 20, color: Colors.white),
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             onPressed: () {
               // TODO: Implement search
             },
@@ -192,9 +334,12 @@ class PdfToolbar extends StatelessWidget {
       value: mode,
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.white),
-          const SizedBox(width: 12),
-          Text(label, style: const TextStyle(color: Colors.white)),
+          Icon(icon, size: 18, color: Colors.white),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+          ),
         ],
       ),
     );
@@ -218,16 +363,16 @@ class PdfToolbar extends StatelessWidget {
       return PopupMenuItem(
         value: color,
         child: Container(
-          width: 40,
-          height: 40,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
             border: Border.all(
-              color: annotationColor == color
+              color: widget.annotationColor == color
                   ? Colors.white
                   : Colors.transparent,
-              width: 3,
+              width: 2,
             ),
           ),
         ),

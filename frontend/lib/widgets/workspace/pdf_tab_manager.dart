@@ -103,7 +103,6 @@ class PdfTab {
   int totalPages = 0;
   double zoomLevel = 1.0;
   bool showOutline = false;
-  bool showThumbnails = false;
   dynamic bookmarks; // PdfBookmarkBase from syncfusion_flutter_pdfviewer
 
   PdfTab({
