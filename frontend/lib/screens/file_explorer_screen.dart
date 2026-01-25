@@ -22,7 +22,7 @@ import '../widgets/ui/modern_button.dart';
 import '../widgets/ui/modern_text_field.dart';
 import 'package:frontend/widgets/pdf_thumbnail.dart';
 import 'pdf_viewer_screen.dart';
-import 'markdown_viewer_screen.dart';
+import 'pdf_workspace_screen.dart';
 import 'document_scanner_screen.dart';
 import 'tag_management_screen.dart';
 import 'shared_files_screen.dart';
@@ -1158,7 +1158,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => MarkdownViewerScreen(file: file),
+                      builder: (context) => PdfWorkspaceScreen(initialFile: file),
                     ),
                   );
                 }
@@ -1231,7 +1231,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MarkdownViewerScreen(file: file),
+                builder: (context) => PdfWorkspaceScreen(initialFile: file),
               ),
             );
           }
@@ -1426,7 +1426,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => MarkdownViewerScreen(file: file),
+                      builder: (context) => PdfWorkspaceScreen(initialFile: file),
                     ),
                   );
                 }

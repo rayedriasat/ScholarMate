@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'pdf_tab_manager.dart';
+import 'document_tab_manager.dart';
 import 'pdf_sidebar_panel.dart';
 import 'pdf_toolbar.dart';
 import 'workspace_split_view.dart';
 import '../../theme/app_colors.dart';
 
+// Type alias for backward compatibility
+typedef PdfTab = DocumentTab;
+typedef PdfTabManager = DocumentTabManager;
+
 /// Main PDF editor area with optional sidebar
 class WorkspacePdfEditor extends StatefulWidget {
-  final PdfTabManager tabManager;
+  final DocumentTabManager tabManager;
 
   const WorkspacePdfEditor({super.key, required this.tabManager});
 
@@ -22,7 +26,7 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
   PdfAnnotationMode _annotationMode = PdfAnnotationMode.none;
   Color _annotationColor = const Color(0xFFFFEB3B);
   bool _isSplitView = false;
-  PdfTab? _rightSplitTab;
+  DocumentTab? _rightSplitTab;
 
   void _toggleSidebar() {
     setState(() {
@@ -55,7 +59,7 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
       return;
     }
 
-    final selectedTab = await showDialog<PdfTab>(
+    final selectedTab = await showDialog<DocumentTab>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
@@ -133,12 +137,12 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
                     ),
                   ),
                 ),
-                child: PdfSidebarPanel(
-                  tab: activeTab,
-                  onPageSelected: (page) {
-                    activeTab.controller.jumpToPage(page);
-                  },
-                ),
+                  child: PdfSidebarPanel(
+                    tab: activeTab,
+                    onPageSelected: (page) {
+                      activeTab.controller?.jumpToPage(page);
+                    },
+                  ),
               ),
             ],
             // Main PDF viewer
@@ -157,18 +161,20 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
                     onAnnotationModeChanged: (mode) {
                       setState(() {
                         _annotationMode = mode;
-                        activeTab.controller.annotationMode = mode;
+                        activeTab.controller?.annotationMode = mode;
                       });
                     },
                     onAnnotationColorChanged: (color) {
                       setState(() {
                         _annotationColor = color;
                         final settings =
-                            activeTab.controller.annotationSettings;
-                        settings.highlight.color = color;
-                        settings.underline.color = color;
-                        settings.strikethrough.color = color;
-                        settings.squiggly.color = color;
+                            activeTab.controller?.annotationSettings;
+                        if (settings != null) {
+                          settings.highlight.color = color;
+                          settings.underline.color = color;
+                          settings.strikethrough.color = color;
+                          settings.squiggly.color = color;
+                        }
                       });
                     },
                   ),
@@ -217,7 +223,7 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
     );
   }
 
-  Widget _buildPdfViewer(PdfTab tab) {
+  Widget _buildPdfViewer(DocumentTab tab) {
     // Show loading state
     if (tab.isLoading || tab.pdfBytes == null) {
       return Container(
@@ -256,7 +262,7 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
           if (tab.initialPage != null && tab.initialPage! > 0) {
             Future.delayed(const Duration(milliseconds: 300), () {
               if (mounted) {
-                tab.controller.jumpToPage(tab.initialPage!);
+                tab.controller?.jumpToPage(tab.initialPage!);
               }
             });
           }
@@ -264,7 +270,7 @@ class _WorkspacePdfEditorState extends State<WorkspacePdfEditor> {
           if (tab.highlightText != null && tab.highlightText!.isNotEmpty) {
             Future.delayed(const Duration(milliseconds: 500), () {
               if (mounted) {
-                tab.controller.searchText(tab.highlightText!);
+                tab.controller?.searchText(tab.highlightText!);
               }
             });
           }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'pdf_tab_manager.dart';
+import 'document_tab_manager.dart';
 import 'workspace_tab_bar.dart';
-import 'workspace_pdf_editor.dart';
+import 'workspace_document_editor.dart';
 import 'workspace_resize_handle.dart';
 import '../../theme/app_colors.dart';
 
 /// Main workspace layout with three-panel design
 class WorkspaceLayout extends StatelessWidget {
-  final PdfTabManager tabManager;
+  final DocumentTabManager tabManager;
   final bool showExplorer;
   final bool showAiChat;
   final double explorerWidth;
@@ -130,8 +130,8 @@ class WorkspaceLayout extends StatelessWidget {
           children: [
             // Tab bar
             WorkspaceTabBar(tabManager: tabManager),
-            // PDF viewer
-            Expanded(child: WorkspacePdfEditor(tabManager: tabManager)),
+            // Document viewer (PDF or Markdown)
+            Expanded(child: WorkspaceDocumentEditor(tabManager: tabManager)),
           ],
         ),
         // Slide-in panels for mobile

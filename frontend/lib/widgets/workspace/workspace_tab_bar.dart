@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'pdf_tab_manager.dart';
+import 'document_tab_manager.dart';
 import '../../theme/app_colors.dart';
 
-/// Tab bar for managing open PDF documents
+/// Tab bar for managing open documents (PDF and Markdown)
 class WorkspaceTabBar extends StatelessWidget {
-  final PdfTabManager tabManager;
+  final DocumentTabManager tabManager;
 
   const WorkspaceTabBar({super.key, required this.tabManager});
 
@@ -64,10 +64,31 @@ class WorkspaceTabBar extends StatelessWidget {
 
   Widget _buildTab(
     BuildContext context, {
-    required PdfTab tab,
+    required DocumentTab tab,
     required int index,
     required bool isActive,
   }) {
+    // Determine icon and color based on file type
+    IconData icon;
+    Color iconColor;
+    
+    if (tab.isPdf) {
+      icon = Icons.picture_as_pdf;
+      iconColor = isActive
+          ? Colors.red.withValues(alpha: 0.9)
+          : Colors.red.withValues(alpha: 0.6);
+    } else if (tab.isMarkdown) {
+      icon = Icons.description;
+      iconColor = isActive
+          ? Colors.blue.withValues(alpha: 0.9)
+          : Colors.blue.withValues(alpha: 0.6);
+    } else {
+      icon = Icons.insert_drive_file;
+      iconColor = isActive
+          ? Colors.white.withValues(alpha: 0.9)
+          : Colors.white.withValues(alpha: 0.6);
+    }
+
     return GestureDetector(
       onTap: () => tabManager.setActiveTab(index),
       child: Container(
@@ -85,13 +106,11 @@ class WorkspaceTabBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
-              // PDF icon
+              // File icon
               Icon(
-                Icons.picture_as_pdf,
+                icon,
                 size: 16,
-                color: isActive
-                    ? AppColors.primary
-                    : Colors.white.withValues(alpha: 0.6),
+                color: iconColor,
               ),
               const SizedBox(width: 8),
               // File name

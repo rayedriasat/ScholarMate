@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/drive_file.dart';
 import '../widgets/workspace/workspace_layout.dart';
-import '../widgets/workspace/pdf_tab_manager.dart';
+import '../widgets/workspace/document_tab_manager.dart';
 import '../widgets/workspace/workspace_explorer_panel.dart';
 import '../widgets/workspace/workspace_ai_chat_panel.dart';
 import '../theme/app_colors.dart';
 
-/// VS Code-style PDF workspace with multi-tab support
+/// VS Code-style document workspace with multi-tab support (PDF and Markdown)
 class PdfWorkspaceScreen extends StatefulWidget {
   final DriveFile? initialFile;
   final String? initialFileId;
@@ -30,7 +30,7 @@ class PdfWorkspaceScreen extends StatefulWidget {
 }
 
 class _PdfWorkspaceScreenState extends State<PdfWorkspaceScreen> {
-  late PdfTabManager _tabManager;
+  late DocumentTabManager _tabManager;
   bool _showExplorer = true;
   bool _showAiChat = false;
   double _explorerWidth = 250;
@@ -42,7 +42,7 @@ class _PdfWorkspaceScreenState extends State<PdfWorkspaceScreen> {
   @override
   void initState() {
     super.initState();
-    _tabManager = PdfTabManager();
+    _tabManager = DocumentTabManager();
 
     // Open initial file if provided
     if (widget.initialFile != null ||
@@ -85,10 +85,14 @@ class _PdfWorkspaceScreenState extends State<PdfWorkspaceScreen> {
 
   void _toggleAiChat() {
     setState(() {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final isWideScreen = screenWidth >= 900;
+      
       _showAiChat = !_showAiChat;
-      if (_showAiChat) {
-        _showExplorer =
-            false; // Close explorer when opening chat on small screens
+      
+      // Only close explorer on small screens where space is limited
+      if (_showAiChat && !isWideScreen) {
+        _showExplorer = false;
       }
     });
   }
@@ -100,51 +104,58 @@ class _PdfWorkspaceScreenState extends State<PdfWorkspaceScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: WorkspaceLayout(
-        tabManager: _tabManager,
-        showExplorer: _showExplorer,
-        showAiChat: _showAiChat,
-        explorerWidth: _explorerWidth,
-        aiChatWidth: _aiChatWidth,
-        isWideScreen: isWideScreen,
-        onToggleExplorer: _toggleExplorer,
-        onToggleAiChat: _toggleAiChat,
-        onExplorerResize: (delta) {
-          setState(() {
-            final maxWidth = screenWidth * _maxPanelWidthPercent;
-            _explorerWidth = (_explorerWidth + delta).clamp(
-              _minPanelWidth,
-              maxWidth,
-            );
-          });
-        },
-        onAiChatResize: (delta) {
-          setState(() {
-            final maxWidth = screenWidth * _maxPanelWidthPercent;
-            _aiChatWidth = (_aiChatWidth - delta).clamp(
-              _minPanelWidth,
-              maxWidth,
-            );
-          });
-        },
-        explorerPanel: WorkspaceExplorerPanel(
-          onFileSelected: (file) async {
-            await _tabManager.openFile(context, file);
-            if (!isWideScreen) {
+      body: ListenableBuilder(
+        listenable: _tabManager,
+        builder: (context, _) {
+          return WorkspaceLayout(
+            tabManager: _tabManager,
+            showExplorer: _showExplorer,
+            showAiChat: _showAiChat,
+            explorerWidth: _explorerWidth,
+            aiChatWidth: _aiChatWidth,
+            isWideScreen: isWideScreen,
+            onToggleExplorer: _toggleExplorer,
+            onToggleAiChat: _toggleAiChat,
+            onExplorerResize: (delta) {
               setState(() {
-                _showExplorer = false;
+                final maxWidth = screenWidth * _maxPanelWidthPercent;
+                _explorerWidth = (_explorerWidth + delta).clamp(
+                  _minPanelWidth,
+                  maxWidth,
+                );
               });
-            }
-          },
-        ),
-        aiChatPanel: WorkspaceAiChatPanel(
-          currentFile: _tabManager.activeTab?.file,
-          onClose: () {
-            setState(() {
-              _showAiChat = false;
-            });
-          },
-        ),
+            },
+            onAiChatResize: (delta) {
+              setState(() {
+                final maxWidth = screenWidth * _maxPanelWidthPercent;
+                _aiChatWidth = (_aiChatWidth - delta).clamp(
+                  _minPanelWidth,
+                  maxWidth,
+                );
+              });
+            },
+            explorerPanel: WorkspaceExplorerPanel(
+              selectedFileId: _tabManager.activeTab?.file.id,
+              selectedFile: _tabManager.activeTab?.file,
+              onFileSelected: (file) async {
+                await _tabManager.openFile(context, file);
+                if (!isWideScreen) {
+                  setState(() {
+                    _showExplorer = false;
+                  });
+                }
+              },
+            ),
+            aiChatPanel: WorkspaceAiChatPanel(
+              currentFile: _tabManager.activeTab?.file,
+              onClose: () {
+                setState(() {
+                  _showAiChat = false;
+                });
+              },
+            ),
+          );
+        },
       ),
     );
   }

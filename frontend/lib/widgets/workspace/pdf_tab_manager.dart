@@ -5,7 +5,12 @@ import '../../models/drive_file.dart';
 import '../../services/pdf_viewer_manager.dart';
 import 'package:provider/provider.dart';
 
+// Re-export new manager for backward compatibility
+export 'document_tab_manager.dart';
+
+/// DEPRECATED: Use DocumentTabManager instead
 /// Manages open PDF tabs and their state
+@Deprecated('Use DocumentTabManager from document_tab_manager.dart instead')
 class PdfTabManager extends ChangeNotifier {
   final List<PdfTab> _tabs = [];
   int _activeTabIndex = -1;
@@ -98,7 +103,9 @@ class PdfTabManager extends ChangeNotifier {
   }
 }
 
+/// DEPRECATED: Use DocumentTab instead
 /// Represents a single PDF tab with its state
+@Deprecated('Use DocumentTab from document_tab_manager.dart instead')
 class PdfTab {
   final DriveFile file;
   final PdfViewerController controller;

@@ -46,11 +46,14 @@ env/
 .metadata
 .flutter-plugins-dependencies
 
-# Build folders (exclude all build artifacts EXCEPT frontend/build/web for Vercel)
+# Exclude all build artifacts
 build/
-!frontend/build/
-frontend/build/*
-!frontend/build/web/
+
+# # Build folders (exclude all build artifacts EXCEPT frontend/build/web for Vercel)
+# build/
+# !frontend/build/
+# frontend/build/*
+# !frontend/build/web/
 
 # Flutter generated files
 **/GeneratedPluginRegistrant.swift

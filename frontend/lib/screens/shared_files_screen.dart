@@ -8,7 +8,7 @@ import '../widgets/ui/glass_container.dart';
 import '../widgets/ui/modern_button.dart';
 import '../theme/app_colors.dart';
 import 'pdf_viewer_screen.dart';
-import 'markdown_viewer_screen.dart';
+import 'pdf_workspace_screen.dart';
 
 /// Screen displaying files shared with the current user
 class SharedFilesScreen extends StatefulWidget {
@@ -106,7 +106,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => MarkdownViewerScreen(file: file),
+          builder: (context) => PdfWorkspaceScreen(initialFile: file),
         ),
       );
     } else {
@@ -130,7 +130,7 @@ class _SharedFilesScreenState extends State<SharedFilesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => MarkdownViewerScreen(file: file),
+          builder: (context) => PdfWorkspaceScreen(initialFile: file),
         ),
       );
     } else {

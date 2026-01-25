@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'pdf_tab_manager.dart';
+import 'document_tab_manager.dart';
 import '../../theme/app_colors.dart';
+
+// Type alias for backward compatibility
+typedef PdfTab = DocumentTab;
 
 /// Toolbar for PDF viewer controls
 class PdfToolbar extends StatefulWidget {
-  final PdfTab tab;
+  final DocumentTab tab;
   final bool showOutlinePanel;
   final PdfAnnotationMode annotationMode;
   final Color annotationColor;
@@ -49,11 +52,14 @@ class _PdfToolbarState extends State<PdfToolbar> {
   }
 
   void _jumpToPage() {
+    final controller = widget.tab.controller;
+    if (controller == null) return;
+    
     final pageNumber = int.tryParse(_pageController.text);
     if (pageNumber != null &&
         pageNumber > 0 &&
         pageNumber <= widget.tab.totalPages) {
-      widget.tab.controller.jumpToPage(pageNumber);
+      controller.jumpToPage(pageNumber);
       setState(() {
         _isEditingPage = false;
       });
@@ -75,7 +81,10 @@ class _PdfToolbarState extends State<PdfToolbar> {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
 
-    final searchResult = widget.tab.controller.searchText(query);
+    final controller = widget.tab.controller;
+    if (controller == null) return;
+
+    final searchResult = controller.searchText(query);
     setState(() {
       widget.tab.searchResult = searchResult;
     });
@@ -83,7 +92,8 @@ class _PdfToolbarState extends State<PdfToolbar> {
 
   void _clearSearch() {
     _searchController.clear();
-    widget.tab.controller.clearSelection();
+    final controller = widget.tab.controller;
+    controller?.clearSelection();
     setState(() {
       widget.tab.searchResult = null;
       _isSearching = false;
@@ -146,7 +156,7 @@ class _PdfToolbarState extends State<PdfToolbar> {
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 onPressed: widget.tab.currentPage > 1
-                    ? () => widget.tab.controller.previousPage()
+                    ? () => widget.tab.controller?.previousPage()
                     : null,
                 tooltip: 'Previous',
               ),
@@ -227,7 +237,7 @@ class _PdfToolbarState extends State<PdfToolbar> {
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 onPressed: widget.tab.currentPage < widget.tab.totalPages
-                    ? () => widget.tab.controller.nextPage()
+                    ? () => widget.tab.controller?.nextPage()
                     : null,
                 tooltip: 'Next',
               ),
@@ -247,11 +257,14 @@ class _PdfToolbarState extends State<PdfToolbar> {
                     minHeight: 32,
                   ),
                   onPressed: () {
-                    widget.tab.controller.zoomLevel =
-                        (widget.tab.controller.zoomLevel - 0.25).clamp(
-                          0.5,
-                          3.0,
-                        );
+                    final controller = widget.tab.controller;
+                    if (controller != null) {
+                      controller.zoomLevel =
+                          (controller.zoomLevel - 0.25).clamp(
+                            0.5,
+                            3.0,
+                          );
+                    }
                   },
                   tooltip: 'Zoom Out',
                 ),
@@ -271,11 +284,14 @@ class _PdfToolbarState extends State<PdfToolbar> {
                     minHeight: 32,
                   ),
                   onPressed: () {
-                    widget.tab.controller.zoomLevel =
-                        (widget.tab.controller.zoomLevel + 0.25).clamp(
-                          0.5,
-                          3.0,
-                        );
+                    final controller = widget.tab.controller;
+                    if (controller != null) {
+                      controller.zoomLevel =
+                          (controller.zoomLevel + 0.25).clamp(
+                            0.5,
+                            3.0,
+                          );
+                    }
                   },
                   tooltip: 'Zoom In',
                 ),
@@ -291,7 +307,10 @@ class _PdfToolbarState extends State<PdfToolbar> {
                     minHeight: 32,
                   ),
                   onPressed: () {
-                    widget.tab.controller.zoomLevel = 1.0;
+                    final controller = widget.tab.controller;
+                    if (controller != null) {
+                      controller.zoomLevel = 1.0;
+                    }
                   },
                   tooltip: 'Fit',
                 ),

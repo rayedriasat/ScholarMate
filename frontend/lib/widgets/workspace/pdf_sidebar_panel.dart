@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'pdf_tab_manager.dart';
+import 'document_tab_manager.dart';
 import '../../theme/app_colors.dart';
+
+// Type alias for backward compatibility
+typedef PdfTab = DocumentTab;
 
 /// Sidebar panel showing document outline
 class PdfSidebarPanel extends StatelessWidget {
-  final PdfTab tab;
+  final DocumentTab tab;
   final ValueChanged<int> onPageSelected;
 
   const PdfSidebarPanel({
@@ -98,7 +101,7 @@ class PdfSidebarPanel extends StatelessWidget {
           onTap: () {
             // Use Syncfusion's jumpToBookmark method
             try {
-              tab.controller.jumpToBookmark(bookmark);
+              tab.controller?.jumpToBookmark(bookmark);
             } catch (e) {
               debugPrint('Error navigating to bookmark: $e');
               ScaffoldMessenger.of(context).showSnackBar(

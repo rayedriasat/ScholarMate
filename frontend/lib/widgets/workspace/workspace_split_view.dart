@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'pdf_tab_manager.dart';
+import 'document_tab_manager.dart';
 import 'workspace_resize_handle.dart';
 import '../../theme/app_colors.dart';
 
+// Type alias for backward compatibility
+typedef PdfTab = DocumentTab;
+
 /// Split view for comparing two PDFs side by side
 class WorkspaceSplitView extends StatefulWidget {
-  final PdfTab leftTab;
-  final PdfTab? rightTab;
+  final DocumentTab leftTab;
+  final DocumentTab? rightTab;
   final VoidCallback onCloseSplit;
   final VoidCallback onSelectRightPdf;
 
@@ -194,13 +197,13 @@ class _WorkspaceSplitViewState extends State<WorkspaceSplitView> {
                         if (isLeft &&
                             details.newPageNumber <=
                                 widget.rightTab!.totalPages) {
-                          widget.rightTab!.controller.jumpToPage(
+                          widget.rightTab!.controller?.jumpToPage(
                             details.newPageNumber,
                           );
                         } else if (!isLeft &&
                             details.newPageNumber <=
                                 widget.leftTab.totalPages) {
-                          widget.leftTab.controller.jumpToPage(
+                          widget.leftTab.controller?.jumpToPage(
                             details.newPageNumber,
                           );
                         }
@@ -213,11 +216,15 @@ class _WorkspaceSplitViewState extends State<WorkspaceSplitView> {
 
                       if (_syncZoom && widget.rightTab != null) {
                         if (isLeft) {
-                          widget.rightTab!.controller.zoomLevel =
-                              details.newZoomLevel;
+                          final rightController = widget.rightTab!.controller;
+                          if (rightController != null) {
+                            rightController.zoomLevel = details.newZoomLevel;
+                          }
                         } else {
-                          widget.leftTab.controller.zoomLevel =
-                              details.newZoomLevel;
+                          final leftController = widget.leftTab.controller;
+                          if (leftController != null) {
+                            leftController.zoomLevel = details.newZoomLevel;
+                          }
                         }
                       }
                     },
@@ -246,14 +253,17 @@ class _WorkspaceSplitViewState extends State<WorkspaceSplitView> {
                   color: tab.currentPage > 1 ? Colors.white : Colors.white24,
                 ),
                 onPressed: tab.currentPage > 1
-                    ? () => tab.controller.previousPage()
+                    ? () => tab.controller?.previousPage()
                     : null,
               ),
               IconButton(
                 icon: const Icon(Icons.zoom_out, size: 20, color: Colors.white),
                 onPressed: () {
-                  tab.controller.zoomLevel = (tab.controller.zoomLevel - 0.25)
-                      .clamp(0.5, 3.0);
+                  final controller = tab.controller;
+                  if (controller != null) {
+                    controller.zoomLevel = (controller.zoomLevel - 0.25)
+                        .clamp(0.5, 3.0);
+                  }
                 },
               ),
               IconButton(
@@ -263,14 +273,20 @@ class _WorkspaceSplitViewState extends State<WorkspaceSplitView> {
                   color: Colors.white,
                 ),
                 onPressed: () {
-                  tab.controller.zoomLevel = 1.0;
+                  final controller = tab.controller;
+                  if (controller != null) {
+                    controller.zoomLevel = 1.0;
+                  }
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.zoom_in, size: 20, color: Colors.white),
                 onPressed: () {
-                  tab.controller.zoomLevel = (tab.controller.zoomLevel + 0.25)
-                      .clamp(0.5, 3.0);
+                  final controller = tab.controller;
+                  if (controller != null) {
+                    controller.zoomLevel = (controller.zoomLevel + 0.25)
+                        .clamp(0.5, 3.0);
+                  }
                 },
               ),
               IconButton(
@@ -282,7 +298,7 @@ class _WorkspaceSplitViewState extends State<WorkspaceSplitView> {
                       : Colors.white24,
                 ),
                 onPressed: tab.currentPage < tab.totalPages
-                    ? () => tab.controller.nextPage()
+                    ? () => tab.controller?.nextPage()
                     : null,
               ),
             ],

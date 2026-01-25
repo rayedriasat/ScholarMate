@@ -233,6 +233,115 @@ class DriveService extends ChangeNotifier {
     }
   }
 
+  /// Search for files across all folders in the app folder
+  Future<List<DriveFile>> searchFiles(String searchQuery) async {
+    if (searchQuery.isEmpty) return [];
+
+    final appFolderId = await getAppFolderId();
+
+    try {
+      // Build search query: search recursively by not restricting parents
+      // Just search by name within entire Drive, then we'll filter by checking if in app folder tree
+      final query = 'name contains \'$searchQuery\' and trashed=false';
+      final fields =
+          'files(id,name,mimeType,size,parents,modifiedTime,createdTime,thumbnailLink,shared)';
+
+      final url =
+          '$_baseUrl/files?q=${Uri.encodeComponent(query)}&fields=$fields&orderBy=folder,name&pageSize=100';
+
+      final response = await _makeAuthenticatedRequest(
+        (token) => http.get(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final allFiles = (data['files'] as List)
+            .map((file) => DriveFile.fromJson(file as Map<String, dynamic>))
+            .toList();
+
+        // Filter to only include files within the app folder tree
+        final filteredFiles = <DriveFile>[];
+        for (final file in allFiles) {
+          if (await _isInAppFolder(file, appFolderId)) {
+            filteredFiles.add(file);
+          }
+        }
+
+        // Sort folders first, then files
+        filteredFiles.sort((a, b) {
+          if (a.isFolder && !b.isFolder) return -1;
+          if (!a.isFolder && b.isFolder) return 1;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+
+        return filteredFiles;
+      } else {
+        throw Exception(
+          'Failed to search files: ${response.statusCode} ${response.body}',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error searching files: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if a file is within the app folder tree by traversing parents
+  Future<bool> _isInAppFolder(DriveFile file, String appFolderId) async {
+    // If file has no parents, it's not in app folder
+    if (file.parentId == null) return false;
+    
+    // If direct parent is app folder, it's in
+    if (file.parentId == appFolderId) return true;
+    
+    // Check if parent is root - if so, not in app folder
+    if (file.parentId == 'root') return false;
+    
+    // Recursively check parent's parent (traverse up the tree)
+    try {
+      final parentInfo = await _getFileInfo(file.parentId!);
+      if (parentInfo != null) {
+        return await _isInAppFolder(parentInfo, appFolderId);
+      }
+    } catch (e) {
+      debugPrint('Error checking parent folder: $e');
+    }
+    
+    return false;
+  }
+
+  /// Get basic file info by ID
+  Future<DriveFile?> _getFileInfo(String fileId) async {
+    try {
+      final fields = 'id,name,mimeType,parents';
+      final url = '$_baseUrl/files/$fileId?fields=$fields';
+
+      final response = await _makeAuthenticatedRequest(
+        (token) => http.get(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return DriveFile.fromJson(data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('Error getting file info: $e');
+    }
+    return null;
+  }
+
   /// Upload a file to Google Drive (with offline queue support)
   Future<DriveFile> uploadFile(
     File file,
